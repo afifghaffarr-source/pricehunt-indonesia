@@ -40,6 +40,22 @@ export function Header() {
           >
             Cari Produk
           </Link>
+          <Link
+            href="/leaderboard"
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              pathname === "/leaderboard" ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            Leaderboard
+          </Link>
+          <Link
+            href="/compare"
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              pathname === "/compare" ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            Bandingkan
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2">

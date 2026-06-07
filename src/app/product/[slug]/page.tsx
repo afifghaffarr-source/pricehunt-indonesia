@@ -14,6 +14,7 @@ import { PriceAlertForm } from "@/components/product/PriceAlertForm";
 import { AIAdvisorCard } from "@/components/ai/AIAdvisorCard";
 import { SocialShare } from "@/components/product/SocialShare";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
+import { PredictionSection } from "./PredictionSection";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -171,6 +172,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       <div className="mt-10 space-y-8">
         {product.aiVerdict && <AIAdvisorCard verdict={product.aiVerdict} />}
+
+        <PredictionSection productId={product.id} />
 
         <PriceAlertForm
           productId={product.id}
