@@ -1,0 +1,157 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/auth";
+import { redirect } from "next/navigation";
+
+async function requireAdmin() {
+  const user = await getUser();
+  if (!user) redirect("/auth/login");
+
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("preferences")
+    .eq("id", user.id)
+    .single();
+
+  const prefs = (profile?.preferences as Record<string, unknown>) || {};
+  if (!prefs.is_admin) {
+    redirect("/dashboard");
+  }
+
+  return { user, supabase };
+}
+
+export async function createProduct(formData: FormData) {
+  const { supabase } = await requireAdmin();
+
+  const name = formData.get("name") as string;
+  const slug = (formData.get("slug") as string) || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const category = formData.get("category") as string;
+  const description = formData.get("description") as string;
+  const imageUrl = formData.get("image_url") as string;
+
+  const { error } = await supabase.from("products").insert({
+    name,
+    slug,
+    category,
+    description,
+    image_url: imageUrl || "https://placehold.co/400x400/e2e8f0/64748b?text=Product",
+    lowest_price: 0,
+    highest_price: 0,
+    average_price: 0,
+    deal_score: 0,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/search");
+  return { success: true };
+}
+
+export async function updateProduct(productId: string, formData: FormData) {
+  const { supabase } = await requireAdmin();
+
+  const updates: Record<string, unknown> = {};
+  const name = formData.get("name") as string;
+  const category = formData.get("category") as string;
+  const description = formData.get("description") as string;
+  const imageUrl = formData.get("image_url") as string;
+  const aiVerdict = formData.get("ai_verdict") as string;
+
+  if (name) updates.name = name;
+  if (category) updates.category = category;
+  if (description) updates.description = description;
+  if (imageUrl) updates.image_url = imageUrl;
+  if (aiVerdict !== null) updates.ai_verdict = aiVerdict;
+
+  const { error } = await supabase
+    .from("products")
+    .update(updates)
+    .eq("id", productId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath(`/product/${formData.get("slug") || ""}`);
+  return { success: true };
+}
+
+export async function deleteProduct(productId: string) {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase.from("products").delete().eq("id", productId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/search");
+  return { success: true };
+}
+
+export async function upsertPrice(formData: FormData) {
+  const { supabase } = await requireAdmin();
+
+  const productId = formData.get("product_id") as string;
+  const marketplaceId = formData.get("marketplace_id") as string;
+  const price = parseInt(formData.get("price") as string, 10);
+  const url = formData.get("url") as string;
+  const seller = formData.get("seller") as string;
+
+  if (!productId || !marketplaceId || !price) {
+    return { error: "product_id, marketplace_id, dan price wajib diisi." };
+  }
+
+  const { error } = await supabase.from("prices").upsert(
+    {
+      product_id: productId,
+      marketplace_id: marketplaceId,
+      price,
+      url,
+      seller,
+      in_stock: true,
+      shipping_cost: 0,
+      last_updated: new Date().toISOString(),
+    },
+    { onConflict: "product_id,marketplace_id" }
+  );
+
+  if (error) return { error: error.message };
+
+  await recalculateProductStats(supabase, productId);
+
+  revalidatePath("/admin");
+  revalidatePath("/search");
+  return { success: true };
+}
+
+async function recalculateProductStats(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  productId: string
+) {
+  const { data: prices } = await supabase
+    .from("prices")
+    .select("price")
+    .eq("product_id", productId)
+    .eq("in_stock", true);
+
+  if (!prices || prices.length === 0) return;
+
+  const priceValues = prices.map((p) => p.price);
+  const lowest = Math.min(...priceValues);
+  const highest = Math.max(...priceValues);
+  const average = Math.round(priceValues.reduce((a, b) => a + b, 0) / priceValues.length);
+  const dealScore = Math.round(100 - ((average - lowest) / average) * 100);
+
+  await supabase
+    .from("products")
+    .update({
+      lowest_price: lowest,
+      highest_price: highest,
+      average_price: average,
+      deal_score: dealScore,
+    })
+    .eq("id", productId);
+}

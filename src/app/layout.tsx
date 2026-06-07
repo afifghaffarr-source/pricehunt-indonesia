@@ -9,7 +9,10 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt.id";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: {
     default: "PriceHunt Indonesia — Bandingkan Harga Marketplace",
     template: "%s | PriceHunt Indonesia",
@@ -25,7 +28,30 @@ export const metadata: Metadata = {
     "lazada",
     "blibli",
     "tiktok shop",
+    "harga termurah",
+    "bandingkan harga",
   ],
+  authors: [{ name: "PriceHunt Indonesia" }],
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "PriceHunt Indonesia",
+    title: "PriceHunt Indonesia — Bandingkan Harga Marketplace",
+    description:
+      "Bandingkan harga dari 6 marketplace Indonesia dalam satu tempat. Temukan harga terbaik!",
+    url: baseUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PriceHunt Indonesia — Bandingkan Harga Marketplace",
+    description:
+      "Bandingkan harga dari 6 marketplace Indonesia dalam satu tempat.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
 };
 
 export default function RootLayout({
@@ -39,6 +65,9 @@ export default function RootLayout({
       className={`${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <meta name="theme-color" content="#2563eb" />
+      </head>
       <body className="min-h-full flex flex-col">
         <Header />
         <main className="flex-1">{children}</main>
