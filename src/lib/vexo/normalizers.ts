@@ -19,14 +19,12 @@ export function detectMarketplace(url: string): PriceHuntDiscoveredProduct["mark
 
 export function extractPrice(text: string): number | null {
   if (!text) return null;
-
   const patterns = [
     /rp\.?\s*([\d.,]+)/i,
     /idr\.?\s*([\d.,]+)/i,
     /harga[:\s]*([\d.,]+)/i,
     /([\d.,]+)\s*(?:rupiah|rp)/i,
   ];
-
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match) {
@@ -35,7 +33,6 @@ export function extractPrice(text: string): number | null {
       if (price > 1000 && price < 100_000_000) return price;
     }
   }
-
   return null;
 }
 
@@ -49,17 +46,24 @@ export function normalizeTitle(title: string): string {
     .trim();
 }
 
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 export function calculateConfidence(item: VexoSearchResultItem, expectedMarketplace?: string): number {
   let score = 0.5;
-
   const detected = detectMarketplace(item.url);
   if (detected !== "unknown") score += 0.2;
   if (expectedMarketplace && detected === expectedMarketplace) score += 0.15;
-
   if (extractPrice(item.snippet || item.price || "")) score += 0.1;
   if (item.title && item.title.length > 10) score += 0.05;
   if (item.imageUrl) score += 0.05;
-
   return Math.min(1, Math.round(score * 100) / 100);
 }
 
@@ -70,9 +74,10 @@ export function normalizeSearchResult(
 ): PriceHuntDiscoveredProduct {
   const marketplace = detectMarketplace(item.url);
   const estimatedPrice = extractPrice(item.snippet || item.price || "");
+  const uniqueId = "vexo-" + simpleHash(item.url + "|" + item.title + "|" + source);
 
   return {
-    id: `vexo-${Buffer.from(item.url).toString("base64").slice(0, 12)}`,
+    id: uniqueId,
     title: item.title,
     normalizedTitle: normalizeTitle(item.title),
     marketplace,
