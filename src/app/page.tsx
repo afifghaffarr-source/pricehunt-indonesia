@@ -2,7 +2,8 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { PopularSearchChips } from "@/components/search/PopularSearchChips";
 import { ProductCard } from "@/components/product/ProductCard";
 import { SectionHeading } from "@/components/common/SectionHeading";
-import { mockProducts, popularSearches, categories } from "@/lib/mock-data";
+import { getProductsFromDB, getCategoriesFromDB } from "@/lib/supabase/data";
+import { popularSearches } from "@/lib/mock-data";
 import {
   ArrowRight,
   Search,
@@ -15,10 +16,15 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function HomePage() {
-  const trendingProducts = [...mockProducts]
-    .sort((a, b) => b.dealScore - a.dealScore)
-    .slice(0, 4);
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const [allProducts, categories] = await Promise.all([
+    getProductsFromDB(),
+    getCategoriesFromDB(),
+  ]);
+
+  const trendingProducts = allProducts.slice(0, 4);
 
   return (
     <div>
@@ -95,50 +101,54 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-muted/50">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <SectionHeading
-              title="Deal Terbaik Hari Ini"
-              subtitle="Produk dengan skor harga tertinggi."
-            />
-            <Link
-              href="/search"
-              className={buttonVariants({ variant: "ghost" }) + " hidden sm:flex"}
-            >
-              Lihat Semua
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
+      {trendingProducts.length > 0 && (
+        <section className="bg-muted/50">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <SectionHeading
+                title="Deal Terbaik Hari Ini"
+                subtitle="Produk dengan skor harga tertinggi dari database."
+              />
+              <Link
+                href="/search"
+                className={buttonVariants({ variant: "ghost" }) + " hidden sm:flex"}
+              >
+                Lihat Semua
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </div>
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {trendingProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {trendingProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+        </section>
+      )}
+
+      {categories.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <SectionHeading
+            title="Jelajahi Kategori"
+            subtitle="Temukan produk berdasarkan kategori."
+            align="center"
+          />
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {categories.map((category) => (
+              <Link
+                key={category}
+                href={`/search?category=${encodeURIComponent(category)}`}
+              >
+                <Card className="transition-all hover:shadow-md hover:-translate-y-0.5">
+                  <CardContent className="flex items-center justify-center p-4">
+                    <span className="text-sm font-medium">{category}</span>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <SectionHeading
-          title="Jelajahi Kategori"
-          subtitle="Temukan produk berdasarkan kategori."
-          align="center"
-        />
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {categories.map((category) => (
-            <Link
-              key={category}
-              href={`/search?category=${encodeURIComponent(category)}`}
-            >
-              <Card className="transition-all hover:shadow-md hover:-translate-y-0.5">
-                <CardContent className="flex items-center justify-center p-4">
-                  <span className="text-sm font-medium">{category}</span>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="bg-primary text-primary-foreground">
         <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">

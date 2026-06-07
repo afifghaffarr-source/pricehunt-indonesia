@@ -2,12 +2,15 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getProductBySlug, mockProducts } from "@/lib/mock-data";
+import { getProductBySlugFromDB, isProductInWishlist, getProductAlerts } from "@/lib/supabase/data";
+import { getUser } from "@/lib/supabase/auth";
 import { formatRupiah, getDiscountPercent, getMarketplaceName } from "@/lib/utils";
 import { PriceComparisonTable } from "@/components/product/PriceComparisonTable";
 import { PriceHistoryChart } from "@/components/product/PriceHistoryChart";
 import { DealScoreBadge } from "@/components/product/DealScoreBadge";
 import { MarketplaceBadge } from "@/components/product/MarketplaceBadge";
+import { WishlistButton } from "@/components/product/WishlistButton";
+import { PriceAlertForm } from "@/components/product/PriceAlertForm";
 import { AIAdvisorCard } from "@/components/ai/AIAdvisorCard";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -22,15 +25,13 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
-  return mockProducts.map((p) => ({ slug: p.slug }));
-}
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlugFromDB(slug);
   if (!product) return { title: "Produk Tidak Ditemukan" };
   return {
     title: product.name,
@@ -40,10 +41,24 @@ export async function generateMetadata({
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlugFromDB(slug);
 
   if (!product) {
     notFound();
+  }
+
+  const user = await getUser();
+
+  let isWishlisted = false;
+  let userAlerts: { id: string; target_price: number; is_active: boolean }[] = [];
+
+  if (user) {
+    const [wishlisted, alerts] = await Promise.all([
+      isProductInWishlist(user.id, product.id),
+      getProductAlerts(user.id, product.id),
+    ]);
+    isWishlisted = wishlisted;
+    userAlerts = alerts;
   }
 
   const discount = getDiscountPercent(product.lowestPrice, product.highestPrice);
@@ -118,6 +133,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
             )}
           </div>
 
+          <div className="mt-4">
+            <WishlistButton
+              productId={product.id}
+              initialIsWishlisted={isWishlisted}
+            />
+          </div>
+
           <Separator className="my-6" />
 
           <p className="text-sm leading-relaxed text-muted-foreground">
@@ -130,7 +152,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               {Object.entries(product.specs).map(([key, value]) => (
                 <div key={key} className="rounded-md bg-muted/50 px-3 py-2">
                   <p className="text-xs text-muted-foreground">{key}</p>
-                  <p className="text-sm font-medium">{value}</p>
+                  <p className="text-sm font-medium">{String(value)}</p>
                 </div>
               ))}
             </div>
@@ -139,7 +161,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
       </div>
 
       <div className="mt-10 space-y-8">
-        <AIAdvisorCard verdict={product.aiVerdict} />
+        {product.aiVerdict && <AIAdvisorCard verdict={product.aiVerdict} />}
+
+        <PriceAlertForm
+          productId={product.id}
+          currentLowestPrice={product.lowestPrice}
+          initialAlerts={userAlerts}
+        />
 
         <div>
           <h2 className="mb-4 text-xl font-bold">Perbandingan Harga</h2>
@@ -149,7 +177,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
           />
         </div>
 
-        <PriceHistoryChart data={product.priceHistory} />
+        {product.priceHistory.length > 0 && (
+          <PriceHistoryChart data={product.priceHistory} />
+        )}
       </div>
     </div>
   );

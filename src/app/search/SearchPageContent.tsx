@@ -1,13 +1,14 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EmptyState } from "@/components/common/EmptyState";
 import { SectionHeading } from "@/components/common/SectionHeading";
-import { mockProducts, categories, searchProducts } from "@/lib/mock-data";
-import type { FilterOptions } from "@/lib/types";
+import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
+import { createClient } from "@/lib/supabase/client";
+import type { Product, Marketplace, MarketplacePrice } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -18,43 +19,118 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { SlidersHorizontal } from "lucide-react";
 
+const categories = [
+  "Smartphone", "Laptop", "Audio", "Wearable",
+  "Home Appliance", "Peripherals", "Gaming",
+];
+
+function transformDbProduct(row: Record<string, unknown>, prices: Record<string, unknown>[]): Product {
+  return {
+    id: row.id as string,
+    slug: row.slug as string,
+    name: row.name as string,
+    category: row.category as string,
+    description: (row.description as string) || "",
+    imageUrl: (row.image_url as string) || "https://placehold.co/400x400/e2e8f0/64748b?text=Product",
+    prices: prices.map((p) => {
+      const mp = p.marketplaces as Record<string, unknown> | null;
+      return {
+        marketplace: (mp?.name as Marketplace) || "tokopedia",
+        price: p.price as number,
+        url: (p.url as string) || "",
+        seller: (p.seller as string) || "",
+        sellerRating: Number(p.seller_rating) || 0,
+        inStock: p.in_stock as boolean,
+        shippingCost: (p.shipping_cost as number) || 0,
+        lastUpdated: (p.last_updated as string) || "",
+      } as MarketplacePrice;
+    }),
+    priceHistory: [],
+    lowestPrice: (row.lowest_price as number) || 0,
+    highestPrice: (row.highest_price as number) || 0,
+    averagePrice: (row.average_price as number) || 0,
+    dealScore: (row.deal_score as number) || 0,
+    aiVerdict: (row.ai_verdict as string) || "",
+    specs: (row.specs as Record<string, string>) || {},
+  };
+}
+
 export function SearchPageContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || "";
 
   const [query, setQuery] = useState(initialQuery);
-  const [filters, setFilters] = useState<FilterOptions>({
-    category: initialCategory || undefined,
-    sortBy: "deal-score",
-  });
+  const [category, setCategory] = useState<string | undefined>(
+    initialCategory || undefined
+  );
+  const [sortBy, setSortBy] = useState<string>("deal-score");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const results = useMemo(() => {
-    let products = query ? searchProducts(query) : [...mockProducts];
+  useEffect(() => {
+    async function fetchProducts() {
+      setLoading(true);
+      const supabase = createClient();
 
-    if (filters.category) {
-      products = products.filter((p) => p.category === filters.category);
-    }
+      let queryBuilder = supabase.from("products").select("*");
 
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
+      if (query) {
+        queryBuilder = queryBuilder.or(
+          `name.ilike.%${query}%,category.ilike.%${query}%,description.ilike.%${query}%`
+        );
+      }
+
+      if (category) {
+        queryBuilder = queryBuilder.eq("category", category);
+      }
+
+      const { data: dbProducts } = await queryBuilder;
+
+      if (!dbProducts) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: allPrices } = await supabase
+        .from("prices")
+        .select("*, marketplaces(name)");
+
+      const pricesByProduct = new Map<string, Record<string, unknown>[]>();
+      if (allPrices) {
+        for (const p of allPrices) {
+          const pid = p.product_id as string;
+          if (!pricesByProduct.has(pid)) pricesByProduct.set(pid, []);
+          pricesByProduct.get(pid)!.push(p);
+        }
+      }
+
+      const result = dbProducts.map((p) =>
+        transformDbProduct(p, pricesByProduct.get(p.id) || [])
+      );
+
+      switch (sortBy) {
         case "price-asc":
-          products.sort((a, b) => a.lowestPrice - b.lowestPrice);
+          result.sort((a, b) => a.lowestPrice - b.lowestPrice);
           break;
         case "price-desc":
-          products.sort((a, b) => b.lowestPrice - a.lowestPrice);
+          result.sort((a, b) => b.lowestPrice - a.lowestPrice);
           break;
         case "deal-score":
-          products.sort((a, b) => b.dealScore - a.dealScore);
+          result.sort((a, b) => b.dealScore - a.dealScore);
           break;
         case "name":
-          products.sort((a, b) => a.name.localeCompare(b.name));
+          result.sort((a, b) => a.name.localeCompare(b.name));
           break;
       }
+
+      setProducts(result);
+      setLoading(false);
     }
 
-    return products;
-  }, [query, filters]);
+    fetchProducts();
+  }, [query, category, sortBy]);
 
   const handleSearch = (q: string) => {
     setQuery(q);
@@ -65,7 +141,7 @@ export function SearchPageContent() {
       <div className="mb-6">
         <SectionHeading
           title={query ? `Hasil pencarian: "${query}"` : "Semua Produk"}
-          subtitle={`${results.length} produk ditemukan`}
+          subtitle={loading ? "Memuat..." : `${products.length} produk ditemukan dari Supabase`}
         />
         <SearchBar
           defaultValue={query}
@@ -80,12 +156,9 @@ export function SearchPageContent() {
           Filter:
         </div>
         <Select
-          value={filters.category || "all"}
+          value={category || "all"}
           onValueChange={(val: string | null) =>
-            setFilters((prev) => ({
-              ...prev,
-              category: val === "all" || val === null ? undefined : val,
-            }))
+            setCategory(val === "all" || val === null ? undefined : val)
           }
         >
           <SelectTrigger className="w-[160px]">
@@ -101,13 +174,8 @@ export function SearchPageContent() {
           </SelectContent>
         </Select>
         <Select
-          value={filters.sortBy || "deal-score"}
-          onValueChange={(val: string | null) =>
-            setFilters((prev) => ({
-              ...prev,
-              sortBy: (val || "deal-score") as FilterOptions["sortBy"],
-            }))
-          }
+          value={sortBy}
+          onValueChange={(val: string | null) => setSortBy(val || "deal-score")}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Urutkan" />
@@ -119,22 +187,22 @@ export function SearchPageContent() {
             <SelectItem value="name">Nama A-Z</SelectItem>
           </SelectContent>
         </Select>
-        {filters.category && (
+        {category && (
           <Badge
             variant="secondary"
             className="cursor-pointer"
-            onClick={() =>
-              setFilters((prev) => ({ ...prev, category: undefined }))
-            }
+            onClick={() => setCategory(undefined)}
           >
-            {filters.category} ×
+            {category} ×
           </Badge>
         )}
       </div>
 
-      {results.length > 0 ? (
+      {loading ? (
+        <LoadingSkeleton count={8} variant="card" />
+      ) : products.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {results.map((product) => (
+          {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>

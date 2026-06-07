@@ -25,7 +25,7 @@ export async function login(state: AuthState, formData: FormData): Promise<AuthS
   });
 
   if (error) {
-    return { error: "Email atau password salah. Silakan coba lagi." };
+    return { error: `Login gagal: ${error.message}` };
   }
 
   revalidatePath("/", "layout");
@@ -58,10 +58,7 @@ export async function register(state: AuthState, formData: FormData): Promise<Au
   });
 
   if (error) {
-    if (error.message.includes("already registered")) {
-      return { error: "Email sudah terdaftar. Silakan login." };
-    }
-    return { error: "Terjadi kesalahan. Silakan coba lagi." };
+    return { error: `Register gagal: ${error.message}` };
   }
 
   revalidatePath("/", "layout");
