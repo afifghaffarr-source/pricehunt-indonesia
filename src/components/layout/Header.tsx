@@ -64,11 +64,12 @@ export function Header() {
             type="button"
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-muted"
             onClick={toggleTheme}
+            suppressHydrationWarning
           >
             {isDark ? (
-              <Sun className="h-4 w-4" />
+              <Sun className="h-4 w-4" suppressHydrationWarning />
             ) : (
-              <Moon className="h-4 w-4" />
+              <Moon className="h-4 w-4" suppressHydrationWarning />
             )}
             <span className="sr-only">Toggle tema</span>
           </button>
