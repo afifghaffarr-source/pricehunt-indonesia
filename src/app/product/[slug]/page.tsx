@@ -15,6 +15,7 @@ import { VexoProductSummary } from "@/components/ai/VexoProductSummary";
 import { VexoImageFallback } from "@/components/common/VexoImageFallback";
 import { SocialShare } from "@/components/product/SocialShare";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
+import { ProductMatcher } from "@/components/product/ProductMatcher";
 import { PredictionSection } from "./PredictionSection";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -207,6 +208,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
         {product.priceHistory.length > 0 && (
           <PriceHistoryChart data={product.priceHistory} />
         )}
+
+        <ProductMatcher
+          productName={product.name}
+        />
 
         <ProductRecommendations
           currentProductId={product.id}
