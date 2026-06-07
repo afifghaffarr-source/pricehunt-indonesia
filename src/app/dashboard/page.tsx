@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ExportWishlistButton } from "@/components/common/ExportButtons";
 import {
   Heart,
   Bell,
@@ -94,10 +95,13 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div>
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-            <Heart className="h-5 w-5" />
-            Wishlist Saya
-          </h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Heart className="h-5 w-5" />
+              Wishlist Saya
+            </h2>
+            {wishlist.length > 0 && <ExportWishlistButton />}
+          </div>
           {wishlist.length > 0 ? (
             <div className="space-y-3">
               {wishlist.map((item) => (

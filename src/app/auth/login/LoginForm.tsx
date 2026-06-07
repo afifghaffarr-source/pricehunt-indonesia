@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { login, type AuthState } from "@/app/actions/auth";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -36,9 +37,17 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className="text-sm font-medium">
+            Password
+          </label>
+          <Link
+            href="/auth/forgot-password"
+            className="text-sm text-muted-foreground hover:text-primary"
+          >
+            Lupa password?
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"
