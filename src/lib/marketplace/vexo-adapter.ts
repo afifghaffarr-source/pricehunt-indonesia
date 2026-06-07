@@ -1,4 +1,4 @@
-import { searchWeb, askAI, searchImages, isVexoConfigured } from "@/lib/vexo/client";
+import { searchWebWithFallback, askAIWithFallback, searchImagesWithFallback, isVexoConfigured } from "@/lib/vexo/client";
 import { normalizeSearchResult } from "@/lib/vexo/normalizers";
 import { MARKETPLACE_SITES } from "@/lib/vexo/endpoints";
 import type { PriceHuntDiscoveredProduct, VexoAIIntent } from "@/lib/vexo/types";
@@ -12,35 +12,30 @@ export async function discoverProducts(
   const siteFilter = marketplace ? MARKETPLACE_SITES[marketplace] : undefined;
   const searchQuery = siteFilter ? `${query} ${siteFilter}` : query;
 
-  const [googleResults, ddgResults] = await Promise.allSettled([
-    searchWeb(searchQuery, "google"),
-    searchWeb(searchQuery, "duckduckgo"),
-  ]);
+  try {
+    const searchResults = await searchWebWithFallback(searchQuery);
+    const products: PriceHuntDiscoveredProduct[] = [];
 
-  const products: PriceHuntDiscoveredProduct[] = [];
-
-  if (googleResults.status === "fulfilled" && googleResults.value.data?.results) {
-    for (const item of googleResults.value.data.results) {
-      products.push(normalizeSearchResult(item, "vexo-google", marketplace));
+    if (searchResults.data?.results) {
+      const source = searchResults.data.searchEngine === "google" ? "vexo-google" : "vexo-duckduckgo";
+      for (const item of searchResults.data.results) {
+        products.push(normalizeSearchResult(item, source, marketplace));
+      }
     }
-  }
 
-  if (ddgResults.status === "fulfilled" && ddgResults.value.data?.results) {
-    for (const item of ddgResults.value.data.results) {
-      products.push(normalizeSearchResult(item, "vexo-duckduckgo", marketplace));
-    }
+    return products
+      .sort((a, b) => b.confidenceScore - a.confidenceScore)
+      .slice(0, 20);
+  } catch {
+    return [];
   }
-
-  return products
-    .sort((a, b) => b.confidenceScore - a.confidenceScore)
-    .slice(0, 20);
 }
 
 export async function discoverProductImage(productName: string): Promise<string | null> {
   if (!isVexoConfigured()) return null;
 
   try {
-    const result = await searchImages(`${productName} product`, "google");
+    const result = await searchImagesWithFallback(`${productName} product`);
     const firstImage = result.data?.results?.[0];
     return firstImage?.imageUrl || null;
   } catch {
@@ -63,7 +58,7 @@ export async function getAIInsight(
   };
 
   try {
-    const result = await askAI(prompts[intent], "gptoss120b");
+    const result = await askAIWithFallback(prompts[intent]);
     return result.data?.response || null;
   } catch {
     return null;

@@ -1,4 +1,12 @@
-import { VEXO_ENDPOINTS, type VexoSearchEngine, type VexoImageEngine, type VexoAIModel } from "./endpoints";
+import {
+  VEXO_ENDPOINTS,
+  AI_MODEL_PRIORITY,
+  IMAGE_ENGINE_PRIORITY,
+  SEARCH_ENGINE_PRIORITY,
+  type VexoSearchEngine,
+  type VexoImageEngine,
+  type VexoAIModel,
+} from "./endpoints";
 import { VexoAPIError, VexoTimeoutError, VexoConfigError } from "./errors";
 import { getCache, setCache, buildCacheKey } from "./cache";
 import type {
@@ -97,4 +105,72 @@ export async function askAI(
 
 export function isVexoConfigured(): boolean {
   return !!(process.env.VEXO_API_BASE_URL && process.env.VEXO_API_KEY);
+}
+
+// Fallback-aware functions that try services in priority order
+
+export async function searchWebWithFallback(query: string): Promise<VexoSearchResponse> {
+  const errors: Array<{ engine: VexoSearchEngine; error: string }> = [];
+
+  for (const engine of SEARCH_ENGINE_PRIORITY) {
+    try {
+      const result = await searchWeb(query, engine);
+      if (result.success && result.data?.results && result.data.results.length > 0) {
+        return result;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      errors.push({ engine, error: message });
+    }
+  }
+
+  throw new VexoAPIError({
+    code: "VEXO_ALL_SEARCH_ENGINES_FAILED",
+    message: `All search engines failed: ${errors.map(e => `${e.engine}: ${e.error}`).join(", ")}`,
+    retryable: false,
+  });
+}
+
+export async function searchImagesWithFallback(query: string): Promise<VexoImageResponse> {
+  const errors: Array<{ engine: VexoImageEngine; error: string }> = [];
+
+  for (const engine of IMAGE_ENGINE_PRIORITY) {
+    try {
+      const result = await searchImages(query, engine);
+      if (result.success && result.data?.results && result.data.results.length > 0) {
+        return result;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      errors.push({ engine, error: message });
+    }
+  }
+
+  throw new VexoAPIError({
+    code: "VEXO_ALL_IMAGE_ENGINES_FAILED",
+    message: `All image engines failed: ${errors.map(e => `${e.engine}: ${e.error}`).join(", ")}`,
+    retryable: false,
+  });
+}
+
+export async function askAIWithFallback(prompt: string): Promise<VexoAIResponse> {
+  const errors: Array<{ model: VexoAIModel; error: string }> = [];
+
+  for (const model of AI_MODEL_PRIORITY) {
+    try {
+      const result = await askAI(prompt, model);
+      if (result.success && result.data?.response) {
+        return result;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      errors.push({ model, error: message });
+    }
+  }
+
+  throw new VexoAPIError({
+    code: "VEXO_ALL_AI_MODELS_FAILED",
+    message: `All AI models failed: ${errors.map(e => `${e.model}: ${e.error}`).join(", ")}`,
+    retryable: false,
+  });
 }

@@ -29,3 +29,7 @@ export const MARKETPLACE_SITES: Record<string, string> = {
   blibli: "site:blibli.com",
   tiktok: "site:shop.tiktok.com",
 };
+
+export const AI_MODEL_PRIORITY: VexoAIModel[] = ["gptoss120b", "glm47flash", "duckai"];
+export const IMAGE_ENGINE_PRIORITY: VexoImageEngine[] = ["google", "bing"];
+export const SEARCH_ENGINE_PRIORITY: VexoSearchEngine[] = ["duckduckgo", "google"];
