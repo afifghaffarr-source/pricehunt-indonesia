@@ -267,6 +267,64 @@ export interface Database {
           created_at?: string;
         };
       };
+      product_reviews: {
+        Row: {
+          id: string;
+          product_id: string;
+          user_id: string;
+          rating: number;
+          title: string | null;
+          comment: string;
+          helpful_count: number;
+          verified_purchase: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          user_id: string;
+          rating: number;
+          title?: string | null;
+          comment: string;
+          helpful_count?: number;
+          verified_purchase?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          user_id?: string;
+          rating?: number;
+          title?: string | null;
+          comment?: string;
+          helpful_count?: number;
+          verified_purchase?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      review_helpfulness: {
+        Row: {
+          id: string;
+          review_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          review_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          review_id?: string;
+          user_id?: string;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       product_summary: {

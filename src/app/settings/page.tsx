@@ -2,10 +2,11 @@ import { requireAuth, getUserProfile } from "@/lib/supabase/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, User, Lock } from "lucide-react";
+import { ArrowLeft, User, Lock, Download } from "lucide-react";
 import type { Metadata } from "next";
 import { ProfileForm } from "./ProfileForm";
 import { PasswordForm } from "./PasswordForm";
+import { DataExportSection } from "./DataExportSection";
 
 export const metadata: Metadata = {
   title: "Pengaturan",
@@ -55,6 +56,18 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent>
             <PasswordForm />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Ekspor Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DataExportSection />
           </CardContent>
         </Card>
       </div>

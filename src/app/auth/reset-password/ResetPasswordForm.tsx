@@ -1,14 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { login, type AuthState } from "@/app/actions/auth";
+import { resetPassword, type AuthState } from "@/app/actions/auth";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
 
-export function LoginForm() {
+export function ResetPasswordForm() {
   const [state, action, pending] = useActionState<AuthState, FormData>(
-    login,
+    resetPassword,
     undefined
   );
 
@@ -22,38 +22,32 @@ export function LoginForm() {
       )}
 
       <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium">
-          Email
+        <label htmlFor="password" className="text-sm font-medium">
+          Password Baru
         </label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="nama@email.com"
-          required
-          autoComplete="email"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label htmlFor="password" className="text-sm font-medium">
-            Password
-          </label>
-          <a
-            href="/auth/forgot-password"
-            className="text-sm text-blue-600 hover:text-blue-500"
-          >
-            Lupa Password?
-          </a>
-        </div>
         <Input
           id="password"
           name="password"
           type="password"
-          placeholder="Masukkan password"
+          placeholder="Masukkan password baru"
           required
-          autoComplete="current-password"
+          autoComplete="new-password"
+          minLength={6}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="confirmPassword" className="text-sm font-medium">
+          Konfirmasi Password
+        </label>
+        <Input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          placeholder="Konfirmasi password baru"
+          required
+          autoComplete="new-password"
+          minLength={6}
         />
       </div>
 
@@ -68,7 +62,7 @@ export function LoginForm() {
             Memproses...
           </>
         ) : (
-          "Masuk"
+          "Reset Password"
         )}
       </button>
     </form>

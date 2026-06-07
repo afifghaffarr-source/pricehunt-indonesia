@@ -5,8 +5,9 @@ const mockSelect = vi.fn();
 const mockEq = vi.fn();
 const mockSingle = vi.fn();
 const mockOrder = vi.fn();
+const mockRange = vi.fn();
 
-vi.mock("@/lib/supabase/server", () => ({
+vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(() => ({
     from: mockFrom,
   })),
@@ -19,9 +20,13 @@ describe("Supabase data queries", () => {
       select: mockSelect.mockReturnValue({
         eq: mockEq.mockReturnValue({
           single: mockSingle.mockResolvedValue({ data: null, error: null }),
-          order: mockOrder.mockResolvedValue({ data: [], error: null }),
+          order: mockOrder.mockReturnValue({
+            range: mockRange.mockResolvedValue({ data: [], error: null }),
+          }),
         }),
-        order: mockOrder.mockResolvedValue({ data: [], error: null }),
+        order: mockOrder.mockReturnValue({
+          range: mockRange.mockResolvedValue({ data: [], error: null }),
+        }),
       }),
     });
   });
@@ -29,7 +34,9 @@ describe("Supabase data queries", () => {
   it("getProductsFromDB returns empty array on error", async () => {
     mockFrom.mockReturnValue({
       select: mockSelect.mockReturnValue({
-        order: mockOrder.mockResolvedValue({ data: null, error: new Error("fail") }),
+        order: mockOrder.mockReturnValue({
+          range: mockRange.mockResolvedValue({ data: null, error: new Error("fail") }),
+        }),
       }),
     });
 

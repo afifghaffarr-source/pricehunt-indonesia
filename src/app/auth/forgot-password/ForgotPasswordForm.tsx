@@ -1,16 +1,32 @@
 "use client";
 
 import { useActionState } from "react";
-import { login, type AuthState } from "@/app/actions/auth";
+import { requestPasswordReset, type AuthState } from "@/app/actions/auth";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
-export function LoginForm() {
+export function ForgotPasswordForm() {
   const [state, action, pending] = useActionState<AuthState, FormData>(
-    login,
+    requestPasswordReset,
     undefined
   );
+
+  if (state?.success) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-50 p-4 text-sm text-green-700">
+          <CheckCircle2 className="h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-medium">Email terkirim!</p>
+            <p className="mt-1 text-green-600">
+              Silakan cek email Anda untuk link reset password.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form action={action} className="space-y-4">
@@ -35,28 +51,6 @@ export function LoginForm() {
         />
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label htmlFor="password" className="text-sm font-medium">
-            Password
-          </label>
-          <a
-            href="/auth/forgot-password"
-            className="text-sm text-blue-600 hover:text-blue-500"
-          >
-            Lupa Password?
-          </a>
-        </div>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          placeholder="Masukkan password"
-          required
-          autoComplete="current-password"
-        />
-      </div>
-
       <button
         type="submit"
         disabled={pending}
@@ -65,10 +59,10 @@ export function LoginForm() {
         {pending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Memproses...
+            Mengirim...
           </>
         ) : (
-          "Masuk"
+          "Kirim Link Reset"
         )}
       </button>
     </form>

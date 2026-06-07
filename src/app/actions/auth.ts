@@ -70,3 +70,59 @@ export async function logout() {
   await supabase.auth.signOut();
   redirect("/");
 }
+
+export async function requestPasswordReset(
+  state: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const supabase = await createClient();
+
+  const email = formData.get("email") as string;
+
+  if (!email) {
+    return { error: "Email wajib diisi." };
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
+  });
+
+  if (error) {
+    return { error: `Gagal mengirim email reset: ${error.message}` };
+  }
+
+  return { success: true };
+}
+
+export async function resetPassword(
+  state: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const supabase = await createClient();
+
+  const password = formData.get("password") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
+
+  if (!password || !confirmPassword) {
+    return { error: "Password dan konfirmasi password wajib diisi." };
+  }
+
+  if (password.length < 6) {
+    return { error: "Password minimal 6 karakter." };
+  }
+
+  if (password !== confirmPassword) {
+    return { error: "Password dan konfirmasi password tidak cocok." };
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password,
+  });
+
+  if (error) {
+    return { error: `Gagal mereset password: ${error.message}` };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/auth/login?reset=success");
+}
