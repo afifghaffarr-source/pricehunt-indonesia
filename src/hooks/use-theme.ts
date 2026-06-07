@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useEffect } from "react";
+import { useSyncExternalStore, useEffect, useRef } from "react";
 
 function getSnapshot() {
   return document.documentElement.classList.contains("dark");
@@ -19,12 +19,20 @@ function subscribe(callback: () => void) {
 
 export function useTheme() {
   const isDark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     const saved = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const shouldBeDark = saved ? saved === "dark" : prefersDark;
-    document.documentElement.classList.toggle("dark", shouldBeDark);
+    const currentlyDark = document.documentElement.classList.contains("dark");
+
+    if (shouldBeDark !== currentlyDark) {
+      document.documentElement.classList.toggle("dark", shouldBeDark);
+    }
   }, []);
 
   const toggleTheme = () => {

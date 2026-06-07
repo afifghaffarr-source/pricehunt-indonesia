@@ -4,7 +4,11 @@ import { useEffect } from "react";
 
 export function PWARegister() {
   useEffect(() => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    if (
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      process.env.NODE_ENV === "production"
+    ) {
       navigator.serviceWorker.register("/sw.js").catch(() => {
         // SW registration failed — non-critical
       });

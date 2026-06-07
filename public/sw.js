@@ -1,10 +1,6 @@
 const CACHE_NAME = "pricehunt-v1";
-const STATIC_ASSETS = ["/", "/search", "/offline"];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -23,7 +19,12 @@ self.addEventListener("fetch", (event) => {
 
   if (request.method !== "GET") return;
   if (url.pathname.startsWith("/api/")) return;
-  if (url.pathname.startsWith("/_next/")) {
+  if (url.pathname.startsWith("/auth")) return;
+  if (url.pathname.startsWith("/dashboard")) return;
+  if (url.pathname.startsWith("/admin")) return;
+  if (url.pathname.startsWith("/settings")) return;
+
+  if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) =>
         cache.match(request).then((cached) => {
@@ -41,14 +42,14 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response.ok) {
+        if (response.ok && url.pathname !== "/offline") {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
       })
       .catch(() =>
-        caches.match(request).then((cached) => cached || caches.match("/offline"))
+        caches.match(request).then((cached) => cached || new Response("Offline", { status: 503 }))
       )
   );
 });
