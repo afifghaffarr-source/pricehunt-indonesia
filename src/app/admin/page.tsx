@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Package, Database, TrendingUp } from "lucide-react";
+import { Package, Database, TrendingUp, Globe } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah } from "@/lib/utils";
 import { CreateProductForm } from "./CreateProductForm";
@@ -130,7 +130,7 @@ export default async function AdminPage() {
       </div>
 
       <div className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold">Analytics</h2>
+        <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Analytics</h2><Link href="/admin/registry" className={buttonVariants({ variant: "outline", size: "sm" }) + " gap-2"}><Globe className="h-4 w-4" />API Registry</Link></div>
         <AnalyticsDashboard
           products={chartProducts}
           categories={categoryData}
