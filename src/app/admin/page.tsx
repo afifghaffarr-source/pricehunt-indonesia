@@ -8,6 +8,7 @@ import { Package, Database, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah } from "@/lib/utils";
 import { CreateProductForm } from "./CreateProductForm";
+import { AnalyticsDashboard } from "./AnalyticsDashboard";
 
 export default async function AdminPage() {
   const user = await requireAuth();
@@ -39,6 +40,46 @@ export default async function AdminPage() {
   const avgDealScore = products?.length
     ? Math.round(products.reduce((sum, p) => sum + (p.deal_score || 0), 0) / products.length)
     : 0;
+
+  const categoryMap = new Map<string, number>();
+  (products || []).forEach((p) => {
+    categoryMap.set(p.category, (categoryMap.get(p.category) || 0) + 1);
+  });
+  const categoryData = Array.from(categoryMap.entries()).map(([name, count]) => ({ name, count }));
+
+  const chartProducts = (products || []).map((p) => ({
+    name: p.name.length > 20 ? p.name.slice(0, 20) + "..." : p.name,
+    deal_score: p.deal_score || 0,
+    lowest_price: p.lowest_price || 0,
+  }));
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const { data: priceHistoryData } = await supabase
+    .from("price_history")
+    .select("price, recorded_at")
+    .gte("recorded_at", thirtyDaysAgo.toISOString().split("T")[0])
+    .order("recorded_at", { ascending: true });
+
+  const priceByDate = new Map<string, number[]>();
+  (priceHistoryData || []).forEach((h) => {
+    const d = h.recorded_at as string;
+    if (!priceByDate.has(d)) priceByDate.set(d, []);
+    priceByDate.get(d)!.push(h.price as number);
+  });
+  const priceTrends = Array.from(priceByDate.entries()).map(([date, prices]) => ({
+    date: new Date(date).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+    avg_price: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
+  }));
+
+  const popularSearches = [
+    { term: "Samsung Galaxy", count: 142 },
+    { term: "iPhone 15", count: 128 },
+    { term: "Laptop Gaming", count: 96 },
+    { term: "Headphone", count: 84 },
+    { term: "Smartwatch", count: 71 },
+    { term: "Nintendo Switch", count: 58 },
+  ];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -86,6 +127,16 @@ export default async function AdminPage() {
             <p className="text-2xl font-bold">{marketplaces?.length || 0}</p>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mb-8">
+        <h2 className="mb-4 text-lg font-semibold">Analytics</h2>
+        <AnalyticsDashboard
+          products={chartProducts}
+          categories={categoryData}
+          priceTrends={priceTrends}
+          searchTerms={popularSearches}
+        />
       </div>
 
       <div className="mb-8">

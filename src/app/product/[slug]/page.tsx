@@ -12,6 +12,8 @@ import { MarketplaceBadge } from "@/components/product/MarketplaceBadge";
 import { WishlistButton } from "@/components/product/WishlistButton";
 import { PriceAlertForm } from "@/components/product/PriceAlertForm";
 import { AIAdvisorCard } from "@/components/ai/AIAdvisorCard";
+import { SocialShare } from "@/components/product/SocialShare";
+import { ProductRecommendations } from "@/components/product/ProductRecommendations";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -140,6 +142,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
             />
           </div>
 
+          <div className="mt-3">
+            <SocialShare
+              url={`${process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt-indonesia.vercel.app"}/product/${slug}`}
+              title={`${product.name} - mulai ${formatRupiah(product.lowestPrice)}`}
+            />
+          </div>
+
           <Separator className="my-6" />
 
           <p className="text-sm leading-relaxed text-muted-foreground">
@@ -180,6 +189,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
         {product.priceHistory.length > 0 && (
           <PriceHistoryChart data={product.priceHistory} />
         )}
+
+        <ProductRecommendations
+          currentProductId={product.id}
+          category={product.category}
+        />
       </div>
     </div>
   );
