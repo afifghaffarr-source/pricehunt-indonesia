@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/api-auth";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // Require authentication
   const authError = await requireAuth();
   if (authError) return authError;
@@ -44,16 +44,24 @@ export async function GET(request: NextRequest) {
 
     // Format data for CSV
     const csvData = wishlist.map((item) => {
-      const product = item.products as any;
+      const product = item.products as unknown as { 
+        name: string; 
+        category: string; 
+        lowest_price: number; 
+        highest_price: number; 
+        average_price: number; 
+        deal_score: number; 
+        slug: string 
+      } | null;
       return {
-        "Product Name": product.name || "",
-        "Category": product.category || "",
-        "Lowest Price": product.lowest_price || 0,
-        "Highest Price": product.highest_price || 0,
-        "Average Price": product.average_price || 0,
-        "Deal Score": product.deal_score || 0,
+        "Product Name": product?.name || "",
+        "Category": product?.category || "",
+        "Lowest Price": product?.lowest_price || 0,
+        "Highest Price": product?.highest_price || 0,
+        "Average Price": product?.average_price || 0,
+        "Deal Score": product?.deal_score || 0,
         "Added Date": new Date(item.created_at).toLocaleDateString("id-ID"),
-        "URL": `${process.env.NEXT_PUBLIC_APP_URL}/product/${product.slug}`,
+        "URL": `${process.env.NEXT_PUBLIC_APP_URL}/product/${product?.slug}`,
       };
     });
 

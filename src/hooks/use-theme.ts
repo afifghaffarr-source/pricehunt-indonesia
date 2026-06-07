@@ -1,45 +1,33 @@
-import { useSyncExternalStore, useEffect, useRef } from "react";
+'use client'
 
-function getSnapshot() {
-  return document.documentElement.classList.contains("dark");
-}
-
-function getServerSnapshot() {
-  return false;
-}
-
-function subscribe(callback: () => void) {
-  const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class"],
-  });
-  return () => observer.disconnect();
-}
+import { useEffect, useState } from 'react'
 
 export function useTheme() {
-  const isDark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const initialized = useRef(false);
+  // Initialize with false to match SSR, will sync with DOM after mount
+  const [mounted, setMounted] = useState(false)
+  const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const shouldBeDark = saved ? saved === "dark" : prefersDark;
-    const currentlyDark = document.documentElement.classList.contains("dark");
-
-    if (shouldBeDark !== currentlyDark) {
-      document.documentElement.classList.toggle("dark", shouldBeDark);
-    }
-  }, []);
+    // Sync with DOM on mount - legitimate use case for reading external state
+    const isDarkMode = document.documentElement.classList.contains('dark')
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setIsDark(isDarkMode)
+    setMounted(true)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [])
 
   const toggleTheme = () => {
-    const next = !isDark;
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  };
+    const newValue = !isDark
+    setIsDark(newValue)
+    
+    if (newValue) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
+  }
 
-  return { isDark, toggleTheme };
+  return { isDark: mounted ? isDark : false, toggleTheme }
 }

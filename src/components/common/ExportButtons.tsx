@@ -25,7 +25,7 @@ export function ExportWishlistButton() {
         const data = await res.json()
         alert(data.error || 'Failed to export')
       }
-    } catch (err) {
+    } catch {
       alert('Export failed')
     } finally {
       setIsExporting(false)

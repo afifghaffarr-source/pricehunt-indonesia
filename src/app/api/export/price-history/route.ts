@@ -61,10 +61,10 @@ export async function GET(request: NextRequest) {
 
     // Format data for CSV
     const csvData = history.map((item) => {
-      const marketplace = item.marketplaces as any;
+      const marketplace = item.marketplaces as unknown as { display_name: string } | null;
       return {
         "Date": new Date(item.recorded_at).toLocaleDateString("id-ID"),
-        "Marketplace": marketplace.display_name || "",
+        "Marketplace": marketplace?.display_name || "",
         "Price (Rp)": item.price,
       };
     });

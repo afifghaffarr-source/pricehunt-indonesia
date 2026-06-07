@@ -3,11 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { getApiSources, getRegistryStats } from "@/lib/api-registry/data";
 import { STATUS_LABELS, PRIORITY_LABELS, CATEGORY_LABELS } from "@/lib/api-registry/types";
 import type { ApiSourceStatus, ApiSourceCategorySlug } from "@/lib/api-registry/types";
-import Link from "next/link";
 import { Globe, Key, CheckCircle, Clock, AlertTriangle, ExternalLink } from "lucide-react";
 
 const STATUS_COLORS: Record<ApiSourceStatus, string> = {
