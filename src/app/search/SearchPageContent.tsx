@@ -4,11 +4,14 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ProductCard } from "@/components/product/ProductCard";
+import { DiscoveredProductCard } from "@/components/product/DiscoveredProductCard";
+import { VexoSearchBadge } from "@/components/search/VexoSearchBadge";
 import { EmptyState } from "@/components/common/EmptyState";
 import { SectionHeading } from "@/components/common/SectionHeading";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
 import { createClient } from "@/lib/supabase/client";
 import type { Product, Marketplace, MarketplacePrice } from "@/lib/types";
+import type { PriceHuntDiscoveredProduct } from "@/lib/vexo/types";
 import {
   Select,
   SelectContent,
@@ -17,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Globe } from "lucide-react";
 
 const categories = [
   "Smartphone", "Laptop", "Audio", "Wearable",
@@ -66,6 +69,8 @@ export function SearchPageContent() {
   );
   const [sortBy, setSortBy] = useState<string>("deal-score");
   const [products, setProducts] = useState<Product[]>([]);
+  const [discovered, setDiscovered] = useState<PriceHuntDiscoveredProduct[]>([]);
+  const [vexoStatus, setVexoStatus] = useState<"loading" | "ok" | "error" | "unavailable">("loading");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -132,8 +137,41 @@ export function SearchPageContent() {
     fetchProducts();
   }, [query, category, sortBy]);
 
+  useEffect(() => {
+    if (!query) return;
+
+    let cancelled = false;
+
+    async function fetchVexo() {
+      try {
+        const res = await fetch(`/api/vexo/search?q=${encodeURIComponent(query)}&limit=8`);
+        const data = await res.json();
+
+        if (cancelled) return;
+
+        if (data.source === "vexo" && data.results?.length > 0) {
+          setDiscovered(data.results);
+          setVexoStatus("ok");
+        } else if (data.source === "vexo-unavailable") {
+          setVexoStatus("unavailable");
+        } else {
+          setVexoStatus("error");
+        }
+      } catch {
+        if (!cancelled) setVexoStatus("error");
+      }
+    }
+
+    fetchVexo();
+    return () => { cancelled = true; };
+  }, [query]);
+
   const handleSearch = (q: string) => {
     setQuery(q);
+    if (!q) {
+      setDiscovered([]);
+      setVexoStatus("unavailable");
+    }
   };
 
   return (
@@ -141,7 +179,7 @@ export function SearchPageContent() {
       <div className="mb-6">
         <SectionHeading
           title={query ? `Hasil pencarian: "${query}"` : "Semua Produk"}
-          subtitle={loading ? "Memuat..." : `${products.length} produk ditemukan dari Supabase`}
+          subtitle={loading ? "Memuat..." : `${products.length} produk dari database`}
         />
         <SearchBar
           defaultValue={query}
@@ -208,9 +246,33 @@ export function SearchPageContent() {
         </div>
       ) : (
         <EmptyState
-          title="Produk tidak ditemukan"
-          description={`Tidak ada produk yang cocok dengan "${query}". Coba kata kunci lain atau jelajahi kategori.`}
+          title="Produk tidak ditemukan di database"
+          description={`Tidak ada produk yang cocok dengan "${query}" di database lokal.`}
         />
+      )}
+
+      {discovered.length > 0 && (
+        <div className="mt-10">
+          <div className="mb-4 flex items-center gap-3">
+            <SectionHeading
+              title="Ditemukan dari Internet"
+              subtitle={`${discovered.length} hasil via VexoAPI`}
+            />
+            <VexoSearchBadge source="vexo-google" />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {discovered.map((item) => (
+              <DiscoveredProductCard key={item.id} product={item} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {query && vexoStatus === "loading" && products.length > 0 && (
+        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Globe className="h-4 w-4 animate-pulse" />
+          Mencari dari internet...
+        </div>
       )}
     </div>
   );
