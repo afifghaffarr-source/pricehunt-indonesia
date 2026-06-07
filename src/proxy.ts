@@ -1,7 +1,31 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 
-const protectedRoutes = ["/dashboard", "/admin"];
+const rateLimit = new Map<string, { count: number; resetAt: number }>();
+
+const LIMITS: Record<string, { max: number; windowMs: number }> = {
+  "/api/ai-advisor": { max: 10, windowMs: 60_000 },
+  "/api/search": { max: 60, windowMs: 60_000 },
+  "/api/products": { max: 100, windowMs: 60_000 },
+};
+
+function checkRateLimit(path: string, ip: string): boolean {
+  const limit = LIMITS[path];
+  if (!limit) return true;
+
+  const key = `${ip}:${path}`;
+  const now = Date.now();
+  const entry = rateLimit.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimit.set(key, { count: 1, resetAt: now + limit.windowMs });
+    return true;
+  }
+
+  if (entry.count >= limit.max) return false;
+  entry.count++;
+  return true;
+}
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
@@ -23,17 +47,31 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const path = request.nextUrl.pathname;
+
+  if (path.startsWith("/api/")) {
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "anonymous";
+    if (!checkRateLimit(path, ip)) {
+      return NextResponse.json(
+        { error: "Terlalu banyak request. Coba lagi nanti." },
+        { status: 429 }
+      );
+    }
+    return response;
+  }
+
+  const protectedRoutes = ["/dashboard", "/admin", "/settings"];
   const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
+    path.startsWith(route)
   );
 
   if (isProtectedRoute && !user) {
     const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+    loginUrl.searchParams.set("redirect", path);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && request.nextUrl.pathname.startsWith("/auth")) {
+  if (user && path.startsWith("/auth")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
