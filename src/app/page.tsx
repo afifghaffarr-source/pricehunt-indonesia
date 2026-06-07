@@ -1,4 +1,5 @@
 import { SearchBar } from "@/components/search/SearchBar";
+import { SmartSearchBar } from "@/components/search/SmartSearchBar";
 import { PopularSearchChips } from "@/components/search/PopularSearchChips";
 import { ProductCard } from "@/components/product/ProductCard";
 import { SectionHeading } from "@/components/common/SectionHeading";
@@ -46,6 +47,9 @@ export default async function HomePage() {
             </p>
             <div className="mt-8">
               <SearchBar size="lg" />
+            </div>
+            <div className="mt-3">
+              <SmartSearchBar />
             </div>
             <div className="mt-4">
               <p className="mb-2 text-sm text-muted-foreground">Populer:</p>

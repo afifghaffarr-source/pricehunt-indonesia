@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getProductBySlugFromDB, isProductInWishlist, getProductAlerts } from "@/lib/supabase/data";
@@ -11,7 +10,9 @@ import { DealScoreBadge } from "@/components/product/DealScoreBadge";
 import { MarketplaceBadge } from "@/components/product/MarketplaceBadge";
 import { WishlistButton } from "@/components/product/WishlistButton";
 import { PriceAlertForm } from "@/components/product/PriceAlertForm";
-import { AIAdvisorCard } from "@/components/ai/AIAdvisorCard";
+import { VexoDealVerdict } from "@/components/ai/VexoDealVerdict";
+import { VexoProductSummary } from "@/components/ai/VexoProductSummary";
+import { VexoImageFallback } from "@/components/common/VexoImageFallback";
 import { SocialShare } from "@/components/product/SocialShare";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
 import { PredictionSection } from "./PredictionSection";
@@ -78,13 +79,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-          <Image
-            src={product.imageUrl}
+          <VexoImageFallback
+            productName={product.name}
+            fallbackSrc={product.imageUrl}
             alt={product.name}
             fill
-            className="object-cover"
             priority
             sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-cover"
           />
           {discount > 5 && (
             <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-sm font-semibold text-white">
@@ -171,7 +173,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
       </div>
 
       <div className="mt-10 space-y-8">
-        {product.aiVerdict && <AIAdvisorCard verdict={product.aiVerdict} />}
+        <VexoDealVerdict
+          productName={product.name}
+          lowestPrice={product.lowestPrice}
+          highestPrice={product.highestPrice}
+          dealScore={product.dealScore}
+          marketplaceCount={product.prices.filter((p) => p.inStock).length}
+          aiVerdict={product.aiVerdict}
+        />
+
+        <VexoProductSummary
+          productName={product.name}
+          category={product.category}
+          specs={product.specs}
+        />
 
         <PredictionSection productId={product.id} />
 
