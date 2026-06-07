@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/alerts/check",
+      "schedule": "0 */6 * * *"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { PWARegister } from "@/components/common/PWARegister";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -67,8 +68,12 @@ export default function RootLayout({
     >
       <head>
         <meta name="theme-color" content="#2563eb" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icons/icon-192.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
       <body className="min-h-full flex flex-col">
+        <PWARegister />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
