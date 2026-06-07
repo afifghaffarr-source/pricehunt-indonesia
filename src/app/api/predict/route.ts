@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api-auth";
 import OpenAI from "openai";
 
 export async function POST(request: NextRequest) {
+  // ✅ SECURITY: Require authentication (expensive OpenAI operation)
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { productId } = body;
@@ -103,7 +108,8 @@ export async function POST(request: NextRequest) {
         });
 
         aiAnalysis = completion.choices[0]?.message?.content || "";
-      } catch {
+      } catch (err) {
+        console.error("OpenAI prediction error:", err);
         // AI fallback
       }
     }
@@ -133,7 +139,8 @@ export async function POST(request: NextRequest) {
         dataPoints: history.length,
       },
     });
-  } catch {
+  } catch (err) {
+    console.error("Prediction error:", err);
     return NextResponse.json(
       { error: "Prediction failed" },
       { status: 500 }

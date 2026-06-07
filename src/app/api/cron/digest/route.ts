@@ -1,7 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyCronSecret } from "@/lib/api-auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // ✅ SECURITY: Require cron secret (fail closed)
+  const authError = verifyCronSecret(request);
+  if (authError) return authError;
+
   try {
     const supabase = await createClient();
 
@@ -77,7 +82,8 @@ export async function GET() {
     }
 
     return NextResponse.json({ success: true, usersNotified: sent });
-  } catch {
+  } catch (err) {
+    console.error("Digest error:", err);
     return NextResponse.json({ error: "Digest failed" }, { status: 500 });
   }
 }

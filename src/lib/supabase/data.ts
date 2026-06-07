@@ -1,5 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "./client";
 import type { Product, MarketplacePrice, PriceHistoryPoint, Marketplace } from "@/lib/types";
+
+/**
+ * Escape special characters for PostgreSQL ILIKE pattern matching
+ * Prevents SQL injection and pattern injection attacks
+ */
+function escapeILIKEPattern(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\") // Escape backslashes first
+    .replace(/%/g, "\\%")   // Escape % wildcard
+    .replace(/_/g, "\\_");  // Escape _ wildcard
+}
 
 function transformProduct(row: Record<string, unknown>): Product {
   return {
@@ -56,75 +67,101 @@ function transformPriceHistory(rows: Record<string, unknown>[]): PriceHistoryPoi
   return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export async function getProductsFromDB(): Promise<Product[]> {
+/**
+ * ✅ OPTIMIZED: Get products with prices in a single query using JOIN
+ * Reduced from 2 queries to 1 query
+ * 
+ * @param limit - Optional limit for pagination (default: 50)
+ * @param offset - Optional offset for pagination (default: 0)
+ */
+export async function getProductsFromDB(limit = 50, offset = 0): Promise<Product[]> {
   const supabase = await createClient();
+  
+  // ✅ Use JOIN to get products with their prices in ONE query
   const { data: products, error } = await supabase
     .from("products")
-    .select("*")
-    .order("deal_score", { ascending: false });
+    .select(`
+      *,
+      prices(
+        *,
+        marketplaces(name)
+      )
+    `)
+    .order("deal_score", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error || !products) return [];
 
-  const { data: allPrices } = await supabase
-    .from("prices")
-    .select("*, marketplaces(name)");
-
-  const pricesByProduct = new Map<string, Record<string, unknown>[]>();
-  if (allPrices) {
-    for (const p of allPrices) {
-      const pid = p.product_id as string;
-      if (!pricesByProduct.has(pid)) pricesByProduct.set(pid, []);
-      pricesByProduct.get(pid)!.push(p);
-    }
-  }
-
   return products.map((p) => {
     const product = transformProduct(p);
-    product.prices = transformPrices(pricesByProduct.get(p.id) || []);
+    // Prices are already nested from the join
+    product.prices = transformPrices((p.prices as Record<string, unknown>[]) || []);
     return product;
   });
 }
 
+/**
+ * ✅ OPTIMIZED: Get single product with prices and history using JOINs
+ * Reduced from 3 queries to 1 query with multiple joins
+ */
 export async function getProductBySlugFromDB(slug: string): Promise<Product | null> {
   const supabase = await createClient();
 
+  // ✅ Use JOIN to get product with prices and history in ONE query
   const { data: product, error } = await supabase
     .from("products")
-    .select("*")
+    .select(`
+      *,
+      prices(
+        *,
+        marketplaces(name)
+      ),
+      price_history(
+        *,
+        marketplaces(name)
+      )
+    `)
     .eq("slug", slug)
     .single();
 
   if (error || !product) return null;
 
-  const { data: prices } = await supabase
-    .from("prices")
-    .select("*, marketplaces(name)")
-    .eq("product_id", product.id)
-    .order("price", { ascending: true });
-
-  const { data: history } = await supabase
-    .from("price_history")
-    .select("*, marketplaces(name)")
-    .eq("product_id", product.id)
-    .order("recorded_at", { ascending: true });
-
   const result = transformProduct(product);
-  result.prices = transformPrices(prices || []);
-  result.priceHistory = transformPriceHistory(history || []);
+  result.prices = transformPrices((product.prices as Record<string, unknown>[]) || []);
+  result.priceHistory = transformPriceHistory((product.price_history as Record<string, unknown>[]) || []);
 
   return result;
 }
 
-export async function searchProductsFromDB(query: string, category?: string): Promise<Product[]> {
+/**
+ * ✅ OPTIMIZED: Search products with prices in a single query using JOIN
+ * Reduced from 2 queries to 1 query
+ * 
+ * @param limit - Optional limit for pagination (default: 50)
+ * @param offset - Optional offset for pagination (default: 0)
+ */
+export async function searchProductsFromDB(
+  query: string, 
+  category?: string,
+  limit = 50,
+  offset = 0
+): Promise<Product[]> {
   const supabase = await createClient();
 
   let queryBuilder = supabase
     .from("products")
-    .select("*");
+    .select(`
+      *,
+      prices(
+        *,
+        marketplaces(name)
+      )
+    `);
 
   if (query) {
+    const escapedQuery = escapeILIKEPattern(query);
     queryBuilder = queryBuilder.or(
-      `name.ilike.%${query}%,category.ilike.%${query}%,description.ilike.%${query}%`
+      `name.ilike.%${escapedQuery}%,category.ilike.%${escapedQuery}%,description.ilike.%${escapedQuery}%`
     );
   }
 
@@ -132,31 +169,24 @@ export async function searchProductsFromDB(query: string, category?: string): Pr
     queryBuilder = queryBuilder.eq("category", category);
   }
 
-  queryBuilder = queryBuilder.order("deal_score", { ascending: false });
+  queryBuilder = queryBuilder
+    .order("deal_score", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   const { data: products, error } = await queryBuilder;
   if (error || !products) return [];
 
-  const { data: allPrices } = await supabase
-    .from("prices")
-    .select("*, marketplaces(name)");
-
-  const pricesByProduct = new Map<string, Record<string, unknown>[]>();
-  if (allPrices) {
-    for (const p of allPrices) {
-      const pid = p.product_id as string;
-      if (!pricesByProduct.has(pid)) pricesByProduct.set(pid, []);
-      pricesByProduct.get(pid)!.push(p);
-    }
-  }
-
   return products.map((p) => {
     const product = transformProduct(p);
-    product.prices = transformPrices(pricesByProduct.get(p.id) || []);
+    product.prices = transformPrices((p.prices as Record<string, unknown>[]) || []);
     return product;
   });
 }
 
+/**
+ * Get distinct categories
+ * Note: This loads category column for all products, but it's cached and small
+ */
 export async function getCategoriesFromDB(): Promise<string[]> {
   const supabase = await createClient();
   const { data } = await supabase

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scrapeAllMarketplaces, generateScrapeReport } from "@/lib/scraper";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
+  // ✅ SECURITY: Require admin authentication (expensive operation)
+  const authError = await requireAdmin(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { productId } = body;
@@ -86,6 +91,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
+    console.error("Scrape error:", err);
     return NextResponse.json(
       { error: "Scrape failed", details: err instanceof Error ? err.message : "unknown" },
       { status: 500 }

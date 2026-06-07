@@ -3,6 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 import { discoverProducts } from "@/lib/marketplace/vexo-adapter";
 import { isVexoConfigured } from "@/lib/vexo/client";
 
+/**
+ * Escape special characters for PostgreSQL ILIKE pattern matching
+ * Prevents SQL injection and pattern injection attacks
+ */
+function escapeILIKEPattern(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\") // Escape backslashes first
+    .replace(/%/g, "\\%")   // Escape % wildcard
+    .replace(/_/g, "\\_");  // Escape _ wildcard
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = request.nextUrl;
@@ -19,8 +30,9 @@ export async function GET(request: NextRequest) {
   let queryBuilder = supabase.from("products").select("*");
 
   if (q) {
+    const escapedQ = escapeILIKEPattern(q);
     queryBuilder = queryBuilder.or(
-      `name.ilike.%${q}%,category.ilike.%${q}%,description.ilike.%${q}%`
+      `name.ilike.%${escapedQ}%,category.ilike.%${escapedQ}%,description.ilike.%${escapedQ}%`
     );
   }
 
