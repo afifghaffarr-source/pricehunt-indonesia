@@ -31,11 +31,13 @@ export function PriceAlertForm({
   const [targetPrice, setTargetPrice] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const router = useRouter();
 
   const handleCreate = () => {
     setError(null);
+    setMessage(null);
     const price = parseInt(targetPrice.replace(/\D/g, ""), 10);
     if (!price || price <= 0) {
       setError("Masukkan harga target yang valid.");
@@ -62,6 +64,7 @@ export function PriceAlertForm({
         ]);
         setTargetPrice("");
         setShowForm(false);
+        setMessage("Alert berhasil dibuat. Kami akan memberi tahu saat harga mencapai target.");
       }
     });
   };
@@ -71,6 +74,9 @@ export function PriceAlertForm({
       const result = await deletePriceAlert(alertId);
       if (result.success) {
         setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+        setMessage("Alert berhasil dihapus.");
+      } else if (result.error) {
+        setError(result.error);
       }
     });
   };
@@ -90,7 +96,9 @@ export function PriceAlertForm({
           Dapat notifikasi saat harga turun di bawah target Anda.
         </p>
 
-        {alerts.length > 0 && (
+        {message && <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{message}</p>}
+
+        {alerts.length > 0 ? (
           <div className="space-y-2">
             {alerts.map((alert) => (
               <div
@@ -109,12 +117,17 @@ export function PriceAlertForm({
                   type="button"
                   onClick={() => handleDelete(alert.id)}
                   disabled={isPending}
+                  aria-label={`Hapus alert ${formatRupiah(alert.target_price)}`}
                   className="text-muted-foreground hover:text-destructive transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-4 text-sm text-muted-foreground">
+            Belum ada pantauan harga. Tambahkan target agar PriceHunt memberi tahu saat harga turun.
           </div>
         )}
 

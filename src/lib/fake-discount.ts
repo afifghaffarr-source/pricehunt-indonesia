@@ -178,7 +178,6 @@ function collectFlags(params: {
     originalPriceInflation,
     currentPriceVsMedian,
     lowestHistoricalPrice,
-    currentPrice,
     medianPrice,
   } = params;
   
@@ -210,8 +209,8 @@ function collectFlags(params: {
  */
 function determineStatus(
   flags: DiscountFlag[],
-  originalPriceInflation: number,
-  discountPercent: number
+  _originalPriceInflation: number,
+  _discountPercent: number
 ): { status: FakeDiscountOutput['status']; confidence: number } {
   // Calculate suspicion score (0-100, higher = more suspicious)
   let suspicionScore = 0;

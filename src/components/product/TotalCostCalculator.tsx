@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { 
   Calculator,
   TrendingDown,
-  Package,
   Truck,
   Tag,
   Coins,

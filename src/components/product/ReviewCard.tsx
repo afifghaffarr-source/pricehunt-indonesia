@@ -15,11 +15,8 @@ interface ReviewCardProps {
     created_at: string;
     user_id: string;
     user?: {
-      id: string;
-      email: string;
-      raw_user_meta_data?: {
-        display_name?: string;
-      };
+      display_name: string;
+      avatar_url: string | null;
     };
   };
   currentUserId?: string;
@@ -40,10 +37,7 @@ export function ReviewCard({
   const [isHelpful, setIsHelpful] = useState(false);
 
   const isOwner = currentUserId === review.user_id;
-  const displayName =
-    review.user?.raw_user_meta_data?.display_name ||
-    review.user?.email?.split("@")[0] ||
-    "Pengguna";
+  const displayName = review.user?.display_name || "Pengguna";
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

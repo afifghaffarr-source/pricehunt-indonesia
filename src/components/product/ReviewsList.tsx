@@ -16,11 +16,8 @@ interface Review {
   created_at: string;
   user_id: string;
   user?: {
-    id: string;
-    email: string;
-    raw_user_meta_data?: {
-      display_name?: string;
-    };
+    display_name: string;
+    avatar_url: string | null;
   };
 }
 

@@ -111,7 +111,7 @@ export function calculateDealScore(input: DealScoreInput): DealScoreOutput {
  * Calculate score based on historical discount (0-35 points)
  */
 function calculatePriceDiscountScore(input: DealScoreInput): number {
-  const { currentPrice, median90Day, lowestHistoricalPrice } = input;
+  const { currentPrice, median90Day } = input;
   
   // Need historical data for this score
   if (!median90Day) return 0;
@@ -334,7 +334,7 @@ function determineLabelColor(label: DealScoreLabel): 'green' | 'yellow' | 'orang
 function generateExplanation(
   input: DealScoreInput,
   breakdown: DealScoreOutput['breakdown'],
-  risks: string[]
+  _risks: string[]
 ): string[] {
   const explanations: string[] = [];
   

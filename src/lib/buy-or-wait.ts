@@ -225,7 +225,7 @@ function determineRecommendation(
 function checkCriticalIssues(
   input: BuyOrWaitInput,
   dealScore: DealScoreOutput,
-  fakeDiscount?: FakeDiscountOutput
+  _fakeDiscount?: FakeDiscountOutput
 ): boolean {
   // Very low seller trust
   if (dealScore.breakdown.sellerTrust === 0 && !input.isOfficialStore) {

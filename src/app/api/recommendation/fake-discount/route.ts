@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       lowestHistoricalPrice,
       median30Day,
       median90Day,
-      discountPercent,
+      discountPercent: _discountPercent,
     } = body;
 
     // Validate required fields

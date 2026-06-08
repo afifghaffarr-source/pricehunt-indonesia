@@ -3,6 +3,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+const MIN_REASONABLE_ALERT_PRICE = 1_000;
+const MAX_REASONABLE_ALERT_PRICE = 1_000_000_000;
+
 export async function toggleWishlist(productId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -46,8 +49,30 @@ export async function createPriceAlert(productId: string, targetPrice: number) {
     return { error: "Anda harus login terlebih dahulu." };
   }
 
-  if (!targetPrice || targetPrice <= 0) {
+  if (!productId || typeof productId !== "string") {
+    return { error: "Produk tidak valid." };
+  }
+
+  if (!Number.isFinite(targetPrice) || targetPrice <= 0) {
     return { error: "Harga target tidak valid." };
+  }
+
+  if (targetPrice < MIN_REASONABLE_ALERT_PRICE) {
+    return { error: "Harga target terlalu rendah untuk dipantau." };
+  }
+
+  if (targetPrice > MAX_REASONABLE_ALERT_PRICE) {
+    return { error: "Harga target terlalu tinggi." };
+  }
+
+  const { data: product } = await supabase
+    .from("products")
+    .select("id")
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (!product) {
+    return { error: "Produk tidak ditemukan." };
   }
 
   // ✅ Return the actual inserted row with real database ID

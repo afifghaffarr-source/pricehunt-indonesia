@@ -9,6 +9,28 @@ import Link from "next/link";
 import { formatRupiah } from "@/lib/utils";
 import { CreateProductForm } from "./CreateProductForm";
 import { AnalyticsDashboard } from "./AnalyticsDashboard";
+import { getJobStatistics, getRecentJobLogs } from "@/lib/job-logger";
+
+type JobStatistic = {
+  job_name: string;
+  total_runs: number;
+  successful_runs: number;
+  failed_runs: number;
+  success_rate: number;
+  avg_duration_ms: number | null;
+  last_run_at: string | null;
+};
+
+type JobLog = {
+  id: string;
+  job_name: string;
+  status: "running" | "success" | "failed" | "partial";
+  processed_count: number | null;
+  success_count: number | null;
+  failed_count: number | null;
+  error_summary: string | null;
+  created_at: string;
+};
 
 export default async function AdminPage() {
   const user = await requireAuth();
@@ -81,6 +103,13 @@ export default async function AdminPage() {
     { term: "Nintendo Switch", count: 58 },
   ];
 
+  const [jobStatsRaw, recentJobsRaw] = await Promise.all([
+    getJobStatistics(undefined, 7),
+    getRecentJobLogs("cron_prices", 5),
+  ]);
+  const jobStats = jobStatsRaw as JobStatistic[];
+  const recentJobs = recentJobsRaw as JobLog[];
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 flex items-center justify-between">
@@ -137,6 +166,61 @@ export default async function AdminPage() {
           priceTrends={priceTrends}
           searchTerms={popularSearches}
         />
+      </div>
+
+      <div className="mb-8 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Observability Job</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {jobStats.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Belum ada statistik job dalam 7 hari terakhir.</p>
+            ) : (
+              jobStats.map((job) => (
+                <div key={job.job_name} className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="font-medium">{job.job_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {job.total_runs} run &middot; {job.successful_runs} sukses &middot; {job.failed_runs} gagal
+                    </p>
+                  </div>
+                  <Badge variant={job.success_rate >= 90 ? "default" : job.success_rate >= 70 ? "secondary" : "destructive"}>
+                    {Number(job.success_rate || 0).toFixed(0)}%
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Cron Prices Terakhir</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recentJobs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Belum ada log cron prices.</p>
+            ) : (
+              recentJobs.map((job) => (
+                <div key={job.id} className="rounded-lg border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant={job.status === "success" ? "default" : job.status === "partial" ? "secondary" : "destructive"}>
+                      {job.status}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(job.created_at).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Processed {job.processed_count || 0}, sukses {job.success_count || 0}, gagal {job.failed_count || 0}
+                  </p>
+                  {job.error_summary && <p className="mt-1 text-xs text-destructive">{job.error_summary}</p>}
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mb-8">
