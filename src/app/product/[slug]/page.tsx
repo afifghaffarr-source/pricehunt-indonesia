@@ -17,6 +17,9 @@ import { SocialShare } from "@/components/product/SocialShare";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
 import { ProductMatcher } from "@/components/product/ProductMatcher";
 import { PredictionSection } from "./PredictionSection";
+import { BuyOrWaitDecision } from "@/components/product/BuyOrWaitDecision";
+import { FakeDiscountAlert } from "@/components/product/FakeDiscountAlert";
+import { TotalCostCalculator } from "@/components/product/TotalCostCalculator";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -70,6 +73,64 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const cheapestMarketplace = product.prices
     .filter((p) => p.inStock)
     .sort((a, b) => a.price - b.price)[0];
+
+  // Calculate price statistics from history for intelligent recommendations
+  const calculatePriceStats = () => {
+    if (product.priceHistory.length === 0) {
+      return {
+        median30Day: undefined,
+        median90Day: undefined,
+        lowestHistoricalPrice: undefined,
+      };
+    }
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+    // Extract all prices from price history (prices is Record<Marketplace, number | null>)
+    const extractPrices = (historyPoint: typeof product.priceHistory[0]) => {
+      return Object.values(historyPoint.prices).filter((p): p is number => p !== null);
+    };
+
+    const prices30Day = product.priceHistory
+      .filter((h) => new Date(h.date) >= thirtyDaysAgo)
+      .flatMap(extractPrices)
+      .sort((a, b) => a - b);
+
+    const prices90Day = product.priceHistory
+      .filter((h) => new Date(h.date) >= ninetyDaysAgo)
+      .flatMap(extractPrices)
+      .sort((a, b) => a - b);
+
+    const allPrices = product.priceHistory.flatMap(extractPrices);
+
+    const getMedian = (arr: number[]) => {
+      if (arr.length === 0) return undefined;
+      const mid = Math.floor(arr.length / 2);
+      return arr.length % 2 === 0 ? (arr[mid - 1] + arr[mid]) / 2 : arr[mid];
+    };
+
+    return {
+      median30Day: getMedian(prices30Day),
+      median90Day: getMedian(prices90Day),
+      lowestHistoricalPrice: allPrices.length > 0 ? Math.min(...allPrices) : undefined,
+    };
+  };
+
+  const priceStats = calculatePriceStats();
+
+  // Prepare marketplace prices for TotalCostCalculator
+  const marketplacePrices = product.prices
+    .filter((p) => p.inStock)
+    .map((p) => ({
+      marketplace: getMarketplaceName(p.marketplace),
+      price: p.price,
+      url: p.url,
+    }));
+
+  // Check if we should show fake discount alert (if there's a significant discount)
+  const shouldShowFakeDiscountAlert = discount > 10 && product.highestPrice > product.lowestPrice;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -174,6 +235,29 @@ export default async function ProductDetailPage({ params }: PageProps) {
       </div>
 
       <div className="mt-10 space-y-8">
+        {/* 1. BUY OR WAIT DECISION - TOP PRIORITY (Decision-focused UX) */}
+        <BuyOrWaitDecision
+          currentPrice={product.lowestPrice}
+          originalPrice={discount > 5 ? product.highestPrice : undefined}
+          lowestHistoricalPrice={priceStats.lowestHistoricalPrice}
+          median30Day={priceStats.median30Day}
+          median90Day={priceStats.median90Day}
+          stockStatus={product.prices.some((p) => p.inStock) ? 'in_stock' : 'out_of_stock'}
+        />
+
+        {/* 2. FAKE DISCOUNT ALERT - If suspicious discount detected */}
+        {shouldShowFakeDiscountAlert && (
+          <FakeDiscountAlert
+            currentPrice={product.lowestPrice}
+            originalPrice={product.highestPrice}
+            lowestHistoricalPrice={priceStats.lowestHistoricalPrice}
+            median30Day={priceStats.median30Day}
+            median90Day={priceStats.median90Day}
+            discountPercent={discount}
+          />
+        )}
+
+        {/* 3. DEAL VERDICT - AI analysis context */}
         <VexoDealVerdict
           productName={product.name}
           lowestPrice={product.lowestPrice}
@@ -183,20 +267,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           aiVerdict={product.aiVerdict}
         />
 
-        <VexoProductSummary
-          productName={product.name}
-          category={product.category}
-          specs={product.specs}
-        />
-
-        <PredictionSection productId={product.id} />
-
-        <PriceAlertForm
-          productId={product.id}
-          currentLowestPrice={product.lowestPrice}
-          initialAlerts={userAlerts}
-        />
-
+        {/* 4. PRICE COMPARISON - Core comparison feature */}
         <div>
           <h2 className="mb-4 text-xl font-bold">Perbandingan Harga</h2>
           <PriceComparisonTable
@@ -205,17 +276,42 @@ export default async function ProductDetailPage({ params }: PageProps) {
           />
         </div>
 
+        {/* 5. TOTAL COST CALCULATOR - Real cost analysis */}
+        {marketplacePrices.length > 0 && (
+          <TotalCostCalculator prices={marketplacePrices} />
+        )}
+
+        {/* 6. PRICE HISTORY CHART - Visual price trends */}
         {product.priceHistory.length > 0 && (
           <PriceHistoryChart data={product.priceHistory} />
         )}
 
-        <ProductMatcher
-          productName={product.name}
+        {/* 7. PRICE ALERT FORM - Let users track price drops */}
+        <PriceAlertForm
+          productId={product.id}
+          currentLowestPrice={product.lowestPrice}
+          initialAlerts={userAlerts}
         />
 
+        {/* 8. PRODUCT SUMMARY - AI-generated insights */}
+        <VexoProductSummary
+          productName={product.name}
+          category={product.category}
+          specs={product.specs}
+        />
+
+        {/* 9. PREDICTION - Future price predictions (lower priority) */}
+        <PredictionSection productId={product.id} />
+
+        {/* 10. SIMILAR PRODUCTS - Help users explore alternatives */}
         <ProductRecommendations
           currentProductId={product.id}
           category={product.category}
+        />
+
+        {/* 11. PRODUCT MATCHER - Advanced search tool */}
+        <ProductMatcher
+          productName={product.name}
         />
       </div>
     </div>
