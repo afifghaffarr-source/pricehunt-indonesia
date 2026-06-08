@@ -8,6 +8,7 @@ const mockOrder = vi.fn();
 const mockRange = vi.fn();
 
 vi.mock("@/lib/supabase/client", () => ({
+  hasSupabaseEnv: vi.fn(() => true),
   createClient: vi.fn(() => ({
     from: mockFrom,
   })),

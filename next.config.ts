@@ -36,6 +36,9 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  turbopack: {
+    root: __dirname,
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "recharts", "framer-motion"],
   },
@@ -49,12 +52,6 @@ const nextConfig: NextConfig = {
       // Individual API routes now set their own appropriate cache headers
       // Private routes (user data, admin, alerts) use Cache-Control: no-store
       // Public routes (trending, public search) can set public cache if needed
-      {
-        source: "/_next/static/:path*",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
     ];
   },
 };

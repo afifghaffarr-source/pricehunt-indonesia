@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Wand2, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -23,64 +23,62 @@ export function SmartSearchBar({ className }: SmartSearchBarProps) {
   const [parsed, setParsed] = useState<ParsedQuery | null>(null);
   const [showParsed, setShowParsed] = useState(false);
   const router = useRouter();
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const handleChange = useCallback((value: string) => {
+  const handleChange = (value: string) => {
     setQuery(value);
+    setParsed(null);
+    setShowParsed(false);
+  };
 
-    if (value.length < 10) {
-      setParsed(null);
-      setShowParsed(false);
-      return;
-    }
+  const parseWithVexo = async (): Promise<ParsedQuery | null> => {
+    const value = query.trim();
+    if (value.length < 10) return null;
 
     const looksLikeNaturalLanguage = /(dibawah|diatas|di bawah|di atas|max|min|murah|termurah|cari|carikan|rekomendasi)/i.test(value);
+    if (!looksLikeNaturalLanguage) return null;
 
-    if (!looksLikeNaturalLanguage) {
-      setParsed(null);
-      setShowParsed(false);
+    setParsing(true);
+    try {
+      const res = await fetch("/api/vexo/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ intent: "smart-search", context: value }),
+      });
+      const data = await res.json();
+
+      if (data.result) {
+        const jsonMatch = data.result.match(/\{[\s\S]*?\}/);
+        if (jsonMatch) {
+          const parsedResult = JSON.parse(jsonMatch[0]) as ParsedQuery;
+          setParsed(parsedResult);
+          setShowParsed(true);
+          return parsedResult;
+        }
+      }
+    } catch {
+      // Fallback to regular search if Vexo AI cannot parse the query.
+    } finally {
+      setParsing(false);
+    }
+    return null;
+  };
+
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+
+    let activeParsed = parsed;
+    if (!activeParsed) {
+      activeParsed = await parseWithVexo();
+    }
+
+    if (activeParsed?.keyword) {
+      const params = new URLSearchParams();
+      params.set("q", activeParsed.keyword);
+      if (activeParsed.category) params.set("category", activeParsed.category);
+      router.push(`/search?${params.toString()}`);
       return;
     }
-
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setParsing(true);
-      try {
-        const res = await fetch("/api/vexo/ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ intent: "smart-search", context: value }),
-        });
-        const data = await res.json();
-
-        if (data.result) {
-          try {
-            const jsonMatch = data.result.match(/\{[\s\S]*?\}/);
-            if (jsonMatch) {
-              const parsedResult = JSON.parse(jsonMatch[0]);
-              setParsed(parsedResult);
-              setShowParsed(true);
-            }
-          } catch {
-            // not valid JSON
-          }
-        }
-      } catch {
-        // ignore
-      }
-      setParsing(false);
-    }, 1000);
-  }, []);
-
-  const handleSearch = () => {
-    if (parsed?.keyword) {
-      const params = new URLSearchParams();
-      params.set("q", parsed.keyword);
-      if (parsed.category) params.set("category", parsed.category);
-      router.push(`/search?${params.toString()}`);
-    } else {
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-    }
+    router.push(`/search?q=${encodeURIComponent(query)}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -112,6 +110,8 @@ export function SmartSearchBar({ className }: SmartSearchBarProps) {
         {query && (
           <button
             onClick={handleClear}
+            aria-label="Bersihkan pencarian"
+            title="Bersihkan pencarian"
             className="absolute right-14 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
@@ -119,10 +119,10 @@ export function SmartSearchBar({ className }: SmartSearchBarProps) {
         )}
         <button
           onClick={handleSearch}
-          disabled={!query.trim()}
+          disabled={!query.trim() || parsing}
           className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 disabled:opacity-50"
         >
-          Cari
+          {parsing ? "Baca" : "Cari"}
         </button>
       </div>
 

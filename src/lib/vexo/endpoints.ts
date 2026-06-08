@@ -20,6 +20,7 @@ export const VEXO_ENDPOINTS = {
 export type VexoSearchEngine = keyof typeof VEXO_ENDPOINTS.search;
 export type VexoImageEngine = keyof typeof VEXO_ENDPOINTS.image;
 export type VexoAIModel = keyof typeof VEXO_ENDPOINTS.ai;
+export type VexoTool = keyof typeof VEXO_ENDPOINTS.tools;
 
 export const MARKETPLACE_SITES: Record<string, string> = {
   tokopedia: "site:tokopedia.com",

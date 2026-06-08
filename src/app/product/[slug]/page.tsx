@@ -16,6 +16,7 @@ import { VexoImageFallback } from "@/components/common/VexoImageFallback";
 import { SocialShare } from "@/components/product/SocialShare";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
 import { ProductMatcher } from "@/components/product/ProductMatcher";
+import { ReviewsList } from "@/components/product/ReviewsList";
 import { PredictionSection } from "./PredictionSection";
 import { BuyOrWaitDecision } from "@/components/product/BuyOrWaitDecision";
 import { FakeDiscountAlert } from "@/components/product/FakeDiscountAlert";
@@ -133,7 +134,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const shouldShowFakeDiscountAlert = discount > 10 && product.highestPrice > product.lowestPrice;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
       <Link href="/search" className={buttonVariants({ variant: "ghost" }) + " mb-6"}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Kembali
@@ -234,7 +235,16 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      <div className="mt-8 flex gap-2 overflow-x-auto rounded-2xl border bg-background p-2 text-sm shadow-sm">
+        <a href="#decision" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Rekomendasi</a>
+        <a href="#prices" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Harga</a>
+        <a href="#total-cost" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Total bayar</a>
+        <a href="#alerts" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Pantau</a>
+        <a href="#reviews" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Review</a>
+      </div>
+
       <div className="mt-10 space-y-8">
+        <section id="decision">
         {/* 1. BUY OR WAIT DECISION - TOP PRIORITY (Decision-focused UX) */}
         <BuyOrWaitDecision
           currentPrice={product.lowestPrice}
@@ -244,6 +254,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           median90Day={priceStats.median90Day}
           stockStatus={product.prices.some((p) => p.inStock) ? 'in_stock' : 'out_of_stock'}
         />
+        </section>
 
         {/* 2. FAKE DISCOUNT ALERT - If suspicious discount detected */}
         {shouldShowFakeDiscountAlert && (
@@ -268,7 +279,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         />
 
         {/* 4. PRICE COMPARISON - Core comparison feature */}
-        <div>
+        <div id="prices">
           <h2 className="mb-4 text-xl font-bold">Perbandingan Harga</h2>
           <PriceComparisonTable
             prices={product.prices}
@@ -278,7 +289,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
         {/* 5. TOTAL COST CALCULATOR - Real cost analysis */}
         {marketplacePrices.length > 0 && (
-          <TotalCostCalculator prices={marketplacePrices} />
+          <section id="total-cost"><TotalCostCalculator prices={marketplacePrices} /></section>
         )}
 
         {/* 6. PRICE HISTORY CHART - Visual price trends */}
@@ -287,11 +298,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
         )}
 
         {/* 7. PRICE ALERT FORM - Let users track price drops */}
-        <PriceAlertForm
-          productId={product.id}
-          currentLowestPrice={product.lowestPrice}
-          initialAlerts={userAlerts}
-        />
+        <section id="alerts">
+          <PriceAlertForm
+            productId={product.id}
+            currentLowestPrice={product.lowestPrice}
+            initialAlerts={userAlerts}
+          />
+        </section>
 
         {/* 8. PRODUCT SUMMARY - AI-generated insights */}
         <VexoProductSummary
@@ -313,6 +326,19 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <ProductMatcher
           productName={product.name}
         />
+
+        <section id="reviews">
+          <ReviewsList productId={product.id} currentUserId={user?.id} />
+        </section>
+      </div>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 shadow-lg backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-7xl gap-2">
+          <a href="#alerts" className={buttonVariants({ variant: "default", size: "sm" }) + " flex-1"}>Pantau harga ini</a>
+          <a href="#prices" className={buttonVariants({ variant: "outline", size: "sm" }) + " flex-1"}>Bandingkan</a>
+          {cheapestMarketplace?.url && (
+            <Link href={cheapestMarketplace.url} className={buttonVariants({ variant: "secondary", size: "sm" }) + " flex-1"}>Buka toko</Link>
+          )}
+        </div>
       </div>
     </div>
   );

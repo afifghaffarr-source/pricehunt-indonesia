@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/api-auth";
-import { discoverProducts } from "@/lib/marketplace/vexo-adapter";
+import { discoverProducts, discoverProductsAcrossMarketplaces } from "@/lib/marketplace/vexo-adapter";
 import { checkPersistentRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 import { isVexoConfigured } from "@/lib/vexo/client";
 
@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const q = (searchParams.get("q") || "").trim().slice(0, MAX_QUERY_LENGTH);
   const marketplace = searchParams.get("marketplace") || undefined;
+  const mode = searchParams.get("mode") || "focused";
   const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
 
   if (!q) {
@@ -49,12 +50,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const products = await discoverProducts(q, marketplace);
+    const products = marketplace || mode !== "marketplaces"
+      ? await discoverProducts(q, marketplace)
+      : await discoverProductsAcrossMarketplaces(q);
 
     return json({
       results: products.slice(0, limit),
       query: q,
       marketplace,
+      mode,
       source: "vexo",
       count: products.length,
     });

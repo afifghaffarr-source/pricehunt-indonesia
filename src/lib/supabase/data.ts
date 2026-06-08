@@ -1,4 +1,4 @@
-import { createClient } from "./client";
+import { createClient, hasSupabaseEnv } from "./client";
 import type { Product, MarketplacePrice, PriceHistoryPoint, Marketplace } from "@/lib/types";
 
 /**
@@ -75,6 +75,8 @@ function transformPriceHistory(rows: Record<string, unknown>[]): PriceHistoryPoi
  * @param offset - Optional offset for pagination (default: 0)
  */
 export async function getProductsFromDB(limit = 50, offset = 0): Promise<Product[]> {
+  if (!hasSupabaseEnv()) return [];
+
   const supabase = await createClient();
   
   // ✅ Use JOIN to get products with their prices in ONE query
@@ -105,6 +107,8 @@ export async function getProductsFromDB(limit = 50, offset = 0): Promise<Product
  * Reduced from 3 queries to 1 query with multiple joins
  */
 export async function getProductBySlugFromDB(slug: string): Promise<Product | null> {
+  if (!hasSupabaseEnv()) return null;
+
   const supabase = await createClient();
 
   // ✅ Use JOIN to get product with prices and history in ONE query
@@ -146,6 +150,8 @@ export async function searchProductsFromDB(
   limit = 50,
   offset = 0
 ): Promise<Product[]> {
+  if (!hasSupabaseEnv()) return [];
+
   const supabase = await createClient();
 
   let queryBuilder = supabase
@@ -188,6 +194,8 @@ export async function searchProductsFromDB(
  * Note: This loads category column for all products, but it's cached and small
  */
 export async function getCategoriesFromDB(): Promise<string[]> {
+  if (!hasSupabaseEnv()) return [];
+
   const supabase = await createClient();
   const { data } = await supabase
     .from("products")
@@ -199,6 +207,8 @@ export async function getCategoriesFromDB(): Promise<string[]> {
 }
 
 export async function getUserWishlist(userId: string) {
+  if (!hasSupabaseEnv()) return [];
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("wishlists")
@@ -211,6 +221,8 @@ export async function getUserWishlist(userId: string) {
 }
 
 export async function getUserAlerts(userId: string) {
+  if (!hasSupabaseEnv()) return [];
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("price_alerts")
@@ -223,6 +235,8 @@ export async function getUserAlerts(userId: string) {
 }
 
 export async function isProductInWishlist(userId: string, productId: string): Promise<boolean> {
+  if (!hasSupabaseEnv()) return false;
+
   const supabase = await createClient();
   const { data } = await supabase
     .from("wishlists")
@@ -235,6 +249,8 @@ export async function isProductInWishlist(userId: string, productId: string): Pr
 }
 
 export async function getProductAlerts(userId: string, productId: string) {
+  if (!hasSupabaseEnv()) return [];
+
   const supabase = await createClient();
   const { data } = await supabase
     .from("price_alerts")

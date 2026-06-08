@@ -7,6 +7,8 @@ import { getProductsFromDB, getCategoriesFromDB } from "@/lib/supabase/data";
 import { popularSearches } from "@/lib/mock-data";
 import {
   ArrowRight,
+  Bell,
+  Calculator,
   Search,
   TrendingDown,
   Shield,
@@ -33,17 +35,15 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <Badge variant="secondary" className="mb-4">
-              Perbandingan Harga #1 Indonesia
+              Asisten belanja pintar untuk pembeli Indonesia
             </Badge>
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-              Cari Harga{" "}
-              <span className="text-primary">Termurah</span>
+              Bandingkan harga, cek diskon, dan tahu kapan harus membeli
               <br />
-              dari Semua Marketplace
+              <span className="text-primary">sebelum checkout</span>
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Bandingkan harga dari Tokopedia, Shopee, Bukalapak, Lazada,
-              Blibli, dan TikTok Shop dalam satu tempat.
+              PriceHunt membantu membaca pola harga, mendeteksi diskon yang terindikasi mencurigakan, dan memberi saran beli atau tunggu berdasarkan data yang tersedia.
             </p>
             <div className="mt-8">
               <SearchBar size="lg" />
@@ -71,7 +71,7 @@ export default async function HomePage() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Search className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mb-2 font-semibold">Bandingkan Seketika</h3>
+              <h3 className="mb-2 font-semibold">Bandingkan tanpa buka banyak tab</h3>
               <p className="text-sm text-muted-foreground">
                 Lihat harga dari 6 marketplace sekaligus. Tidak perlu buka satu
                 per satu.
@@ -83,7 +83,7 @@ export default async function HomePage() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
                 <TrendingDown className="h-6 w-6 text-green-600" />
               </div>
-              <h3 className="mb-2 font-semibold">Pantau Harga</h3>
+              <h3 className="mb-2 font-semibold">Pantau harga incaran</h3>
               <p className="text-sm text-muted-foreground">
                 Lihat grafik riwayat harga 30 hari untuk tahu waktu terbaik
                 membeli.
@@ -95,7 +95,7 @@ export default async function HomePage() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/10">
                 <Zap className="h-6 w-6 text-purple-600" />
               </div>
-              <h3 className="mb-2 font-semibold">AI Price Advisor</h3>
+              <h3 className="mb-2 font-semibold">Rekomendasi beli atau tunggu</h3>
               <p className="text-sm text-muted-foreground">
                 Rekomendasi cerdas kapan waktu terbaik untuk membeli produk
                 incaran Anda.
@@ -130,6 +130,32 @@ export default async function HomePage() {
         </section>
       )}
 
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className="border-amber-200 bg-amber-50/60 dark:bg-amber-950/20">
+            <CardContent className="p-6">
+              <Shield className="mb-4 h-7 w-7 text-amber-600" />
+              <h3 className="font-semibold">Deteksi diskon palsu</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Lihat apakah potongan harga terlihat wajar berdasarkan riwayat harga yang tersedia.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20">
+            <CardContent className="p-6">
+              <Bell className="mb-4 h-7 w-7 text-emerald-600" />
+              <h3 className="font-semibold">Alert saat harga masuk target</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Pasang target harga dan biarkan PriceHunt mengingatkan saat waktunya lebih masuk akal untuk beli.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-sky-200 bg-sky-50/60 dark:bg-sky-950/20">
+            <CardContent className="p-6">
+              <Calculator className="mb-4 h-7 w-7 text-sky-600" />
+              <h3 className="font-semibold">Hitung total bayar real</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Harga barang murah belum tentu total checkout paling rendah setelah ongkir, voucher, dan cashback.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
       {categories.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <SectionHeading
@@ -161,8 +187,7 @@ export default async function HomePage() {
             Belanja Cerdas, Hemat Waktu & Uang
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-primary-foreground/80">
-            PriceHunt membantu jutaan pembeli Indonesia menemukan harga terbaik
-            setiap hari.
+            Dirancang untuk membantu pembeli Indonesia membandingkan harga dengan lebih cerdas, jujur, dan berbasis data.
           </p>
           <Link
             href="/search"

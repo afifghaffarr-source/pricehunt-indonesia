@@ -17,8 +17,8 @@ export function Footer() {
               </span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
-              Bandingkan harga produk dari berbagai marketplace Indonesia dalam
-              satu tempat. Hemat waktu dan uang!
+              Bandingkan harga, pantau penurunan, dan tahu kapan waktu terbaik
+              untuk membeli.
             </p>
           </div>
 
@@ -64,24 +64,34 @@ export function Footer() {
             <h4 className="mb-3 text-sm font-semibold">Tentang</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <span className="hover:text-foreground transition-colors cursor-pointer">
+                <Link href="/legal#accuracy" className="hover:text-foreground transition-colors">
                   Cara Kerja
-                </span>
+                </Link>
               </li>
               <li>
-                <span className="hover:text-foreground transition-colors cursor-pointer">
+                <Link href="/legal" className="hover:text-foreground transition-colors">
                   Tentang Kami
-                </span>
+                </Link>
               </li>
               <li>
-                <span className="hover:text-foreground transition-colors cursor-pointer">
+                <Link href="/legal#privacy" className="hover:text-foreground transition-colors">
                   Kebijakan Privasi
-                </span>
+                </Link>
               </li>
               <li>
-                <span className="hover:text-foreground transition-colors cursor-pointer">
+                <Link href="/legal#terms" className="hover:text-foreground transition-colors">
                   Syarat & Ketentuan
-                </span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal#affiliate" className="hover:text-foreground transition-colors">
+                  Disclosure Afiliasi
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal#contact" className="hover:text-foreground transition-colors">
+                  Kontak
+                </Link>
               </li>
             </ul>
           </div>

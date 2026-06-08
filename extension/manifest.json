@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Bandingkan harga marketplace Indonesia saat browsing",
   "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://pricehunt-indonesia.vercel.app/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "PriceHunt"

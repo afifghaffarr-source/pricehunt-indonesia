@@ -52,8 +52,9 @@ export function PushNotificationButton({ className }: PushNotificationButtonProp
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
           await sub.unsubscribe();
-          setSubscribed(false);
         }
+        await fetch("/api/push/subscribe", { method: "DELETE" });
+        setSubscribed(false);
       } else {
         const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!vapidKey) {
@@ -67,11 +68,16 @@ export function PushNotificationButton({ className }: PushNotificationButtonProp
           applicationServerKey: urlBase64ToUint8Array(vapidKey),
         });
 
-        await fetch("/api/push/subscribe", {
+        const response = await fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(sub),
         });
+
+        if (!response.ok) {
+          await sub.unsubscribe();
+          throw new Error("Gagal menyimpan subscription push");
+        }
 
         setSubscribed(true);
       }

@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const q = (searchParams.get("q") || "").trim().slice(0, MAX_QUERY_LENGTH);
   const engine = (searchParams.get("engine") || "google") as "google" | "bing";
+  const limit = Math.min(parseInt(searchParams.get("limit") || "8", 10), 20);
 
   if (!q) {
     return json({ error: "Parameter 'q' diperlukan" }, { status: 400 });
@@ -49,7 +50,8 @@ export async function GET(request: NextRequest) {
     const result = await searchImages(q, engine);
 
     return json({
-      results: result.data?.results || [],
+      results: (result.data?.results || []).slice(0, limit),
+      count: result.data?.results?.length || 0,
       query: q,
       engine,
       source: "vexo",

@@ -48,6 +48,15 @@ export interface VexoAIResponse extends VexoBaseResponse {
   };
 }
 
+export interface VexoTranslateResponse extends VexoBaseResponse {
+  data?: {
+    translatedText?: string;
+    text?: string;
+    sourceLanguage?: string;
+    targetLanguage?: string;
+  };
+}
+
 export interface PriceHuntDiscoveredProduct {
   id: string;
   title: string;

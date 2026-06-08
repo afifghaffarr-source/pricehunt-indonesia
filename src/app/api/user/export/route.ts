@@ -71,7 +71,10 @@ export async function GET(_request: NextRequest) {
         .eq("user_id", user.id),
     ]);
 
-    // Compile the export data
+    const profile = profileData.data || null;
+
+    // Compile the export data. Keep search_history explicit even when the table
+    // has not been introduced yet so the export shape stays predictable.
     const exportData = {
       export_date: new Date().toISOString(),
       export_version: "1.0",
@@ -81,10 +84,12 @@ export async function GET(_request: NextRequest) {
         created_at: user.created_at,
         metadata: user.user_metadata,
       },
-      profile: profileData.data || null,
+      profile,
+      preferences: profile?.preferences || {},
       wishlists: wishlistsData.data || [],
       price_alerts: alertsData.data || [],
       reviews: reviewsData.data || [],
+      search_history: [],
       statistics: {
         total_wishlists: wishlistsData.data?.length || 0,
         total_alerts: alertsData.data?.length || 0,
@@ -103,11 +108,11 @@ export async function GET(_request: NextRequest) {
   } catch (err) {
     console.error("User data export error:", err);
     return NextResponse.json(
+      { error: "Gagal mengekspor data pengguna. Coba lagi nanti." },
       {
-        error: "Failed to export user data",
-        details: err instanceof Error ? err.message : "Unknown error",
-      },
-      { status: 500 }
+        status: 500,
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate, private" },
+      }
     );
   }
 }

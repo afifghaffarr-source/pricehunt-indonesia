@@ -6,13 +6,16 @@ import {
   type VexoSearchEngine,
   type VexoImageEngine,
   type VexoAIModel,
+  type VexoTool,
 } from "./endpoints";
 import { VexoAPIError, VexoTimeoutError, VexoConfigError } from "./errors";
 import { getCache, setCache, buildCacheKey } from "./cache";
 import type {
+  VexoBaseResponse,
   VexoSearchResponse,
   VexoImageResponse,
   VexoAIResponse,
+  VexoTranslateResponse,
 } from "./types";
 
 function getConfig() {
@@ -103,6 +106,15 @@ export async function askAI(
   return vexoFetch<VexoAIResponse>(endpoint, { prompt });
 }
 
+export async function translateText(
+  text: string,
+  target = "id",
+  source = "auto"
+): Promise<VexoTranslateResponse> {
+  const endpoint = VEXO_ENDPOINTS.tools.translate satisfies string;
+  return vexoFetch<VexoTranslateResponse>(endpoint, { text, target, source });
+}
+
 export function isVexoConfigured(): boolean {
   return !!(process.env.VEXO_API_BASE_URL && process.env.VEXO_API_KEY);
 }
@@ -173,4 +185,11 @@ export async function askAIWithFallback(prompt: string): Promise<VexoAIResponse>
     message: `All AI models failed: ${errors.map(e => `${e.model}: ${e.error}`).join(", ")}`,
     retryable: false,
   });
+}
+
+export async function callVexoTool(
+  tool: VexoTool,
+  params: Record<string, string>
+): Promise<VexoBaseResponse> {
+  return vexoFetch<VexoBaseResponse>(VEXO_ENDPOINTS.tools[tool], params);
 }
