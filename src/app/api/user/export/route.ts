@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Gather all user data
-    const [profileData, favoritesData, alertsData, reviewsData] = await Promise.all([
+    const [profileData, wishlistsData, alertsData, reviewsData] = await Promise.all([
       // User profile
       supabase
         .from("user_profiles")
@@ -27,9 +27,9 @@ export async function GET(_request: NextRequest) {
         .eq("id", user.id)
         .single(),
       
-      // Favorites
+      // Wishlists (fixed from 'favorites')
       supabase
-        .from("favorites")
+        .from("wishlists")
         .select(`
           *,
           product:products (
@@ -82,21 +82,22 @@ export async function GET(_request: NextRequest) {
         metadata: user.user_metadata,
       },
       profile: profileData.data || null,
-      favorites: favoritesData.data || [],
+      wishlists: wishlistsData.data || [],
       price_alerts: alertsData.data || [],
       reviews: reviewsData.data || [],
       statistics: {
-        total_favorites: favoritesData.data?.length || 0,
+        total_wishlists: wishlistsData.data?.length || 0,
         total_alerts: alertsData.data?.length || 0,
         total_reviews: reviewsData.data?.length || 0,
       },
     };
 
-    // Return as downloadable JSON
+    // Return as downloadable JSON with proper cache headers for private data
     return new NextResponse(JSON.stringify(exportData, null, 2), {
       headers: {
         "Content-Type": "application/json",
         "Content-Disposition": `attachment; filename="pricehunt-data-export-${new Date().toISOString().split('T')[0]}.json"`,
+        "Cache-Control": "no-store, no-cache, must-revalidate, private",
       },
     });
   } catch (err) {

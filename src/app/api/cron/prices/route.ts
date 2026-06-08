@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCronSecret } from "@/lib/api-auth";
 
 export async function GET(request: NextRequest) {
@@ -8,7 +8,17 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = await createClient();
+    // Type for price data from database
+    interface PriceRow {
+      id: string;
+      product_id: string;
+      marketplace_id: string;
+      price: number;
+      in_stock: boolean;
+    }
+
+    // ✅ Use admin client to bypass RLS for system operations
+    const supabase = createAdminClient();
     const today = new Date().toISOString().split("T")[0];
 
     // ✅ PERFORMANCE FIX: Fetch all data in 2 queries instead of 1,500+
@@ -29,12 +39,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "No prices to update", updated: 0 });
     }
 
-    // ✅ Calculate updates in memory
-    const priceUpdates = [];
-    const historyRecords = [];
+    // ✅ Type assertion for Supabase query result
+    const typedPrices = allPrices as PriceRow[];
+
+    // ✅ Calculate updates in memory with proper types
+    const priceUpdates: Array<{ id: string; price: number; last_updated: string }> = [];
+    const historyRecords: Array<{ product_id: string; marketplace_id: string; price: number; recorded_at: string }> = [];
     const productStats = new Map<string, { prices: number[]; id: string }>();
 
-    for (const priceRow of allPrices) {
+    for (const priceRow of typedPrices) {
       // Simulate price fluctuation
       const fluctuation = 1 + (Math.random() - 0.5) * 0.06;
       const newPrice = Math.round(priceRow.price * fluctuation);
@@ -71,7 +84,7 @@ export async function GET(request: NextRequest) {
       const batch = priceUpdates.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("prices")
-        .upsert(batch, { onConflict: "id" });
+        .upsert(batch as any, { onConflict: "id" });
       
       if (!error) {
         pricesUpdated += batch.length;
@@ -85,7 +98,7 @@ export async function GET(request: NextRequest) {
       const batch = historyRecords.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("price_history")
-        .upsert(batch, { onConflict: "product_id,marketplace_id,recorded_at" });
+        .upsert(batch as any, { onConflict: "product_id,marketplace_id,recorded_at" });
       
       if (!error) {
         historyInserted += batch.length;
@@ -93,7 +106,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ✅ BATCH UPDATE: Update product stats in batches
-    const productUpdates = [];
+    const productUpdates: Array<{ id: string; lowest_price: number; highest_price: number; average_price: number; deal_score: number }> = [];
     
     for (const [productId, stats] of productStats) {
       if (stats.prices.length === 0) continue;
@@ -118,7 +131,7 @@ export async function GET(request: NextRequest) {
       const batch = productUpdates.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("products")
-        .upsert(batch, { onConflict: "id" });
+        .upsert(batch as any, { onConflict: "id" });
       
       if (!error) {
         productsUpdated += batch.length;

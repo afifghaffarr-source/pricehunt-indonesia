@@ -1,0 +1,73 @@
+-- Migration: Cleanup Duplicate Review Schema
+-- Date: 2026-06-08
+-- Purpose: Document and optionally remove duplicate review tables
+--
+-- CONTEXT:
+-- There were two competing review systems in the migrations:
+-- 1. product_reviews + review_helpfulness (ACTIVE - being used by the app)
+-- 2. reviews + review_votes (UNUSED - created by 003_reviews_system.sql)
+--
+-- The application is using the product_reviews system, which is simpler
+-- and more appropriate for the MVP stage. The reviews/review_votes system
+-- adds complexity with approval workflows that aren't needed yet.
+--
+-- DECISION: Keep product_reviews system, document the unused tables
+--
+-- =============================================
+-- CLEANUP SECTION (Optional - run if needed)
+-- =============================================
+--
+-- If you want to remove the unused tables, uncomment the following:
+--
+-- DROP TABLE IF EXISTS review_votes CASCADE;
+-- DROP TABLE IF EXISTS reviews CASCADE;
+-- DROP FUNCTION IF EXISTS update_review_helpful_counts() CASCADE;
+--
+-- =============================================
+-- ACTIVE SCHEMA DOCUMENTATION
+-- =============================================
+--
+-- The following tables are ACTIVE and used by the application:
+--
+-- 1. product_reviews
+--    - Main review table
+--    - Fields: id, product_id, user_id, rating, title, comment, helpful_count
+--    - RLS: Public read, users can CRUD their own reviews
+--    - Constraint: One review per user per product
+--
+-- 2. review_helpfulness
+--    - Tracks which users found reviews helpful
+--    - Fields: id, review_id, user_id
+--    - RLS: Public read, authenticated users can vote
+--    - Constraint: One vote per user per review
+--
+-- 3. user_profiles
+--    - Used for public review author data
+--    - Fields exposed: display_name, avatar_url
+--    - NOTE: auth.users.email is NEVER exposed in public review listings
+--
+-- =============================================
+-- SECURITY NOTES
+-- =============================================
+--
+-- ✅ Reviews API does NOT expose user emails
+-- ✅ Only display_name and avatar_url are public
+-- ✅ Users can only edit/delete their own reviews (enforced by RLS)
+-- ✅ Review helpful votes prevent duplicate voting
+--
+-- =============================================
+-- MIGRATION STATUS
+-- =============================================
+--
+-- This migration is informational only and makes no schema changes.
+-- It documents the resolution of the duplicate review schema conflict.
+--
+-- To verify the active schema, check:
+-- - src/app/api/products/[id]/reviews/route.ts (uses product_reviews)
+-- - src/app/api/reviews/[id]/route.ts (uses product_reviews)
+-- - src/app/api/reviews/[id]/helpful/route.ts (uses review_helpfulness)
+--
+-- Last updated: 2026-06-08
+
+-- No-op to make this a valid migration file
+SELECT 'Duplicate review schema documented. Using product_reviews system.' AS status;

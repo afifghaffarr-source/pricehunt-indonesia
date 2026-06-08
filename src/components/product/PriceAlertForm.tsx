@@ -50,10 +50,15 @@ export function PriceAlertForm({
           return;
         }
         setError(result.error);
-      } else if (result.success) {
+      } else if (result.success && result.alert) {
+        // ✅ Use real database ID from server response
         setAlerts((prev) => [
           ...prev,
-          { id: Date.now().toString(), target_price: price, is_active: true },
+          {
+            id: result.alert.id,
+            target_price: result.alert.target_price,
+            is_active: result.alert.is_active,
+          },
         ]);
         setTargetPrice("");
         setShowForm(false);

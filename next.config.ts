@@ -45,13 +45,10 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
-      {
-        source: "/api/:path*",
-        headers: [
-          ...securityHeaders,
-          { key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" },
-        ],
-      },
+      // ⚠️ REMOVED: Global API cache was dangerous for private endpoints
+      // Individual API routes now set their own appropriate cache headers
+      // Private routes (user data, admin, alerts) use Cache-Control: no-store
+      // Public routes (trending, public search) can set public cache if needed
       {
         source: "/_next/static/:path*",
         headers: [

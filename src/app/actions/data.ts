@@ -50,17 +50,20 @@ export async function createPriceAlert(productId: string, targetPrice: number) {
     return { error: "Harga target tidak valid." };
   }
 
-  const { error } = await supabase
+  // ✅ Return the actual inserted row with real database ID
+  const { data, error } = await supabase
     .from("price_alerts")
     .insert({
       user_id: user.id,
       product_id: productId,
       target_price: targetPrice,
-    });
+    })
+    .select()
+    .single();
 
   if (error) return { error: "Gagal membuat price alert." };
   revalidatePath("/dashboard");
-  return { success: true };
+  return { success: true, alert: data };
 }
 
 export async function deletePriceAlert(alertId: string) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCronSecret } from "@/lib/api-auth";
 
 export async function GET(request: NextRequest) {
@@ -8,7 +8,13 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = await createClient();
+    // ✅ Use admin client for system operations and user data access
+    const supabase = createAdminClient();
+
+    type AlertWithProduct = {
+      user_id: string;
+      products: { name: string; slug: string; lowest_price: number } | null;
+    };
 
     const { data: alerts } = await supabase
       .from("price_alerts")
@@ -19,8 +25,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "No active alerts", sent: 0 });
     }
 
-    const userGroups = new Map<string, typeof alerts>();
-    for (const alert of alerts) {
+    const userGroups = new Map<string, AlertWithProduct[]>();
+    for (const alert of alerts as AlertWithProduct[]) {
       const uid = alert.user_id;
       if (!userGroups.has(uid)) userGroups.set(uid, []);
       userGroups.get(uid)!.push(alert);
@@ -35,23 +41,17 @@ export async function GET(request: NextRequest) {
     const resend = new Resend(resendApiKey);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const { createClient: createAdmin } = await import("@supabase/supabase-js");
-    const adminClient = createAdmin(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-
     let sent = 0;
 
     for (const [userId, userAlerts] of userGroups) {
-      const { data: userData } = await adminClient.auth.admin.getUserById(userId);
+      // ✅ Use centralized admin client for user data access
+      const { data: userData } = await supabase.auth.admin.getUserById(userId);
       if (!userData.user?.email) continue;
 
       const userName = (userData.user.user_metadata?.display_name as string) || "User";
       const alertRows = userAlerts
         .map((a) => {
-          const p = a.products as unknown as { name: string; slug: string; lowest_price: number } | null;
+          const p = a.products;
           if (!p) return "";
           return `<tr><td style="padding:8px;border:1px solid #e5e7eb;"><a href="${appUrl}/product/${p.slug}" style="color:#2563eb;text-decoration:none;">${p.name}</a></td><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Rp${(p.lowest_price || 0).toLocaleString("id-ID")}</td></tr>`;
         })

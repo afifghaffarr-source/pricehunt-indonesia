@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
 
 interface AlertEmail {
@@ -11,7 +11,16 @@ interface AlertEmail {
 }
 
 export async function checkAndSendPriceAlerts() {
-  const supabase = await createClient();
+  // ✅ Use admin client to read alerts and update triggered status
+  const supabase = createAdminClient();
+
+  type AlertData = {
+    id: string;
+    target_price: number;
+    user_id: string;
+    product_id: string;
+    products: { id: string; name: string; slug: string; lowest_price: number } | null;
+  };
 
   const { data: alerts } = await supabase
     .from("price_alerts")
@@ -20,32 +29,25 @@ export async function checkAndSendPriceAlerts() {
 
   if (!alerts || alerts.length === 0) return { checked: 0, sent: 0 };
 
-  const userIds = [...new Set(alerts.map((a) => a.user_id))];
+  const typedAlerts = alerts as AlertData[];
+  const userIds = [...new Set(typedAlerts.map((a) => a.user_id))];
   const userMap = new Map<string, { email: string; displayName: string }>();
 
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const { createClient: createAdmin } = await import("@supabase/supabase-js");
-    const adminClient = createAdmin(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-
-    for (const uid of userIds) {
-      const { data } = await adminClient.auth.admin.getUserById(uid);
-      if (data.user?.email) {
-        userMap.set(uid, {
-          email: data.user.email,
-          displayName: (data.user.user_metadata?.display_name as string) || "User",
-        });
-      }
+  // ✅ Get user data using admin client
+  for (const uid of userIds) {
+    const { data } = await supabase.auth.admin.getUserById(uid);
+    if (data.user?.email) {
+      userMap.set(uid, {
+        email: data.user.email,
+        displayName: (data.user.user_metadata?.display_name as string) || "User",
+      });
     }
   }
 
   let sent = 0;
 
-  for (const alert of alerts) {
-    const product = alert.products as unknown as { name: string; slug: string; lowest_price: number } | null;
+  for (const alert of typedAlerts) {
+    const product = alert.products;
     if (!product) continue;
 
     if (product.lowest_price && product.lowest_price <= alert.target_price) {
@@ -62,10 +64,16 @@ export async function checkAndSendPriceAlerts() {
       });
 
       if (emailSent) {
+        // ✅ Update alert status using admin client
+        // Admin client doesn't have full type inference, but operation is valid
+        /* eslint-disable @typescript-eslint/ban-ts-comment */
+        // @ts-ignore - Admin client type inference limitation
         await supabase
           .from("price_alerts")
+          // @ts-ignore
           .update({ triggered_at: new Date().toISOString(), is_active: false })
           .eq("id", alert.id);
+        /* eslint-enable @typescript-eslint/ban-ts-comment */
         sent++;
       }
     }
