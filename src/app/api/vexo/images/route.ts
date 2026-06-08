@@ -1,17 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedUser } from "@/lib/api-auth";
+import { checkPersistentRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 import { searchImages, isVexoConfigured } from "@/lib/vexo/client";
 
+const MAX_QUERY_LENGTH = 120;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const RATE_LIMIT_MAX = 30;
+
+function json(data: unknown, init?: ResponseInit) {
+  const response = NextResponse.json(data, init);
+  response.headers.set("Cache-Control", "no-store");
+  return response;
+}
+
 export async function GET(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return json({ error: "Silakan login untuk memakai pencarian gambar." }, { status: 401 });
+  }
+
   const { searchParams } = request.nextUrl;
-  const q = searchParams.get("q") || "";
+  const q = (searchParams.get("q") || "").trim().slice(0, MAX_QUERY_LENGTH);
   const engine = (searchParams.get("engine") || "google") as "google" | "bing";
 
   if (!q) {
-    return NextResponse.json({ error: "Parameter 'q' diperlukan" }, { status: 400 });
+    return json({ error: "Parameter 'q' diperlukan" }, { status: 400 });
+  }
+
+  const rateLimit = await checkPersistentRateLimit({
+    identifier: getRequestIdentifier(user.id, request),
+    endpoint: "vexo-images",
+    limit: RATE_LIMIT_MAX,
+    windowMs: RATE_LIMIT_WINDOW_MS,
+  });
+  if (!rateLimit.allowed) {
+    return json({ error: "Batas pencarian gambar tercapai. Coba lagi nanti." }, { status: 429 });
   }
 
   if (!isVexoConfigured()) {
-    return NextResponse.json({
+    return json({
       results: [],
       query: q,
       source: "vexo-unavailable",
@@ -21,17 +48,18 @@ export async function GET(request: NextRequest) {
   try {
     const result = await searchImages(q, engine);
 
-    return NextResponse.json({
+    return json({
       results: result.data?.results || [],
       query: q,
       engine,
       source: "vexo",
     });
   } catch (err) {
-    return NextResponse.json({
+    console.error("Vexo images error:", err);
+    return json({
       results: [],
       query: q,
-      error: err instanceof Error ? err.message : "Unknown error",
-    });
+      error: "Pencarian gambar sedang tidak tersedia.",
+    }, { status: 500 });
   }
 }

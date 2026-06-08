@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       const batch = priceUpdates.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("prices")
-        .upsert(batch as any, { onConflict: "id" });
+        .upsert(batch as never, { onConflict: "id" });
       
       if (!error) {
         pricesUpdated += batch.length;
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       const batch = historyRecords.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("price_history")
-        .upsert(batch as any, { onConflict: "product_id,marketplace_id,recorded_at" });
+        .upsert(batch as never, { onConflict: "product_id,marketplace_id,recorded_at" });
       
       if (!error) {
         historyInserted += batch.length;
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
       const batch = productUpdates.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("products")
-        .upsert(batch as any, { onConflict: "id" });
+        .upsert(batch as never, { onConflict: "id" });
       
       if (!error) {
         productsUpdated += batch.length;

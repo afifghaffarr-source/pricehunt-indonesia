@@ -1,17 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthenticatedUser } from "@/lib/api-auth";
+import { checkPersistentRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 import OpenAI from "openai";
+
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const RATE_LIMIT_MAX = 20;
+
+function json(data: unknown, init?: ResponseInit) {
+  const response = NextResponse.json(data, init);
+  response.headers.set("Cache-Control", "no-store");
+  return response;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { productId } = body;
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return json({ error: "Silakan login untuk memakai AI shopping advisor." }, { status: 401 });
+    }
 
-    if (!productId) {
-      return NextResponse.json({ error: "productId diperlukan" }, { status: 400 });
+    const body = await request.json();
+    const { productId } = body as { productId?: string };
+
+    if (!productId || typeof productId !== "string" || productId.length > 80) {
+      return json({ error: "productId tidak valid" }, { status: 400 });
+    }
+
+    const rateLimit = await checkPersistentRateLimit({
+      identifier: getRequestIdentifier(user.id, request),
+      endpoint: "ai-advisor",
+      limit: RATE_LIMIT_MAX,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    });
+    if (!rateLimit.allowed) {
+      return json({ error: "Batas penggunaan AI tercapai. Coba lagi nanti." }, { status: 429 });
     }
 
     const supabase = await createClient();
+    const adminClient = createAdminClient();
 
     const { data: product } = await supabase
       .from("products")
@@ -20,10 +48,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!product) {
-      return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 404 });
+      return json({ error: "Produk tidak ditemukan" }, { status: 404 });
     }
 
-    const { data: cached } = await supabase
+    const { data: cached } = await adminClient
       .from("ai_cache")
       .select("verdict, created_at")
       .eq("product_id", productId)
@@ -33,7 +61,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (cached) {
-      return NextResponse.json({ verdict: cached.verdict, source: "cache" });
+      return json({ verdict: (cached as { verdict: string }).verdict, source: "cache" });
     }
 
     const { data: prices } = await supabase
@@ -52,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     if (!process.env.OPENAI_API_KEY) {
       const fallback = generateFallbackVerdict(product, prices || [], history || []);
-      return NextResponse.json({ verdict: fallback, source: "fallback" });
+      return json({ verdict: fallback, source: "fallback" });
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -90,22 +118,22 @@ export async function POST(request: NextRequest) {
       completion.choices[0]?.message?.content || "Tidak dapat menghasilkan rekomendasi saat ini.";
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    await supabase.from("ai_cache").insert({
+    await adminClient.from("ai_cache").insert({
       product_id: productId,
       verdict,
       model: "gpt-4o-mini",
       expires_at: expiresAt,
-    });
+    } as never);
 
-    await supabase
+    await adminClient
       .from("products")
-      .update({ ai_verdict: verdict })
+      .update({ ai_verdict: verdict } as never)
       .eq("id", productId);
 
-    return NextResponse.json({ verdict, source: "openai" });
+    return json({ verdict, source: "openai" });
   } catch (err) {
     console.error("AI Advisor error:", err);
-    return NextResponse.json(
+    return json(
       { error: "Terjadi kesalahan pada AI Advisor" },
       { status: 500 }
     );

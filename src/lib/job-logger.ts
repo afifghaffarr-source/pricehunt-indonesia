@@ -24,21 +24,38 @@ export interface JobLogResult {
   startedAt: Date;
 }
 
+type JobLogRow = {
+  id: string;
+  started_at: string;
+};
+
+type UntypedSupabase = ReturnType<typeof createAdminClient> & {
+  from(table: "job_logs"): ReturnType<ReturnType<typeof createAdminClient>["from"]>;
+  rpc(fn: "get_job_statistics" | "cleanup_old_job_logs", args?: Record<string, unknown>): Promise<{
+    data: unknown;
+    error: { message: string } | null;
+  }>;
+};
+
+function getAdminClient() {
+  return createAdminClient() as UntypedSupabase;
+}
+
 /**
  * Start logging a job execution
  */
 export async function startJobLog(jobName: string, metadata?: Record<string, unknown>): Promise<JobLogResult | null> {
   try {
-    const supabase = createAdminClient();
+    const supabase = getAdminClient();
     
     const { data, error } = await supabase
-      .from("job_logs" as any)
+      .from("job_logs")
       .insert({
         job_name: jobName,
         status: "running" as JobStatus,
         started_at: new Date().toISOString(),
         metadata: metadata || {},
-      } as any)
+      } as never)
       .select("id, started_at")
       .single();
     
@@ -47,7 +64,7 @@ export async function startJobLog(jobName: string, metadata?: Record<string, unk
       return null;
     }
     
-    const logData = data as any;
+    const logData = data as JobLogRow;
     
     return {
       id: logData.id,
@@ -68,9 +85,9 @@ export async function finishJobLog(
   data: Omit<JobLogData, "jobName">
 ): Promise<boolean> {
   try {
-    const supabase = createAdminClient();
+    const supabase = getAdminClient();
     
-    const result = await (supabase as any)
+    const result = await supabase
       .from("job_logs")
       .update({
         status,
@@ -81,7 +98,7 @@ export async function finishJobLog(
         error_details: data.errorDetails,
         finished_at: new Date().toISOString(),
         metadata: data.metadata,
-      })
+      } as never)
       .eq("id", logId);
     
     const { error } = result;
@@ -108,11 +125,11 @@ export async function logJob(
   data: Omit<JobLogData, "jobName">
 ): Promise<boolean> {
   try {
-    const supabase = createAdminClient();
+    const supabase = getAdminClient();
     const now = new Date().toISOString();
     
     const { error } = await supabase
-      .from("job_logs" as any)
+      .from("job_logs")
       .insert({
         job_name: jobName,
         status,
@@ -124,7 +141,7 @@ export async function logJob(
         started_at: now,
         finished_at: now,
         metadata: data.metadata,
-      } as any);
+      } as never);
     
     if (error) {
       console.error(`Failed to log job ${jobName}:`, error);
@@ -146,10 +163,10 @@ export async function getRecentJobLogs(
   limit: number = 10
 ): Promise<unknown[]> {
   try {
-    const supabase = createAdminClient();
+    const supabase = getAdminClient();
     
     const { data, error } = await supabase
-      .from("job_logs" as any)
+      .from("job_logs")
       .select("*")
       .eq("job_name", jobName)
       .order("created_at", { ascending: false })
@@ -160,7 +177,7 @@ export async function getRecentJobLogs(
       return [];
     }
     
-    return data || [];
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error(`Exception getting recent logs for ${jobName}:`, error);
     return [];
@@ -175,20 +192,20 @@ export async function getJobStatistics(
   days: number = 7
 ): Promise<unknown[]> {
   try {
-    const supabase = createAdminClient();
+    const supabase = getAdminClient();
     
     const { data, error } = await supabase
-      .rpc("get_job_statistics" as any, {
+      .rpc("get_job_statistics", {
         p_job_name: jobName || null,
         p_days: days,
-      } as any);
+      });
     
     if (error) {
       console.error("Failed to get job statistics:", error);
       return [];
     }
     
-    return data || [];
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Exception getting job statistics:", error);
     return [];
@@ -200,17 +217,17 @@ export async function getJobStatistics(
  */
 export async function cleanupOldJobLogs(): Promise<number> {
   try {
-    const supabase = createAdminClient();
+    const supabase = getAdminClient();
     
     const { data, error } = await supabase
-      .rpc("cleanup_old_job_logs" as any);
+      .rpc("cleanup_old_job_logs");
     
     if (error) {
       console.error("Failed to cleanup old job logs:", error);
       return 0;
     }
     
-    return data || 0;
+    return typeof data === "number" ? data : 0;
   } catch (error) {
     console.error("Exception cleaning up old job logs:", error);
     return 0;

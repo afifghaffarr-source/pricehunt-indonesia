@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
 
@@ -21,11 +22,11 @@ async function requireAdmin() {
     redirect("/dashboard");
   }
 
-  return { user, supabase };
+  return { user, adminClient: createAdminClient() };
 }
 
 export async function createProduct(formData: FormData) {
-  const { supabase } = await requireAdmin();
+  const { adminClient } = await requireAdmin();
 
   const name = formData.get("name") as string;
   const slug = (formData.get("slug") as string) || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -33,7 +34,7 @@ export async function createProduct(formData: FormData) {
   const description = formData.get("description") as string;
   const imageUrl = formData.get("image_url") as string;
 
-  const { error } = await supabase.from("products").insert({
+  const productInsert = {
     name,
     slug,
     category,
@@ -43,7 +44,9 @@ export async function createProduct(formData: FormData) {
     highest_price: 0,
     average_price: 0,
     deal_score: 0,
-  });
+  } as never;
+
+  const { error } = await adminClient.from("products").insert(productInsert);
 
   if (error) return { error: error.message };
 
@@ -53,7 +56,7 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(productId: string, formData: FormData) {
-  const { supabase } = await requireAdmin();
+  const { adminClient } = await requireAdmin();
 
   const updates: Record<string, unknown> = {};
   const name = formData.get("name") as string;
@@ -68,9 +71,9 @@ export async function updateProduct(productId: string, formData: FormData) {
   if (imageUrl) updates.image_url = imageUrl;
   if (aiVerdict !== null) updates.ai_verdict = aiVerdict;
 
-  const { error } = await supabase
+  const { error } = await adminClient
     .from("products")
-    .update(updates)
+    .update(updates as never)
     .eq("id", productId);
 
   if (error) return { error: error.message };
@@ -81,9 +84,9 @@ export async function updateProduct(productId: string, formData: FormData) {
 }
 
 export async function deleteProduct(productId: string) {
-  const { supabase } = await requireAdmin();
+  const { adminClient } = await requireAdmin();
 
-  const { error } = await supabase.from("products").delete().eq("id", productId);
+  const { error } = await adminClient.from("products").delete().eq("id", productId);
   if (error) return { error: error.message };
 
   revalidatePath("/admin");
@@ -92,7 +95,7 @@ export async function deleteProduct(productId: string) {
 }
 
 export async function upsertPrice(formData: FormData) {
-  const { supabase } = await requireAdmin();
+  const { adminClient } = await requireAdmin();
 
   const productId = formData.get("product_id") as string;
   const marketplaceId = formData.get("marketplace_id") as string;
@@ -104,8 +107,7 @@ export async function upsertPrice(formData: FormData) {
     return { error: "product_id, marketplace_id, dan price wajib diisi." };
   }
 
-  const { error } = await supabase.from("prices").upsert(
-    {
+  const priceUpsert = {
       product_id: productId,
       marketplace_id: marketplaceId,
       price,
@@ -114,13 +116,16 @@ export async function upsertPrice(formData: FormData) {
       in_stock: true,
       shipping_cost: 0,
       last_updated: new Date().toISOString(),
-    },
+  } as never;
+
+  const { error } = await adminClient.from("prices").upsert(
+    priceUpsert,
     { onConflict: "product_id,marketplace_id" }
   );
 
   if (error) return { error: error.message };
 
-  await recalculateProductStats(supabase, productId);
+  await recalculateProductStats(adminClient, productId);
 
   revalidatePath("/admin");
   revalidatePath("/search");
@@ -128,7 +133,7 @@ export async function upsertPrice(formData: FormData) {
 }
 
 async function recalculateProductStats(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createAdminClient>,
   productId: string
 ) {
   const { data: prices } = await supabase
@@ -139,7 +144,7 @@ async function recalculateProductStats(
 
   if (!prices || prices.length === 0) return;
 
-  const priceValues = prices.map((p) => p.price);
+  const priceValues = (prices as Array<{ price: number }>).map((p) => p.price);
   const lowest = Math.min(...priceValues);
   const highest = Math.max(...priceValues);
   const average = Math.round(priceValues.reduce((a, b) => a + b, 0) / priceValues.length);
@@ -152,6 +157,6 @@ async function recalculateProductStats(
       highest_price: highest,
       average_price: average,
       deal_score: dealScore,
-    })
+    } as never)
     .eq("id", productId);
 }
