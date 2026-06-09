@@ -6,7 +6,6 @@ import {
   BarChart3,
   Search,
   Sparkles,
-  LayoutDashboard,
   Shield,
   Moon,
   Sun,
@@ -48,8 +47,8 @@ export function Header() {
 
   const navItems: NavItem[] = [
     { href: "/search", label: "Cari Produk", icon: Search },
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/leaderboard", label: "Promo Pintar", icon: Sparkles },
+    { href: "/dashboard", label: "Pantau Harga", icon: Heart },
+    { href: "/", label: "Promo Pintar", icon: Sparkles },
     { href: "/admin", label: "Admin", icon: Shield, adminOnly: true },
   ];
 
@@ -135,9 +134,9 @@ export function Header() {
           <span>Bandingkan</span>
         </Link>
         <Link
-          href="/leaderboard"
+          href="/"
           className={`flex flex-col items-center gap-1 text-[11px] transition-colors ${
-            pathname === "/leaderboard" ? "text-primary" : "text-muted-foreground"
+            pathname === "/" ? "text-primary" : "text-muted-foreground"
           }`}
         >
           <Sparkles className="h-4 w-4" />
