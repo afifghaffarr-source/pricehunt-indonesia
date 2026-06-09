@@ -13,6 +13,11 @@ import {
   TrendingDown,
   Shield,
   Zap,
+  Sparkles,
+  BarChart3,
+  Download,
+  ChevronDown,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
@@ -207,6 +212,70 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* How It Works - Phase D */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <Badge variant="secondary" className="mb-4">
+            <Sparkles className="mr-1 h-3 w-3" />
+            3 Langkah Mudah
+          </Badge>
+          <h2 className="text-3xl font-bold sm:text-4xl">Cara Kerja PriceHunt</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
+            Dari pencarian hingga keputusan, semua dalam hitungan detik
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-8 md:grid-cols-3">
+          {/* Step 1 */}
+          <div className="relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-2xl font-bold text-white shadow-lg">
+                1
+              </div>
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10">
+                <Search className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold">Cari Produk</h3>
+              <p className="text-sm text-muted-foreground">
+                Ketik nama produk atau paste link dari marketplace favorit Anda
+              </p>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div className="relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 text-2xl font-bold text-white shadow-lg">
+                2
+              </div>
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+                <BarChart3 className="h-6 w-6 text-emerald-600" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold">Analisis Otomatis</h3>
+              <p className="text-sm text-muted-foreground">
+                PriceHunt membandingkan harga, menghitung deal score, dan deteksi diskon palsu
+              </p>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div className="relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-2xl font-bold text-white shadow-lg">
+                3
+              </div>
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/10">
+                <CheckCircle2 className="h-6 w-6 text-purple-600" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold">Terima Rekomendasi</h3>
+              <p className="text-sm text-muted-foreground">
+                Dapatkan saran beli sekarang atau tunggu berdasarkan analisis data historis
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <SectionHeading
           title="Belanja Cerdas Dimulai dari Sini"
@@ -327,6 +396,163 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Extension CTA - Phase D */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-background to-blue-50 dark:from-purple-950/20 dark:via-background dark:to-blue-950/20">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+            <div>
+              <Badge variant="secondary" className="mb-4">
+                <Download className="mr-1 h-3 w-3" />
+                Browser Extension
+              </Badge>
+              <h2 className="text-3xl font-bold sm:text-4xl">
+                Perbandingan Harga Langsung di Marketplace
+              </h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                Install extension PriceHunt dan lihat perbandingan harga otomatis saat Anda browsing di Tokopedia, Shopee, atau marketplace lainnya.
+              </p>
+              <ul className="mt-6 space-y-3">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Otomatis deteksi produk yang sedang Anda lihat</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Tampilkan harga dari 6 marketplace dalam satu sidebar</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Alert diskon palsu dan rekomendasi beli/tunggu</span>
+                </li>
+              </ul>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  href="/extension"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  <Download className="mr-2 h-5 w-5" />
+                  Download Extension
+                </Link>
+                <Link
+                  href="/extension"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                >
+                  Pelajari Lebih Lanjut
+                </Link>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="rounded-2xl border-2 bg-gradient-to-br from-white to-gray-50 p-8 shadow-2xl dark:from-gray-900 dark:to-gray-800">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
+                    <Download className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">PriceHunt Extension</div>
+                    <div className="text-xs text-muted-foreground">Chrome • Edge • Brave</div>
+                  </div>
+                </div>
+                <div className="space-y-3 text-sm">
+                  <div className="rounded-lg border bg-background/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Status</span>
+                      <Badge variant="secondary" className="bg-green-500/10 text-green-700">
+                        Active
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border bg-background/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Marketplace Detected</span>
+                      <span className="font-medium">Tokopedia</span>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border bg-background/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Prices Found</span>
+                      <span className="font-medium">6 toko</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section - Phase D */}
+      <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <Badge variant="secondary" className="mb-4">FAQ</Badge>
+          <h2 className="text-3xl font-bold sm:text-4xl">Pertanyaan Umum</h2>
+          <p className="mt-3 text-muted-foreground">
+            Hal yang sering ditanyakan tentang PriceHunt
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-semibold">
+              Apakah PriceHunt gratis?
+              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Ya, PriceHunt sepenuhnya gratis untuk digunakan. Anda dapat membandingkan harga, mendapatkan alert, dan mengakses semua fitur intelligence tanpa biaya apapun.
+            </p>
+          </details>
+
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-semibold">
+              Seberapa akurat data harga yang ditampilkan?
+              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-4 text-sm text-muted-foreground">
+              PriceHunt mengumpulkan data harga secara otomatis dari marketplace. Harga dapat berubah sewaktu-waktu, jadi kami sarankan untuk selalu cek harga final di marketplace saat checkout. Data historis kami update berkala untuk analisis yang akurat.
+            </p>
+          </details>
+
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-semibold">
+              Marketplace mana saja yang didukung?
+              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-4 text-sm text-muted-foreground">
+              PriceHunt mendukung 6 marketplace terbesar di Indonesia: Tokopedia, Shopee, Bukalapak, Lazada, Blibli, dan JD.ID. Kami terus menambah coverage marketplace lainnya.
+            </p>
+          </details>
+
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-semibold">
+              Bagaimana cara kerja deteksi diskon palsu?
+              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-4 text-sm text-muted-foreground">
+              PriceHunt menganalisis riwayat harga produk selama 30-90 hari terakhir. Jika harga &ldquo;original&rdquo; yang dicoret tiba-tiba naik drastis sebelum diskon, atau jika diskon terlihat tidak konsisten dengan pola harga historis, sistem akan menandai sebagai diskon yang terindikasi mencurigakan.
+            </p>
+          </details>
+
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-semibold">
+              Apakah data saya aman?
+              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Ya. PriceHunt tidak menyimpan informasi pembayaran atau data sensitif Anda. Kami hanya menyimpan wishlist, price alert, dan preferensi yang Anda set. Data Anda dilindungi dan tidak dibagikan kepada pihak ketiga.
+            </p>
+          </details>
+
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-semibold">
+              Bagaimana cara kerja price alert?
+              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Setelah Anda set target harga untuk suatu produk, PriceHunt akan memantau harga secara otomatis. Saat harga mencapai atau di bawah target Anda, kami akan mengirim notifikasi via email atau push notification (jika diaktifkan).
+            </p>
+          </details>
+        </div>
+      </section>
 
       <section className="bg-primary text-primary-foreground">
         <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
