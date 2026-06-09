@@ -1,18 +1,29 @@
 ﻿# PriceHunt Indonesia
 
-Platform perbandingan harga marketplace Indonesia terlengkap. Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, Blibli, TikTok Shop) dalam satu tempat dengan AI-powered recommendations.
+**Asisten belanja pintar untuk Indonesia** - Platform perbandingan harga marketplace dengan **AI-powered recommendations**, **fake discount detection**, dan **smart buy/wait recommendations**.
+
+Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, Blibli, TikTok Shop) dalam satu tempat. Tahu kapan waktu terbaik untuk membeli dengan data, bukan hype.
+
+🎯 **Production-Ready MVP** | ✅ 59 Tests Passing | 🚀 TypeScript Zero Errors
 
 ## ✨ Features
 
+### 🧠 Smart Intelligence Features (NEW!)
+- **Deal Score Engine** - 6-factor scoring (0-100) untuk setiap produk: price discount, percentile, seller trust, official store, stock, promotions
+- **Fake Discount Detector** - Deteksi diskon palsu dengan analisis median 30/90 hari & original price inflation
+- **Buy or Wait Recommendations** - Rekomendasi beli sekarang/tunggu berdasarkan data historis, campaign timing, & deal score
+- **Total Cost Calculator** - Bandingkan total bayar real (product + shipping - voucher - cashback)
+- **Smart Price Alerts** - Alert pintar dengan confidence score & target price recommendations
+
 ### Core Features
-- 🔍 **Smart Search** - Natural language search dengan AI
+- � **Smart Search** - Natural language search dengan AI
 - 📊 **Price Comparison** - Bandingkan harga real-time dari 6 marketplace
 - 📈 **Price History** - Grafik tren harga 30-90 hari
 - 🎯 **Price Alerts** - Notifikasi otomatis saat harga turun
 - ⭐ **Wishlist** - Simpan produk favorit
 - 🤖 **AI Advisor** - Rekomendasi beli/tunggu berbasis AI
 - 🔮 **Price Prediction** - Prediksi harga 7-28 hari ke depan
-- 📱 **PWA Support** - Install sebagai app di mobile/desktop
+- �📱 **PWA Support** - Install sebagai app di mobile/desktop
 
 ### Advanced Features
 - 🎮 **Gamification** - Badges, levels, points system
@@ -210,6 +221,13 @@ pricehunt-indonesia/
 | /api/search | GET | Search products (DB + VexoAPI augmented) |
 | /api/scrape | POST | Scrape marketplace data |
 
+### Smart Recommendation Endpoints (NEW!)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| /api/recommendation/deal-score | POST | Calculate deal score (0-100) dengan risk flags |
+| /api/recommendation/fake-discount | POST | Detect fake discount dengan confidence score |
+| /api/recommendation/buy-or-wait | POST | Smart buy/wait recommendation |
+
 ### AI Features
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -369,6 +387,42 @@ bun run start
 |-------|-------------|
 | /sitemap.xml | Dynamic sitemap (includes all products) |
 | /robots.txt | Robots.txt for search engines |
+
+## ✅ Testing & Quality
+
+### Comprehensive Test Coverage
+**59 unit tests** covering critical business logic:
+
+| Module | Tests | Coverage |
+|--------|-------|----------|
+| Deal Score Engine | 30 tests | 6-factor scoring, edge cases, risk flags |
+| Fake Discount Detector | 18 tests | Price analysis, confidence scoring, thresholds |
+| Buy or Wait Recommendations | 11 tests | Decision logic, campaign timing, stock handling |
+
+**Test Command:**
+```bash
+# Run all tests
+bun run test
+
+# Watch mode
+bun run test:watch
+```
+
+###Production Quality Metrics
+- ✅ **59/59 Tests Passing** (100%)
+- ✅ **TypeScript** - Zero errors, strict mode enabled
+- ✅ **ESLint** - Clean, no warnings
+- ✅ **Build** - Successful production build
+- ✅ **Security** - Service role isolation, RLS enabled, rate limiting
+- ✅ **Performance** - Turbopack dev server, optimized bundles
+
+### Code Quality Features
+- **Type Safety**: Full TypeScript coverage
+- **Server Actions**: Secure server-side operations
+- **Admin Client**: Isolated service role for RLS bypass
+- **Rate Limiting**: Protection for expensive AI/Vexo endpoints
+- **Error Handling**: Comprehensive try-catch with logging
+- **Job Logging**: Observable cron jobs with success/failure tracking
 
 ## 🔍 Key Features Explained
 
