@@ -12,6 +12,7 @@ import {
   Heart,
   User,
   Tag,
+  Bell,
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { AuthButton } from "./AuthButton";
@@ -47,8 +48,8 @@ export function Header() {
 
   const navItems: NavItem[] = [
     { href: "/search", label: "Cari Produk", icon: Search },
-    { href: "/dashboard", label: "Pantau Harga", icon: Heart },
-    { href: "/", label: "Promo Pintar", icon: Sparkles },
+    { href: "/dashboard/alerts", label: "Pantau Harga", icon: Bell },
+    { href: "/deals", label: "Promo Pintar", icon: Sparkles },
     { href: "/admin", label: "Admin", icon: Shield, adminOnly: true },
   ];
 
@@ -134,9 +135,9 @@ export function Header() {
           <span>Bandingkan</span>
         </Link>
         <Link
-          href="/"
+          href="/deals"
           className={`flex flex-col items-center gap-1 text-[11px] transition-colors ${
-            pathname === "/" ? "text-primary" : "text-muted-foreground"
+            pathname === "/deals" ? "text-primary" : "text-muted-foreground"
           }`}
         >
           <Sparkles className="h-4 w-4" />
