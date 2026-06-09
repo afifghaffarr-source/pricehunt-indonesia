@@ -8,6 +8,7 @@ function formatRupiah(amount) {
 
 const PRICEHUNT_API = "https://pricehunt-indonesia.vercel.app/api/search";
 const BUY_OR_WAIT_API = "https://pricehunt-indonesia.vercel.app/api/recommendation/buy-or-wait";
+const FAKE_DISCOUNT_API = "https://pricehunt-indonesia.vercel.app/api/recommendation/fake-discount";
 
 /**
  * Safely render results using DOM manipulation instead of innerHTML
@@ -58,6 +59,16 @@ async function fetchBuyOrWaitRecommendation(productSlug) {
   }
 }
 
+async function fetchFakeDiscountDetection(productSlug) {
+  try {
+    const response = await fetch(`${FAKE_DISCOUNT_API}?slug=${encodeURIComponent(productSlug)}`);
+    if (!response.ok) return null;
+    return response.json();
+  } catch {
+    return null;
+  }
+}
+
 async function renderResults(productName, products) {
   const appEl = clearApp();
 
@@ -70,10 +81,15 @@ async function renderResults(productName, products) {
   const lowest = best.lowest_price || best.lowestPrice || 0;
   const productSlug = best.slug;
 
-  // Fetch buy/wait recommendation
+  // Fetch buy/wait recommendation and fake discount detection
   let recommendation = null;
+  let fakeDiscountData = null;
+  
   if (productSlug) {
-    recommendation = await fetchBuyOrWaitRecommendation(productSlug);
+    [recommendation, fakeDiscountData] = await Promise.all([
+      fetchBuyOrWaitRecommendation(productSlug),
+      fetchFakeDiscountDetection(productSlug)
+    ]);
   }
 
   // Render recommendation if available
@@ -120,6 +136,30 @@ async function renderResults(productName, products) {
     appEl.appendChild(recoDiv);
   }
 
+  // Render fake discount warning if suspicious
+  if (fakeDiscountData && fakeDiscountData.status === "suspicious") {
+    const warningDiv = document.createElement("div");
+    warningDiv.className = "fake-discount-warning";
+    warningDiv.style.cssText = "background: #fef2f2; border: 2px solid #ef4444; border-radius: 8px; padding: 12px; margin-bottom: 12px;";
+
+    const warningIcon = document.createElement("div");
+    warningIcon.style.cssText = "font-size: 24px; margin-bottom: 4px;";
+    warningIcon.textContent = "⚠️";
+    
+    const warningTitle = document.createElement("div");
+    warningTitle.style.cssText = "font-size: 13px; font-weight: 700; color: #991b1b; margin-bottom: 4px;";
+    warningTitle.textContent = "Diskon Mencurigakan";
+    
+    const warningDesc = document.createElement("div");
+    warningDesc.style.cssText = "font-size: 11px; color: #6b7280;";
+    warningDesc.textContent = fakeDiscountData.explanation || "Diskon ini terindikasi tidak asli berdasarkan riwayat harga";
+
+    warningDiv.appendChild(warningIcon);
+    warningDiv.appendChild(warningTitle);
+    warningDiv.appendChild(warningDesc);
+    appEl.appendChild(warningDiv);
+  }
+
   const priceInfoDiv = document.createElement("div");
   priceInfoDiv.className = "price-info";
   
@@ -156,11 +196,42 @@ async function renderResults(productName, products) {
   
   appEl.appendChild(marketplaceContainer);
 
+  // Action buttons container
+  const actionButtonsDiv = document.createElement("div");
+  actionButtonsDiv.style.cssText = "display: flex; gap: 8px; margin-top: 12px;";
+
+  // Wishlist button
+  const wishlistBtn = document.createElement("a");
+  wishlistBtn.href = productSlug 
+    ? `https://pricehunt-indonesia.vercel.app/product/${productSlug}#wishlist`
+    : `https://pricehunt-indonesia.vercel.app/search?q=${encodeURIComponent(productName)}`;
+  wishlistBtn.target = "_blank";
+  wishlistBtn.style.cssText = "flex: 1; background: #10b981; color: white; padding: 10px; text-align: center; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;";
+  wishlistBtn.textContent = "💚 Wishlist";
+  wishlistBtn.title = "Simpan ke wishlist di PriceHunt";
+
+  // Price history button
+  const historyBtn = document.createElement("a");
+  historyBtn.href = productSlug 
+    ? `https://pricehunt-indonesia.vercel.app/product/${productSlug}#history`
+    : `https://pricehunt-indonesia.vercel.app/search?q=${encodeURIComponent(productName)}`;
+  historyBtn.target = "_blank";
+  historyBtn.style.cssText = "flex: 1; background: #6366f1; color: white; padding: 10px; text-align: center; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;";
+  historyBtn.textContent = "📊 Riwayat";
+  historyBtn.title = "Lihat riwayat harga produk";
+
+  actionButtonsDiv.appendChild(wishlistBtn);
+  actionButtonsDiv.appendChild(historyBtn);
+  appEl.appendChild(actionButtonsDiv);
+
+  // Main detail link
   const linkBtn = document.createElement("a");
-  linkBtn.href = `https://pricehunt-indonesia.vercel.app/search?q=${encodeURIComponent(productName)}`;
+  linkBtn.href = productSlug
+    ? `https://pricehunt-indonesia.vercel.app/product/${productSlug}`
+    : `https://pricehunt-indonesia.vercel.app/search?q=${encodeURIComponent(productName)}`;
   linkBtn.target = "_blank";
   linkBtn.className = "btn";
-  linkBtn.textContent = "Lihat rekomendasi beli/tunggu";
+  linkBtn.textContent = "Lihat detail lengkap di PriceHunt";
   
   appEl.appendChild(linkBtn);
 }
