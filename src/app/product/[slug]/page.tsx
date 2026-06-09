@@ -21,6 +21,9 @@ import { PredictionSection } from "./PredictionSection";
 import { BuyOrWaitDecision } from "@/components/product/BuyOrWaitDecision";
 import { FakeDiscountAlert } from "@/components/product/FakeDiscountAlert";
 import { TotalCostCalculator } from "@/components/product/TotalCostCalculator";
+import { TrustSignalsBar } from "@/components/product/TrustSignalsBar";
+import { BestOfferCard } from "@/components/product/BestOfferCard";
+import { PriceComparisonPreview } from "@/components/product/PriceComparisonPreview";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -135,51 +138,59 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
-      <Link href="/search" className={buttonVariants({ variant: "ghost" }) + " mb-6"}>
+      <Link href="/search" className={buttonVariants({ variant: "ghost" }) + " mb-4"}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Kembali
       </Link>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+      {/* Trust Signals - Build confidence immediately */}
+      <TrustSignalsBar
+        marketplaceCount={product.prices.filter((p) => p.inStock).length}
+        lastUpdated={undefined}
+        trackerCount={undefined}
+        className="mb-6"
+      />
+
+      {/* Compact Hero - Focus on essentials */}
+      <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start">
+        {/* Product Image - Compact */}
+        <div className="relative h-48 w-48 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-56 sm:w-56">
           <VexoImageFallback
             productName={product.name}
             fallbackSrc={product.imageUrl}
             alt={product.name}
             fill
             priority
-            sizes="(max-width: 1024px) 100vw, 50vw"
+            sizes="(max-width: 640px) 192px, 224px"
             className="object-cover"
           />
           {discount > 5 && (
-            <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-sm font-semibold text-white">
-              <TrendingDown className="h-4 w-4" />
+            <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-1 text-xs font-semibold text-white shadow-lg">
+              <TrendingDown className="h-3.5 w-3.5" />
               Hemat {discount}%
             </div>
           )}
         </div>
 
-        <div>
-          <div className="mb-2 flex flex-wrap gap-2">
-            {product.prices
-              .filter((p) => p.inStock)
-              .map((p) => (
-                <MarketplaceBadge
-                  key={p.marketplace}
-                  marketplace={p.marketplace}
-                />
-              ))}
-          </div>
-
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+        {/* Product Info - Compact */}
+        <div className="flex-1">
+          <h1 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">
             {product.name}
           </h1>
 
-          <p className="mt-2 text-sm text-muted-foreground">
-            {product.category}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {product.category}
+            </Badge>
+            {product.prices
+              .filter((p) => p.inStock)
+              .slice(0, 4)
+              .map((p) => (
+                <MarketplaceBadge key={p.marketplace} marketplace={p.marketplace} />
+              ))}
+          </div>
 
-          <div className="mt-4 flex items-baseline gap-3">
+          <div className="mt-3 flex items-baseline gap-3">
             <span className="text-3xl font-bold text-primary">
               {formatRupiah(product.lowestPrice)}
             </span>
@@ -190,52 +201,31 @@ export default async function ProductDetailPage({ params }: PageProps) {
             )}
           </div>
 
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <DealScoreBadge score={product.dealScore} />
             {cheapestMarketplace && (
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="outline" className="gap-1 text-xs">
                 <Store className="h-3 w-3" />
-                Termurah di{" "}
-                {getMarketplaceName(cheapestMarketplace.marketplace)}
+                Termurah di {getMarketplaceName(cheapestMarketplace.marketplace)}
               </Badge>
             )}
           </div>
 
-          <div className="mt-4">
+          <div className="mt-3 flex items-center gap-2">
             <WishlistButton
               productId={product.id}
               initialIsWishlisted={isWishlisted}
             />
           </div>
 
-          <div className="mt-3">
-            <SocialShare
-              url={`${process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt-indonesia.vercel.app"}/product/${slug}`}
-              title={`${product.name} - mulai ${formatRupiah(product.lowestPrice)}`}
-            />
-          </div>
-
-          <Separator className="my-6" />
-
-          <p className="text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-4 text-sm leading-relaxed text-muted-foreground line-clamp-3">
             {product.description}
           </p>
-
-          <div className="mt-6">
-            <h3 className="mb-3 text-sm font-semibold">Spesifikasi</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(product.specs).map(([key, value]) => (
-                <div key={key} className="rounded-md bg-muted/50 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">{key}</p>
-                  <p className="text-sm font-medium">{String(value)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
-      <div className="mt-8 flex gap-2 overflow-x-auto rounded-2xl border bg-background p-2 text-sm shadow-sm">
+      {/* Quick Navigation */}
+      <div className="mb-6 flex gap-2 overflow-x-auto rounded-2xl border bg-background p-2 text-sm shadow-sm">
         <a href="#decision" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Rekomendasi</a>
         <a href="#prices" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Harga</a>
         <a href="#total-cost" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Total bayar</a>
@@ -243,9 +233,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <a href="#reviews" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Review</a>
       </div>
 
-      <div className="mt-10 space-y-8">
-        <section id="decision">
-        {/* 1. BUY OR WAIT DECISION - TOP PRIORITY (Decision-focused UX) */}
+      <div className="space-y-12">
+        {/* 1. DECISION CARD - ELEVATED & PROMINENT */}
+        <section id="decision" className="scroll-mt-20">
         <BuyOrWaitDecision
           currentPrice={product.lowestPrice}
           originalPrice={discount > 5 ? product.highestPrice : undefined}
@@ -256,7 +246,31 @@ export default async function ProductDetailPage({ params }: PageProps) {
         />
         </section>
 
-        {/* 2. FAKE DISCOUNT ALERT - If suspicious discount detected */}
+        {/* 2. BEST OFFER CARDS - Actionable top offers */}
+        <BestOfferCard
+          offers={product.prices.map((p) => ({
+            marketplace: p.marketplace,
+            price: p.price,
+            url: p.url,
+            inStock: p.inStock,
+            isOfficialStore: false,
+          }))}
+          lowestPrice={product.lowestPrice}
+        />
+
+        {/* 3. PRICE COMPARISON PREVIEW - Quick horizontal scroll comparison */}
+        <PriceComparisonPreview
+          prices={product.prices.map((p) => ({
+            marketplace: p.marketplace,
+            price: p.price,
+            url: p.url,
+            inStock: p.inStock,
+          }))}
+          lowestPrice={product.lowestPrice}
+          highestPrice={product.highestPrice}
+        />
+
+        {/* 4. FAKE DISCOUNT ALERT - If suspicious discount detected */}
         {shouldShowFakeDiscountAlert && (
           <FakeDiscountAlert
             currentPrice={product.lowestPrice}
@@ -268,7 +282,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           />
         )}
 
-        {/* 3. DEAL VERDICT - AI analysis context */}
+        {/* 5. DEAL VERDICT - AI analysis context */}
         <VexoDealVerdict
           productName={product.name}
           lowestPrice={product.lowestPrice}
@@ -278,27 +292,29 @@ export default async function ProductDetailPage({ params }: PageProps) {
           aiVerdict={product.aiVerdict}
         />
 
-        {/* 4. PRICE COMPARISON - Core comparison feature */}
-        <div id="prices">
+        {/* 6. PRICE COMPARISON - Core comparison feature */}
+        <section id="prices" className="scroll-mt-20">
           <h2 className="mb-4 text-xl font-bold">Perbandingan Harga</h2>
           <PriceComparisonTable
             prices={product.prices}
             lowestPrice={product.lowestPrice}
           />
-        </div>
+        </section>
 
-        {/* 5. TOTAL COST CALCULATOR - Real cost analysis */}
+        {/* 7. TOTAL COST CALCULATOR - Real cost analysis */}
         {marketplacePrices.length > 0 && (
-          <section id="total-cost"><TotalCostCalculator prices={marketplacePrices} /></section>
+          <section id="total-cost" className="scroll-mt-20">
+            <TotalCostCalculator prices={marketplacePrices} />
+          </section>
         )}
 
-        {/* 6. PRICE HISTORY CHART - Visual price trends */}
+        {/* 8. PRICE HISTORY CHART - Visual price trends */}
         {product.priceHistory.length > 0 && (
           <PriceHistoryChart data={product.priceHistory} />
         )}
 
-        {/* 7. PRICE ALERT FORM - Let users track price drops */}
-        <section id="alerts">
+        {/* 9. PRICE ALERT FORM - Let users track price drops */}
+        <section id="alerts" className="scroll-mt-20">
           <PriceAlertForm
             productId={product.id}
             currentLowestPrice={product.lowestPrice}
@@ -306,32 +322,62 @@ export default async function ProductDetailPage({ params }: PageProps) {
           />
         </section>
 
-        {/* 8. PRODUCT SUMMARY - AI-generated insights */}
+        {/* 10. PRODUCT SUMMARY - AI-generated insights */}
         <VexoProductSummary
           productName={product.name}
           category={product.category}
           specs={product.specs}
         />
 
-        {/* 9. PREDICTION - Future price predictions (lower priority) */}
+        {/* 11. PREDICTION - Future price predictions */}
         <PredictionSection productId={product.id} />
 
-        {/* 10. SIMILAR PRODUCTS - Help users explore alternatives */}
+        {/* 12. REVIEWS */}
+        <section id="reviews" className="scroll-mt-20">
+          <ReviewsList productId={product.id} currentUserId={user?.id} />
+        </section>
+
+        {/* 13. SIMILAR PRODUCTS - Help users explore alternatives */}
         <ProductRecommendations
           currentProductId={product.id}
           category={product.category}
         />
 
-        {/* 11. PRODUCT MATCHER - Advanced search tool */}
+        {/* 14. PRODUCT MATCHER - Advanced search tool */}
         <ProductMatcher
           productName={product.name}
         />
 
-        <section id="reviews">
-          <ReviewsList productId={product.id} currentUserId={user?.id} />
-        </section>
+        {/* 15. PRODUCT DETAILS - Expandable specs & sharing */}
+        <div className="rounded-xl border bg-muted/30 p-6">
+          <h3 className="mb-4 text-lg font-bold">Detail Produk</h3>
+          
+          <div className="mb-6">
+            <h4 className="mb-3 text-sm font-semibold">Spesifikasi</h4>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {Object.entries(product.specs).map(([key, value]) => (
+                <div key={key} className="rounded-md bg-background px-3 py-2">
+                  <p className="text-xs text-muted-foreground">{key}</p>
+                  <p className="text-sm font-medium">{String(value)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Separator className="my-4" />
+
+          <div>
+            <h4 className="mb-3 text-sm font-semibold">Bagikan produk ini</h4>
+            <SocialShare
+              url={`${process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt-indonesia.vercel.app"}/product/${slug}`}
+              title={`${product.name} - mulai ${formatRupiah(product.lowestPrice)}`}
+            />
+          </div>
+        </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 shadow-lg backdrop-blur md:hidden">
+
+      {/* Mobile Sticky Action Bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
         <div className="mx-auto flex max-w-7xl gap-2">
           <a href="#alerts" className={buttonVariants({ variant: "default", size: "sm" }) + " flex-1"}>Pantau harga ini</a>
           <a href="#prices" className={buttonVariants({ variant: "outline", size: "sm" }) + " flex-1"}>Bandingkan</a>

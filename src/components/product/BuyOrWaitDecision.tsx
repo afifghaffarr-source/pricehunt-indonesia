@@ -131,32 +131,40 @@ export function BuyOrWaitDecision({
     buy_now: {
       icon: CheckCircle2,
       color: "text-green-600 dark:text-green-400",
-      bgColor: "bg-green-50 dark:bg-green-950/30",
+      bgColor: "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30",
       borderColor: "border-green-200 dark:border-green-800",
+      cardBgColor: "bg-green-50/50 dark:bg-green-950/20",
+      iconBgColor: "bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40",
       title: "Beli Sekarang",
       emoji: "✅",
     },
     wait: {
       icon: Clock,
       color: "text-yellow-600 dark:text-yellow-400",
-      bgColor: "bg-yellow-50 dark:bg-yellow-950/30",
+      bgColor: "bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30",
       borderColor: "border-yellow-200 dark:border-yellow-800",
+      cardBgColor: "bg-yellow-50/50 dark:bg-yellow-950/20",
+      iconBgColor: "bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-yellow-900/40 dark:to-amber-900/40",
       title: "Tunggu Dulu",
       emoji: "⏳",
     },
     watch: {
       icon: Eye,
       color: "text-blue-600 dark:text-blue-400",
-      bgColor: "bg-blue-50 dark:bg-blue-950/30",
+      bgColor: "bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30",
       borderColor: "border-blue-200 dark:border-blue-800",
+      cardBgColor: "bg-blue-50/50 dark:bg-blue-950/20",
+      iconBgColor: "bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40",
       title: "Pantau Harga",
       emoji: "👀",
     },
     avoid: {
       icon: AlertTriangle,
       color: "text-red-600 dark:text-red-400",
-      bgColor: "bg-red-50 dark:bg-red-950/30",
+      bgColor: "bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30",
       borderColor: "border-red-200 dark:border-red-800",
+      cardBgColor: "bg-red-50/50 dark:bg-red-950/20",
+      iconBgColor: "bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-900/40 dark:to-rose-900/40",
       title: "Hindari",
       emoji: "⚠️",
     },
@@ -173,36 +181,38 @@ export function BuyOrWaitDecision({
   }[recommendation.confidence];
 
   return (
-    <Card className={cn("border-2", rec.borderColor, rec.bgColor, className)}>
+    <Card className={cn("border-2 shadow-lg", rec.borderColor, rec.bgColor, className)}>
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className={cn("rounded-full p-2", rec.bgColor)}>
-              <Icon className={cn("h-6 w-6", rec.color)} />
+            <div className={cn("rounded-full p-3 shadow-sm", rec.iconBgColor)}>
+              <Icon className={cn("h-7 w-7", rec.color)} />
             </div>
             <div>
-              <CardTitle className="text-xl">
-                <span className="mr-2">{rec.emoji}</span>
+              <div className="mb-1 flex items-center gap-2">
+                <span className="text-2xl">{rec.emoji}</span>
+                <Badge
+                  variant="secondary"
+                  className={cn("text-xs font-bold uppercase tracking-wide", rec.color)}
+                >
+                  {rec.title}
+                </Badge>
+              </div>
+              <CardTitle className="text-2xl font-bold sm:text-3xl">
                 Rekomendasi PriceHunt
               </CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-sm font-medium text-muted-foreground">
                 Berdasarkan analisis data harga yang tersedia
               </p>
             </div>
           </div>
-          <Badge
-            variant="secondary"
-            className={cn("text-xs font-semibold", rec.color)}
-          >
-            {rec.title}
-          </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
         {/* Main Decision Message */}
-        <div className={cn("rounded-lg p-4", rec.bgColor, "border", rec.borderColor)}>
-          <p className="font-medium leading-relaxed">
+        <div className={cn("rounded-lg p-4 shadow-sm", rec.cardBgColor, "border-2", rec.borderColor)}>
+          <p className="text-base font-semibold leading-relaxed sm:text-lg">
             {recommendation.recommendation === "buy_now" && (
               <>
                 Harga saat ini <span className="font-bold">bagus untuk dibeli</span>. 
