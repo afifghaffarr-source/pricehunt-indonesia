@@ -99,22 +99,44 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
       to: data.email,
       subject: `Harga ${data.productName} turun! ${formatRupiah(data.currentPrice)}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Price Alert!</h2>
-          <p>Halo ${data.userName},</p>
-          <p>Harga <strong>${data.productName}</strong> sudah turun di bawah target Anda!</p>
-          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-            <tr>
-              <td style="padding: 8px; border: 1px solid #e5e7eb;">Target Harga</td>
-              <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: bold;">${formatRupiah(data.targetPrice)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border: 1px solid #e5e7eb;">Harga Saat Ini</td>
-              <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: bold; color: #059669;">${formatRupiah(data.currentPrice)}</td>
-            </tr>
-          </table>
-          <a href="${appUrl}/product/${data.productSlug}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Lihat Produk</a>
-          <p style="margin-top: 24px; color: #6b7280; font-size: 12px;">Email ini dikirim oleh PriceHunt Indonesia.</p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 32px 24px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">🎉 Harga Turun!</h1>
+            <p style="color: #e0e7ff; margin: 8px 0 0; font-size: 14px;">PriceHunt Alert</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 32px 24px; background: #f9fafb;">
+            <div style="background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <p style="color: #6b7280; margin: 0 0 8px; font-size: 14px;">Halo ${data.userName},</p>
+              <h2 style="color: #111827; margin: 0 0 20px; font-size: 20px; font-weight: 600;">${data.productName}</h2>
+              
+              <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px; margin: 20px 0;">
+                <tr>
+                  <td style="padding: 14px; background: #f3f4f6; border-radius: 8px; color: #6b7280; font-size: 14px;">Target Harga Anda</td>
+                  <td style="padding: 14px; background: #f3f4f6; border-radius: 8px; text-align: right; font-weight: 700; color: #111827; font-size: 18px;">${formatRupiah(data.targetPrice)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px; background: #ecfdf5; border-radius: 8px; color: #065f46; font-size: 14px; font-weight: 500;">Harga Sekarang</td>
+                  <td style="padding: 14px; background: #ecfdf5; border-radius: 8px; text-align: right; font-weight: 700; color: #059669; font-size: 20px;">${formatRupiah(data.currentPrice)}</td>
+                </tr>
+              </table>
+              
+              <div style="text-align: center; margin-top: 24px;">
+                <a href="${appUrl}/product/${data.productSlug}" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Beli Sekarang</a>
+              </div>
+            </div>
+            
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 14px 16px; border-radius: 6px; margin-top: 16px;">
+              <p style="color: #92400e; margin: 0; font-size: 13px;">⏰ Harga bisa berubah sewaktu-waktu. Segera cek!</p>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="padding: 20px 24px; text-align: center; background: #f9fafb; border-top: 1px solid #e5e7eb;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">Email dari <strong style="color: #2563eb;">PriceHunt Indonesia</strong></p>
+          </div>
         </div>
       `,
     });
@@ -311,36 +333,45 @@ async function sendDigestEmail(data: DigestData): Promise<boolean> {
     }
 
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #2563eb; margin: 0;">PriceHunt</h1>
-          <p style="color: #6b7280; margin: 8px 0 0;">Ringkasan Belanja Pintar Anda</p>
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 36px 24px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">PriceHunt</h1>
+          <p style="color: #e0e7ff; margin: 10px 0 0; font-size: 15px; font-weight: 500;">Ringkasan Belanja Pintar Minggu Ini</p>
         </div>
 
-        <p>Halo ${data.userName},</p>
-        <p style="color: #6b7280;">Berikut update harga dan rekomendasi belanja pintar minggu ini.</p>
+        <!-- Content -->
+        <div style="padding: 32px 24px; background: #f9fafb;">
+          <div style="background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
+            <p style="color: #6b7280; margin: 0 0 4px; font-size: 14px;">Halo ${data.userName},</p>
+            <p style="color: #111827; margin: 0; font-size: 15px;">Berikut update harga dan rekomendasi belanja pintar untuk Anda 🛍️</p>
+          </div>
 
-        ${wishlistHtml}
-        ${dealsHtml}
+          ${wishlistHtml}
+          ${dealsHtml}
 
-        ${
-          data.wishlistItems.length === 0 && data.topDeals.length === 0
-            ? '<p style="color: #6b7280; text-align: center; padding: 24px;">Belum ada update untuk minggu ini. Tambahkan produk ke wishlist untuk mendapat notifikasi harga!</p>'
-            : ""
-        }
+          ${
+            data.wishlistItems.length === 0 && data.topDeals.length === 0
+              ? '<div style="background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; margin: 20px 0;"><p style="color: #9ca3af; margin: 0; font-size: 14px;">Belum ada update untuk minggu ini.</p><p style="color: #6b7280; margin: 8px 0 0; font-size: 13px;">Tambahkan produk ke wishlist untuk mendapat notifikasi harga!</p></div>'
+              : ""
+          }
 
-        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
-          <p style="color: #6b7280; font-size: 14px; margin: 0;">
-            <strong>Tips:</strong> Pantau harga produk favorit Anda dan kami akan memberi tahu kapan waktu terbaik untuk membeli.
-          </p>
-          <a href="${data.appUrl}/dashboard" style="display: inline-block; margin-top: 16px; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Buka Dashboard</a>
+          <!-- Tips Section -->
+          <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 16px 18px; border-radius: 8px; margin-top: 20px;">
+            <p style="color: #1e40af; margin: 0 0 4px; font-weight: 600; font-size: 14px;">💡 Tips Belanja Pintar</p>
+            <p style="color: #1e3a8a; margin: 0; font-size: 13px;">Pantau harga produk favorit Anda dan kami akan memberi tahu kapan waktu terbaik untuk membeli.</p>
+          </div>
+
+          <!-- CTA -->
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="${data.appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Buka Dashboard Saya</a>
+          </div>
         </div>
 
-        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; text-align: center;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-            Email digest dikirim mingguan oleh PriceHunt Indonesia.<br/>
-            <a href="${data.appUrl}/settings" style="color: #9ca3af;">Ubah preferensi email</a>
-          </p>
+        <!-- Footer -->
+        <div style="padding: 24px; text-align: center; background: #f9fafb; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px;">Email digest dikirim mingguan oleh <strong style="color: #2563eb;">PriceHunt Indonesia</strong></p>
+          <a href="${data.appUrl}/settings" style="color: #6b7280; text-decoration: underline; font-size: 11px;">Ubah preferensi email</a>
         </div>
       </div>
     `;
