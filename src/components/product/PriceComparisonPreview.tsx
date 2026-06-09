@@ -1,5 +1,5 @@
 import { ArrowRight, ExternalLink, TrendingDown } from "lucide-react";
-import { formatRupiah, getMarketplaceName } from "@/lib/utils";
+import { formatRupiah } from "@/lib/utils";
 import { MarketplaceBadge } from "./MarketplaceBadge";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,7 @@ export function PriceComparisonPreview({
       {/* Horizontal Scroll Container */}
       <div className="relative">
         <div className="flex gap-3 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {sortedPrices.map((price, index) => {
+          {sortedPrices.map((price, _index) => {
             const isCheapest = price.price === lowestPrice;
             const isMostExpensive = price.price === highestPrice && hasPriceVariation;
             const savingsFromHighest = highestPrice - price.price;

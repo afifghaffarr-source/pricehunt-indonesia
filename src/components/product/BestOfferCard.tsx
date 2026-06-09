@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ExternalLink, Store, CheckCircle2, TrendingDown } from "lucide-react";
-import { formatRupiah, getMarketplaceName } from "@/lib/utils";
+import { formatRupiah } from "@/lib/utils";
 import { MarketplaceBadge } from "./MarketplaceBadge";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
@@ -57,7 +57,7 @@ export function BestOfferCard({ offers, lowestPrice, className = "" }: BestOffer
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {topOffers.map((offer, index) => {
+        {topOffers.map((offer, _index) => {
           const savings = calculateSavings(offer.price);
           const isCheapest = offer.price === lowestPrice;
 

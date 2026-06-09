@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       duration,
     });
   } catch (err) {
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
 
     console.error("[Cron Digest] Failed:", err);

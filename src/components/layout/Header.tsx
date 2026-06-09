@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
-  Bell,
   Search,
   Sparkles,
   LayoutDashboard,
@@ -15,7 +14,6 @@ import {
   User,
   Tag,
 } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { AuthButton } from "./AuthButton";
 import { useEffect, useState } from "react";
