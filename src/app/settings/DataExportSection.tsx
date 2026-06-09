@@ -49,7 +49,7 @@ export function DataExportSection() {
         </div>
       )}
 
-      <div className="space-y-3 text-sm text-gray-600">
+      <div className="space-y-3 text-sm text-muted-foreground">
         <p>
           Unduh semua data Anda dalam format JSON. Data yang diekspor meliputi:
         </p>
@@ -59,7 +59,7 @@ export function DataExportSection() {
           <li>Pengaturan alert harga</li>
           <li>Riwayat ulasan produk</li>
         </ul>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground/70">
           Data akan diunduh sebagai file JSON yang dapat Anda simpan atau gunakan
           untuk keperluan pribadi. Kami menghormati privasi dan hak Anda atas data
           pribadi.

@@ -103,12 +103,16 @@ export default async function AdminPage() {
     { term: "Nintendo Switch", count: 58 },
   ];
 
-  const [jobStatsRaw, recentJobsRaw] = await Promise.all([
+  const [jobStatsRaw, recentPricesRaw, recentAlertsRaw, recentDigestRaw] = await Promise.all([
     getJobStatistics(undefined, 7),
-    getRecentJobLogs("cron_prices", 5),
+    getRecentJobLogs("cron_prices", 3),
+    getRecentJobLogs("cron_alerts", 3),
+    getRecentJobLogs("cron_digest", 3),
   ]);
   const jobStats = jobStatsRaw as JobStatistic[];
-  const recentJobs = recentJobsRaw as JobLog[];
+  const recentPrices = recentPricesRaw as JobLog[];
+  const recentAlerts = recentAlertsRaw as JobLog[];
+  const recentDigest = recentDigestRaw as JobLog[];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -168,59 +172,120 @@ export default async function AdminPage() {
         />
       </div>
 
-      <div className="mb-8 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Observability Job</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {jobStats.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Belum ada statistik job dalam 7 hari terakhir.</p>
-            ) : (
-              jobStats.map((job) => (
-                <div key={job.job_name} className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <p className="font-medium">{job.job_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {job.total_runs} run &middot; {job.successful_runs} sukses &middot; {job.failed_runs} gagal
-                    </p>
-                  </div>
-                  <Badge variant={job.success_rate >= 90 ? "default" : job.success_rate >= 70 ? "secondary" : "destructive"}>
-                    {Number(job.success_rate || 0).toFixed(0)}%
-                  </Badge>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Cron Prices Terakhir</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {recentJobs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Belum ada log cron prices.</p>
-            ) : (
-              recentJobs.map((job) => (
-                <div key={job.id} className="rounded-lg border p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant={job.status === "success" ? "default" : job.status === "partial" ? "secondary" : "destructive"}>
-                      {job.status}
+      <div className="mb-8">
+        <h2 className="mb-4 text-lg font-semibold">Observability Job</h2>
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Statistik 7 Hari Terakhir</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {jobStats.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Belum ada statistik job.</p>
+              ) : (
+                jobStats.map((job) => (
+                  <div key={job.job_name} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <p className="font-medium">{job.job_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {job.total_runs} run &middot; {job.successful_runs} sukses &middot; {job.failed_runs} gagal
+                      </p>
+                    </div>
+                    <Badge variant={job.success_rate >= 90 ? "default" : job.success_rate >= 70 ? "secondary" : "destructive"}>
+                      {Number(job.success_rate || 0).toFixed(0)}%
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(job.created_at).toLocaleString("id-ID")}
-                    </span>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Processed {job.processed_count || 0}, sukses {job.success_count || 0}, gagal {job.failed_count || 0}
-                  </p>
-                  {job.error_summary && <p className="mt-1 text-xs text-destructive">{job.error_summary}</p>}
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Cron Prices</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {recentPrices.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Belum ada log.</p>
+                ) : (
+                  recentPrices.slice(0, 2).map((job) => (
+                    <div key={job.id} className="rounded-md border p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant={job.status === "success" ? "default" : job.status === "partial" ? "secondary" : "destructive"} className="text-[10px]">
+                          {job.status}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(job.created_at).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        {job.processed_count || 0} diproses, {job.success_count || 0} sukses
+                      </p>
+                      {job.error_summary && <p className="mt-1 text-[10px] text-destructive line-clamp-1">{job.error_summary}</p>}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Cron Alerts</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {recentAlerts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Belum ada log.</p>
+                ) : (
+                  recentAlerts.slice(0, 2).map((job) => (
+                    <div key={job.id} className="rounded-md border p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant={job.status === "success" ? "default" : job.status === "partial" ? "secondary" : "destructive"} className="text-[10px]">
+                          {job.status}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(job.created_at).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        {job.processed_count || 0} diproses, {job.success_count || 0} triggered
+                      </p>
+                      {job.error_summary && <p className="mt-1 text-[10px] text-destructive line-clamp-1">{job.error_summary}</p>}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Cron Digest</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {recentDigest.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Belum ada log.</p>
+                ) : (
+                  recentDigest.slice(0, 2).map((job) => (
+                    <div key={job.id} className="rounded-md border p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant={job.status === "success" ? "default" : job.status === "partial" ? "secondary" : "destructive"} className="text-[10px]">
+                          {job.status}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(job.created_at).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        {job.processed_count || 0} user, {job.success_count || 0} dikirim
+                      </p>
+                      {job.error_summary && <p className="mt-1 text-[10px] text-destructive line-clamp-1">{job.error_summary}</p>}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
       <div className="mb-8">

@@ -88,7 +88,7 @@ export function PriceAlertForm({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Bell className="h-4 w-4" />
-          Price Alert
+          Pantau Harga
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -96,7 +96,11 @@ export function PriceAlertForm({
           Dapat notifikasi saat harga turun di bawah target Anda.
         </p>
 
-        {message && <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{message}</p>}
+        {message && (
+          <div className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/10 px-3 py-2 text-xs text-green-700 dark:text-green-400">
+            {message}
+          </div>
+        )}
 
         {alerts.length > 0 ? (
           <div className="space-y-2">
