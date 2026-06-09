@@ -9,11 +9,7 @@
     "default_popup": "popup.html",
     "default_title": "PriceHunt"
   },
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  },
+  "_comment_icons": "Icons temporarily removed - extension will use default browser icon. See extension/ICONS_README.md for instructions to create branded icons",
   "content_scripts": [
     {
       "matches": [
