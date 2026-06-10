@@ -16,14 +16,14 @@ Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, B
 - **Smart Price Alerts** - Alert pintar dengan confidence score & target price recommendations
 
 ### Core Features
-- � **Smart Search** - Natural language search dengan AI
+- 🔍 **Smart Search** - Natural language search dengan AI
 - 📊 **Price Comparison** - Bandingkan harga real-time dari 6 marketplace
-- 📈 **Price History** - Grafik tren harga 30-90 hari
+- 📈 **Price History** - Grafik tren harga 30-90 hari dengan Recharts visualization (NEW!)
 - 🎯 **Price Alerts** - Notifikasi otomatis saat harga turun
 - ⭐ **Wishlist** - Simpan produk favorit
 - 🤖 **AI Advisor** - Rekomendasi beli/tunggu berbasis AI
 - 🔮 **Price Prediction** - Prediksi harga 7-28 hari ke depan
-- �📱 **PWA Support** - Install sebagai app di mobile/desktop
+- 📱 **PWA Support** - Install sebagai app di mobile/desktop
 
 ### Advanced Features
 - 🎮 **Gamification** - Badges, levels, points system
