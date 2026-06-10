@@ -11,8 +11,6 @@ import {
   calculateBatchConfidence,
   shouldRecalculateConfidence,
   getRecommendedRefreshInterval,
-  type DataSourceType,
-  type ConfidenceInput,
 } from "@/lib/ingestion/confidence";
 
 // ============================================================================

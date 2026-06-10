@@ -12,7 +12,7 @@ export async function GET() {
     const supabase = await createClient()
 
     // Simple query to test DB connectivity
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("products")
       .select("id")
       .limit(1)

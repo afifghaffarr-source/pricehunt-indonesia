@@ -96,10 +96,7 @@ describe("detectNegativeKeywords", () => {
 
   describe("word boundary detection", () => {
     it("uses word boundaries to avoid false positives", () => {
-      // "second" in "30 second" should not match
-      const result1 = detectNegativeKeywords("iPhone ships in 30 second");
-      // This might actually match "second" - let's test the actual behavior
-      // For now, let's test a clear non-match
+      // Test a clear non-match case
       const result2 = detectNegativeKeywords("iPhone 14 Pro Max 256GB");
       expect(result2.hasNegative).toBe(false);
       expect(result2.keywords).toHaveLength(0);

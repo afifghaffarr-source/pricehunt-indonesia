@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
  * ✅ SECURITY: Requires authentication
  * ✅ DATA SAFETY: Only removes push fields, keeps other preferences
  */
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -108,7 +108,7 @@ export async function DELETE(request: NextRequest) {
     const currentPreferences = (profile?.preferences as Record<string, unknown>) || {};
 
     // Remove push subscription but keep other preferences
-    const { push_enabled, push_subscription, ...remainingPreferences } = currentPreferences;
+    const { push_enabled: _push_enabled, push_subscription: _push_subscription, ...remainingPreferences } = currentPreferences;
 
     // Update with push fields removed
     const { error: updateError } = await supabase

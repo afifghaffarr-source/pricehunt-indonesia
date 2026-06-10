@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
               ...offer,
               last_checked_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any, {
               onConflict: "product_id,marketplace_id,marketplace_product_id",
               ignoreDuplicates: false, // Update existing
@@ -158,6 +159,7 @@ export async function POST(request: NextRequest) {
             .insert({
               ...snapshot,
               captured_at: new Date().toISOString(),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any);
           
           if (error) {
@@ -187,12 +189,13 @@ export async function POST(request: NextRequest) {
           job_name: data.job_name,
           source: data.source,
           status,
-          items_processed: offersProcessed + snapshotsProcessed,
-          items_failed: offersFailed + snapshotsFailed,
-          duration_ms: duration,
-          error_summary: errors.length > 0 ? errors.slice(0, 10).join("; ") : null,
-          metadata: data.metadata || {},
-        } as any);
+        items_processed: offersProcessed + snapshotsProcessed,
+        items_failed: offersFailed + snapshotsFailed,
+        duration_ms: duration,
+        error_summary: errors.length > 0 ? errors.slice(0, 10).join("; ") : null,
+        metadata: data.metadata || {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
     } catch (logError) {
       console.error("[Ingestion] Failed to log job:", logError);
       // Don't fail the request if logging fails

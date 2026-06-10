@@ -40,6 +40,19 @@ export async function POST(request: NextRequest) {
       lowest_price: number | null;
     }
     
+    // Type for price upsert (Supabase types may be outdated)
+    interface PriceUpsertData {
+      product_id: string;
+      marketplace_id: string;
+      price: number;
+      url: string;
+      seller: string | null;
+      seller_rating: number | null;
+      in_stock: boolean;
+      shipping_cost: number | null;
+      last_updated: string;
+    }
+    
     const { data: productData } = await supabase
       .from("products")
       .select("id, name, lowest_price")
@@ -73,9 +86,8 @@ export async function POST(request: NextRequest) {
       const mpId = mpMap.get(result.marketplace);
       if (!mpId) continue;
 
-      // Type assertion for admin client operations
+      // Supabase generated types outdated - using type assertion until regenerated
       await supabase.from("prices").upsert(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         {
           product_id: product.id,
           marketplace_id: mpId,
@@ -86,6 +98,7 @@ export async function POST(request: NextRequest) {
           in_stock: result.inStock,
           shipping_cost: result.shippingCost,
           last_updated: result.scrapedAt,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         { onConflict: "product_id,marketplace_id" }
       );
