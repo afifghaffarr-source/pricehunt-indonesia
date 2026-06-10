@@ -1,47 +1,66 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
-import { AlertTriangle, Home, RefreshCcw } from "lucide-react";
+import { useEffect } from "react"
+import { Button } from "@/components/ui/button"
 
-export default function GlobalError({
+export default function Error({
   error,
   reset,
 }: {
-  error: Error & { digest?: string };
-  reset: () => void;
+  error: Error & { digest?: string }
+  reset: () => void
 }) {
+  useEffect(() => {
+    // Log error to error reporting service
+    console.error("Application error:", error)
+  }, [error])
+
   return (
-    <html lang="id">
-      <body className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="mx-auto max-w-md text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-            <AlertTriangle className="h-8 w-8 text-destructive" />
-          </div>
-          <h1 className="mb-2 text-2xl font-bold">Terjadi Kesalahan</h1>
-          <p className="mb-6 text-muted-foreground">
-            Maaf, ada sesuatu yang salah. Tim kami sudah diberitahu.
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-gray-900">
+            Ada yang tidak beres
+          </h1>
+          <p className="text-lg text-gray-600">
+            Maaf, terjadi kesalahan saat memuat halaman ini.
           </p>
-          {error.digest && (
-            <p className="mb-6 text-xs text-muted-foreground">
-              Error ID: {error.digest}
-            </p>
-          )}
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={reset}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Coba Lagi
-            </button>
-            <Link href="/" className={buttonVariants({ variant: "default" })}>
-              <Home className="mr-2 h-4 w-4" />
-              Beranda
-            </Link>
-          </div>
         </div>
-      </body>
-    </html>
-  );
+
+        {process.env.NODE_ENV === "development" && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+            <p className="font-mono text-sm text-red-800 break-all">
+              {error.message}
+            </p>
+            {error.digest && (
+              <p className="font-mono text-xs text-red-600 mt-2">
+                Error ID: {error.digest}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button onClick={reset} size="lg">
+            Coba Lagi
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => (window.location.href = "/")}
+          >
+            Kembali ke Beranda
+          </Button>
+        </div>
+
+        <p className="text-sm text-gray-500">
+          Jika masalah terus berlanjut, silakan{" "}
+          <a href="/legal" className="text-blue-600 hover:underline">
+            hubungi kami
+          </a>
+          .
+        </p>
+      </div>
+    </div>
+  )
 }

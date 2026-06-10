@@ -1,29 +1,65 @@
-import type { MetadataRoute } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { MetadataRoute } from "next"
+import { createClient } from "@/lib/supabase/server"
+
+export const dynamic = "force-dynamic"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = await createClient();
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt.id";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt-indonesia.vercel.app"
 
+  // Static pages
   const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
-    { url: `${baseUrl}/search`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/auth/login`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
-    { url: `${baseUrl}/auth/register`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
-  ];
+    {
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/search`,
+      lastModified: new Date(),
+      changeFrequency: "hourly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/deals`,
+      lastModified: new Date(),
+      changeFrequency: "hourly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/legal`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+  ]
 
-  const { data: products } = await supabase
-    .from("products")
-    .select("slug, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(500);
+  // Fetch products for dynamic pages
+  try {
+    const supabase = await createClient()
+    const { data: products, error } = await supabase
+      .from("products")
+      .select("slug, updated_at")
+      .eq("is_active", true)
+      .limit(1000) // Limit for sitemap performance
+      .order("updated_at", { ascending: false })
 
-  const productPages: MetadataRoute.Sitemap = (products || []).map((p) => ({
-    url: `${baseUrl}/product/${p.slug}`,
-    lastModified: new Date(p.updated_at),
-    changeFrequency: "daily" as const,
-    priority: 0.8,
-  }));
+    if (error) {
+      console.error("Sitemap: Error fetching products:", error)
+      return staticPages
+    }
 
-  return [...staticPages, ...productPages];
+    const productPages: MetadataRoute.Sitemap =
+      products?.map((product) => ({
+        url: `${baseUrl}/product/${product.slug}`,
+        lastModified: new Date(product.updated_at),
+        changeFrequency: "daily" as const,
+        priority: 0.8,
+      })) || []
+
+    return [...staticPages, ...productPages]
+  } catch (error) {
+    console.error("Sitemap: Error generating sitemap:", error)
+    return staticPages
+  }
 }

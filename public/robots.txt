@@ -1,0 +1,26 @@
+# PriceHunt Indonesia - Robots.txt
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /admin
+Disallow: /api/
+Disallow: /dashboard
+
+# Disallow user-specific pages
+Disallow: /settings
+
+# Allow search bots to index public pages
+Allow: /
+Allow: /search
+Allow: /product/
+Allow: /deals
+Allow: /legal
+
+# Sitemap location
+Sitemap: https://pricehunt-indonesia.vercel.app/sitemap.xml
+
+# Crawl delay (be nice to servers)
+Crawl-delay: 1
