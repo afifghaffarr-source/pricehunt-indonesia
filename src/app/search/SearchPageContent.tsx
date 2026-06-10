@@ -76,62 +76,76 @@ export function SearchPageContent() {
   useEffect(() => {
     async function fetchProducts() {
       setLoading(true);
-      const supabase = createClient();
 
-      let queryBuilder = supabase.from("products").select("*");
+      try {
+        // Use /api/search which has proper input sanitization
+        const params = new URLSearchParams();
+        if (query) params.set("q", query);
+        if (category) params.set("category", category);
+        params.set("limit", "100");
+        params.set("vexo", "false"); // Vexo handled separately
 
-      if (query) {
-        queryBuilder = queryBuilder.or(
-          `name.ilike.%${query}%,category.ilike.%${query}%,description.ilike.%${query}%`
-        );
-      }
+        const res = await fetch(`/api/search?${params.toString()}`);
+        const data = await res.json();
 
-      if (category) {
-        queryBuilder = queryBuilder.eq("category", category);
-      }
-
-      const { data: dbProducts } = await queryBuilder;
-
-      if (!dbProducts) {
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data: allPrices } = await supabase
-        .from("prices")
-        .select("*, marketplaces(name)");
-
-      const pricesByProduct = new Map<string, Record<string, unknown>[]>();
-      if (allPrices) {
-        for (const p of allPrices) {
-          const pid = p.product_id as string;
-          if (!pricesByProduct.has(pid)) pricesByProduct.set(pid, []);
-          pricesByProduct.get(pid)!.push(p);
+        if (!res.ok || data.error) {
+          console.error("Search API error:", data.error);
+          setProducts([]);
+          setLoading(false);
+          return;
         }
+
+        // Get prices for each product
+        const supabase = createClient();
+        const productIds = (data.results || []).map((p: Record<string, unknown>) => p.id);
+
+        if (productIds.length === 0) {
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+
+        const { data: allPrices } = await supabase
+          .from("prices")
+          .select("*, marketplaces(name)")
+          .in("product_id", productIds);
+
+        const pricesByProduct = new Map<string, Record<string, unknown>[]>();
+        if (allPrices) {
+          for (const p of allPrices) {
+            const pid = p.product_id as string;
+            if (!pricesByProduct.has(pid)) pricesByProduct.set(pid, []);
+            pricesByProduct.get(pid)!.push(p);
+          }
+        }
+
+        const result: Product[] = (data.results || []).map((p: Record<string, unknown>) =>
+          transformDbProduct(p, pricesByProduct.get(p.id as string) || [])
+        );
+
+        // Client-side sorting since API returns by deal_score
+        switch (sortBy) {
+          case "price-asc":
+            result.sort((a, b) => a.lowestPrice - b.lowestPrice);
+            break;
+          case "price-desc":
+            result.sort((a, b) => b.lowestPrice - a.lowestPrice);
+            break;
+          case "deal-score":
+            result.sort((a, b) => b.dealScore - a.dealScore);
+            break;
+          case "name":
+            result.sort((a, b) => a.name.localeCompare(b.name));
+            break;
+        }
+
+        setProducts(result);
+      } catch (error) {
+        console.error("Search error:", error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
       }
-
-      const result = dbProducts.map((p) =>
-        transformDbProduct(p, pricesByProduct.get(p.id) || [])
-      );
-
-      switch (sortBy) {
-        case "price-asc":
-          result.sort((a, b) => a.lowestPrice - b.lowestPrice);
-          break;
-        case "price-desc":
-          result.sort((a, b) => b.lowestPrice - a.lowestPrice);
-          break;
-        case "deal-score":
-          result.sort((a, b) => b.dealScore - a.dealScore);
-          break;
-        case "name":
-          result.sort((a, b) => a.name.localeCompare(b.name));
-          break;
-      }
-
-      setProducts(result);
-      setLoading(false);
     }
 
     fetchProducts();
