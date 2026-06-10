@@ -1,8 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
 import { detectFakeDiscount } from "@/lib/fake-discount";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
 
+// GET handler for extension and simple usage - accepts slug
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const slug = searchParams.get("slug");
+
+    if (!slug) {
+      return NextResponse.json(
+        { error: "slug is required" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch product data with prices
+    const supabase = await createClient();
+    const { data: product, error } = await supabase
+      .from("products")
+      .select(`
+        id,
+        name,
+        slug,
+        lowest_price,
+        highest_price,
+        average_price
+      `)
+      .eq("slug", slug)
+      .single();
+
+    if (error || !product) {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    // Analyze fake discount with available data
+    // For MVP, we use what we have. Full data will come from price_snapshots later.
+    const analysis = detectFakeDiscount({
+      currentPrice: product.lowest_price || 0,
+      originalPrice: product.highest_price || product.lowest_price || 0,
+      lowestHistoricalPrice: product.lowest_price,
+      median30Day: product.average_price,
+      median90Day: product.average_price,
+    });
+
+    return NextResponse.json({
+      success: true,
+      product: {
+        name: product.name,
+        slug: product.slug,
+      },
+      analysis,
+    }, {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
+  } catch (error) {
+    console.error("Error in fake discount GET:", error);
+    return NextResponse.json(
+      { error: "Failed to analyze discount" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST handler for advanced usage with full control
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

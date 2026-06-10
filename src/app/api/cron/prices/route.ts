@@ -7,6 +7,18 @@ export async function GET(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
+  // ✅ DATA TRUST: Check if price simulation is enabled
+  // In production, this should be false. Real prices come from ingestion API.
+  const enableSimulation = process.env.ENABLE_PRICE_SIMULATION === 'true';
+  
+  if (!enableSimulation) {
+    return NextResponse.json({
+      message: "Price simulation disabled. Real price updates should come from ingestion API or data sources.",
+      simulation_enabled: false,
+      note: "To enable simulation for testing, set ENABLE_PRICE_SIMULATION=true in .env"
+    }, { status: 200 });
+  }
+
   try {
     // Type for price data from database
     interface PriceRow {

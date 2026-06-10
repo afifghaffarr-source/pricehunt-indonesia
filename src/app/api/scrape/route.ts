@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scrapeAllMarketplaces, generateScrapeReport } from "@/lib/scraper";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   // ✅ SECURITY: Require admin authentication (expensive operation)
   const authError = await requireAdmin(request);
   if (authError) return authError;
+
+  // ⚠️ DATA TRUST WARNING: This endpoint uses simulated/demo scraper
+  // Real price data should come from ingestion API with proper source tracking
+  // This is for development/testing only
+  const enableSimulation = process.env.ENABLE_PRICE_SIMULATION === 'true';
+  
+  if (!enableSimulation) {
+    return NextResponse.json({
+      error: "Scrape simulation disabled",
+      message: "Real scraping should be done via Python browser collector + ingestion API",
+      simulation_enabled: false,
+      note: "Set ENABLE_PRICE_SIMULATION=true to enable demo scraping"
+    }, { status: 403 });
+  }
 
   try {
     const body = await request.json();
@@ -16,33 +30,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "productId required" }, { status: 400 });
     }
 
-    const supabase = await createClient();
-    const { data: product } = await supabase
+    // ✅ Use admin client since admin is already verified
+    const supabase = createAdminClient();
+    
+    // Type for product query result
+    interface ProductRow {
+      id: string;
+      name: string;
+      lowest_price: number | null;
+    }
+    
+    const { data: productData } = await supabase
       .from("products")
       .select("id, name, lowest_price")
       .eq("id", productId)
       .single();
 
-    if (!product) {
+    if (!productData) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-
+    
+    const product = productData as ProductRow;
     const basePrice = product.lowest_price || 1000000;
-    const results = await scrapeAllMarketplaces(product.name as string, basePrice);
+    const results = await scrapeAllMarketplaces(product.name, basePrice);
     const report = generateScrapeReport(results);
 
-    const { data: marketplaces } = await supabase
+    // Type for marketplace query result
+    interface MarketplaceRow {
+      id: string;
+      name: string;
+    }
+
+    const { data: marketplacesData } = await supabase
       .from("marketplaces")
       .select("id, name");
 
-    const mpMap = new Map((marketplaces || []).map((m) => [m.name, m.id]));
+    const marketplaces = (marketplacesData || []) as MarketplaceRow[];
+    const mpMap = new Map(marketplaces.map((m) => [m.name, m.id]));
 
     let updated = 0;
     for (const result of results) {
       const mpId = mpMap.get(result.marketplace);
       if (!mpId) continue;
 
+      // Type assertion for admin client operations
       await supabase.from("prices").upsert(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         {
           product_id: product.id,
           marketplace_id: mpId,
@@ -53,7 +86,7 @@ export async function POST(request: NextRequest) {
           in_stock: result.inStock,
           shipping_cost: result.shippingCost,
           last_updated: result.scrapedAt,
-        },
+        } as any,
         { onConflict: "product_id,marketplace_id" }
       );
       updated++;
@@ -67,6 +100,8 @@ export async function POST(request: NextRequest) {
         const avg = Math.round(allPrices.reduce((a, b) => a + b, 0) / allPrices.length);
         const score = Math.round(100 - ((avg - lowest) / avg) * 100);
 
+        // Admin client bypasses type checking
+        // @ts-ignore - Admin client operations have broken type inference
         await supabase
           .from("products")
           .update({
