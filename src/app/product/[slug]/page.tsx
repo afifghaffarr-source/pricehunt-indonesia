@@ -224,14 +224,24 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Quick Navigation */}
-      <div className="mb-6 flex gap-2 overflow-x-auto rounded-2xl border bg-background p-2 text-sm shadow-sm">
-        <a href="#decision" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Rekomendasi</a>
-        <a href="#prices" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Harga</a>
-        <a href="#total-cost" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Total bayar</a>
-        <a href="#alerts" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Pantau</a>
-        <a href="#reviews" className="shrink-0 rounded-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">Review</a>
-      </div>
+      {/* Quick Navigation - Improved microcopy */}
+      <nav className="mb-8 flex gap-2 overflow-x-auto rounded-2xl border bg-gradient-to-r from-background to-muted/20 p-2 text-sm shadow-sm" aria-label="Navigasi cepat">
+        <a href="#decision" className="shrink-0 rounded-full px-4 py-2 font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
+          Kapan Beli?
+        </a>
+        <a href="#prices" className="shrink-0 rounded-full px-4 py-2 font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
+          Bandingkan Harga
+        </a>
+        <a href="#total-cost" className="shrink-0 rounded-full px-4 py-2 font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
+          Hitung Total Bayar
+        </a>
+        <a href="#alerts" className="shrink-0 rounded-full px-4 py-2 font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
+          Pantau Harga
+        </a>
+        <a href="#reviews" className="shrink-0 rounded-full px-4 py-2 font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
+          Ulasan Pembeli
+        </a>
+      </nav>
 
       <div className="space-y-12">
         {/* 1. DECISION CARD - ELEVATED & PROMINENT */}
@@ -294,7 +304,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
         {/* 6. PRICE COMPARISON - Core comparison feature */}
         <section id="prices" className="scroll-mt-20">
-          <h2 className="mb-4 text-xl font-bold">Perbandingan Harga</h2>
+          <div className="mb-4">
+            <h2 className="text-xl font-bold">Perbandingan Harga Marketplace</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cek harga dari {product.prices.filter((p) => p.inStock).length} marketplace dan temukan penawaran terbaik
+            </p>
+          </div>
           <PriceComparisonTable
             prices={product.prices}
             lowestPrice={product.lowestPrice}
@@ -376,13 +391,24 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Mobile Sticky Action Bar */}
+      {/* Mobile Sticky Action Bar - Quick access to key actions */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
         <div className="mx-auto flex max-w-7xl gap-2">
-          <a href="#alerts" className={buttonVariants({ variant: "default", size: "sm" }) + " flex-1"}>Pantau harga ini</a>
-          <a href="#prices" className={buttonVariants({ variant: "outline", size: "sm" }) + " flex-1"}>Bandingkan</a>
+          <a href="#alerts" className={buttonVariants({ variant: "default", size: "sm" }) + " flex-1 text-xs"}>
+            Pantau Harga
+          </a>
+          <a href="#prices" className={buttonVariants({ variant: "outline", size: "sm" }) + " flex-1 text-xs"}>
+            Lihat Harga
+          </a>
           {cheapestMarketplace?.url && (
-            <Link href={cheapestMarketplace.url} className={buttonVariants({ variant: "secondary", size: "sm" }) + " flex-1"}>Buka toko</Link>
+            <Link 
+              href={cheapestMarketplace.url} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "secondary", size: "sm" }) + " flex-1 text-xs"}
+            >
+              Beli Sekarang
+            </Link>
           )}
         </div>
       </div>
