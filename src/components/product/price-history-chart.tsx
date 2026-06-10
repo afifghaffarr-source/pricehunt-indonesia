@@ -48,7 +48,7 @@ const formatShortRupiah = (value: number): string => {
 };
 
 // Custom tooltip
-const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
