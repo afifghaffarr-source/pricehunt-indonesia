@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2026-06-11 07:11]
+
+### Changed
+- Enhanced PriceHistoryChart component with best features from both versions
+- Added date-fns Indonesian locale support for better date formatting
+- Improved performance with 50 data point limit optimization
+- Better Y-axis domain calculation with 10% padding
+- Enhanced tooltip with null value filtering
+
+### Removed
+- Duplicate price-history-chart.tsx component
+- 13 outdated PHASE*.md documentation files
+
 ## [2026-06-11 06:45]
 
 ### Fix
