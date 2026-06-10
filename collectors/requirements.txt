@@ -1,0 +1,35 @@
+# PriceHunt Indonesia - Price Collectors Dependencies
+
+# Browser Automation
+playwright==1.40.0
+selenium==4.16.0
+
+# HTTP & Web Scraping
+requests==2.31.0
+httpx==0.25.2
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Data Validation & Parsing
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Environment & Config
+python-dotenv==1.0.0
+
+# Database Client
+supabase==2.3.0
+
+# Utilities
+python-slugify==8.0.1
+python-dateutil==2.8.2
+
+# Logging & Monitoring
+structlog==23.2.0
+
+# Async
+aiohttp==3.9.1
+asyncio==3.4.3
+
+# Optional: Anti-detection
+fake-useragent==1.4.0
