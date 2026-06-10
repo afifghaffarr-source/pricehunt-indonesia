@@ -101,9 +101,9 @@ export async function POST(request: NextRequest) {
         const score = Math.round(100 - ((avg - lowest) / avg) * 100);
 
         // Admin client bypasses type checking
-        // @ts-ignore - Admin client operations have broken type inference
-        await supabase
-          .from("products")
+        // TODO: Regenerate Supabase types after schema changes
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from("products") as any)
           .update({
             lowest_price: lowest,
             highest_price: highest,

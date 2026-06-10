@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
+import { sendPriceAlertPush } from "@/lib/push-notifications";
 
 interface AlertEmail {
   email: string;
@@ -45,6 +46,7 @@ export async function checkAndSendPriceAlerts() {
   }
 
   let sent = 0;
+  let pushSentCount = 0;
 
   for (const alert of typedAlerts) {
     const product = alert.products;
@@ -54,6 +56,21 @@ export async function checkAndSendPriceAlerts() {
       const userInfo = userMap.get(alert.user_id);
       if (!userInfo) continue;
 
+      // ✅ Try push notification first (immediate notification)
+      const pushSent = await sendPriceAlertPush(
+        alert.user_id,
+        product.name,
+        product.slug,
+        alert.target_price,
+        product.lowest_price
+      );
+
+      if (pushSent) {
+        pushSentCount++;
+        console.log(`[Price Alert] Push notification sent to user ${alert.user_id}`);
+      }
+
+      // ✅ Always send email as reliable backup/record
       const emailSent = await sendPriceAlertEmail({
         email: userInfo.email,
         userName: userInfo.displayName,
@@ -79,7 +96,7 @@ export async function checkAndSendPriceAlerts() {
     }
   }
 
-  return { checked: alerts.length, sent };
+  return { checked: alerts.length, sent, pushSent: pushSentCount };
 }
 
 async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {

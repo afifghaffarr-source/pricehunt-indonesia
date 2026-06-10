@@ -1,80 +1,140 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function DELETE() {
+/**
+ * POST /api/push/subscribe
+ * Save push notification subscription to user preferences
+ * 
+ * ✅ SECURITY: Requires authentication
+ * ✅ DATA SAFETY: Merges with existing preferences (doesn't overwrite)
+ */
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+    // Check authentication
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Parse subscription object from request
+    const subscription = await request.json();
+
+    if (!subscription || !subscription.endpoint) {
+      return NextResponse.json(
+        { error: "Invalid subscription object" },
+        { status: 400 }
+      );
+    }
+
+    // Get current user preferences to merge (not overwrite)
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("preferences")
       .eq("id", user.id)
       .single();
 
-    const currentPreferences =
-      profile?.preferences && typeof profile.preferences === "object" && !Array.isArray(profile.preferences)
-        ? profile.preferences
-        : {};
+    const currentPreferences = (profile?.preferences as Record<string, unknown>) || {};
 
-    const { error } = await supabase.from("user_profiles").update({
-      preferences: {
-        ...currentPreferences,
-        push_subscription: null,
-        push_enabled: false,
-      },
-    }).eq("id", user.id);
+    // Merge push subscription with existing preferences
+    const updatedPreferences = {
+      ...currentPreferences,
+      push_enabled: true,
+      push_subscription: subscription,
+    };
 
-    if (error) {
-      return NextResponse.json({ error: "Failed to unsubscribe" }, { status: 500 });
+    // Update user preferences
+    const { error: updateError } = await supabase
+      .from("user_profiles")
+      .update({
+        preferences: updatedPreferences,
+      })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("[Push Subscribe] Database update failed:", updateError);
+      return NextResponse.json(
+        { error: "Failed to save subscription" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Failed to unsubscribe" }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      message: "Push notification berhasil diaktifkan",
+    });
+  } catch (err) {
+    console.error("[Push Subscribe] Error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: Request) {
+/**
+ * DELETE /api/push/subscribe
+ * Remove push notification subscription from user preferences
+ * 
+ * ✅ SECURITY: Requires authentication
+ * ✅ DATA SAFETY: Only removes push fields, keeps other preferences
+ */
+export async function DELETE(request: NextRequest) {
   try {
-    const subscription = await request.json();
-
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+    // Check authentication
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get current preferences
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("preferences")
       .eq("id", user.id)
       .single();
 
-    const currentPreferences =
-      profile?.preferences && typeof profile.preferences === "object" && !Array.isArray(profile.preferences)
-        ? profile.preferences
-        : {};
+    const currentPreferences = (profile?.preferences as Record<string, unknown>) || {};
 
-    const { error } = await supabase.from("user_profiles").update({
-      preferences: {
-        ...currentPreferences,
-        push_subscription: subscription,
-        push_enabled: true,
-      },
-    }).eq("id", user.id);
+    // Remove push subscription but keep other preferences
+    const { push_enabled, push_subscription, ...remainingPreferences } = currentPreferences;
 
-    if (error) {
-      return NextResponse.json({ error: "Failed to subscribe" }, { status: 500 });
+    // Update with push fields removed
+    const { error: updateError } = await supabase
+      .from("user_profiles")
+      .update({
+        preferences: remainingPreferences,
+      })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("[Push Unsubscribe] Database update failed:", updateError);
+      return NextResponse.json(
+        { error: "Failed to remove subscription" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Failed to subscribe" }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      message: "Push notification berhasil dinonaktifkan",
+    });
+  } catch (err) {
+    console.error("[Push Unsubscribe] Error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

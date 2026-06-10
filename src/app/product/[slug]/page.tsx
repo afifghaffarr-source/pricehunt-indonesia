@@ -10,6 +10,7 @@ import { DealScoreBadge } from "@/components/product/DealScoreBadge";
 import { MarketplaceBadge } from "@/components/product/MarketplaceBadge";
 import { WishlistButton } from "@/components/product/WishlistButton";
 import { PriceAlertForm } from "@/components/product/PriceAlertForm";
+import { PushNotificationButton } from "@/components/common/PushNotificationButton";
 import { VexoDealVerdict } from "@/components/ai/VexoDealVerdict";
 import { VexoProductSummary } from "@/components/ai/VexoProductSummary";
 import { VexoImageFallback } from "@/components/common/VexoImageFallback";
@@ -335,6 +336,23 @@ export default async function ProductDetailPage({ params }: PageProps) {
             currentLowestPrice={product.lowestPrice}
             initialAlerts={userAlerts}
           />
+          
+          {/* Push notification prompt for instant alerts */}
+          <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h4 className="font-semibold text-sm text-blue-900 dark:text-blue-100 mb-1.5">
+                  Dapatkan Notifikasi Instan
+                </h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Aktifkan notifikasi push untuk mendapat peringatan langsung saat harga turun ke target Anda.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <PushNotificationButton />
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* 10. PRODUCT SUMMARY - AI-generated insights */}
