@@ -211,7 +211,7 @@ def send_to_ingestion(
     job_name: str,
     offers: Optional[List[Dict[str, Any]]] = None,
     price_snapshots: Optional[List[Dict[str, Any]]] = None,
-    metadata: Optional[Dict[str, Any]]] = None,
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> IngestionResult:
     """
     Convenience function to send data to ingestion API.
