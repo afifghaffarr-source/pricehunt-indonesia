@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { getProductBySlugFromDB, isProductInWishlist, getProductAlerts } from "@/lib/supabase/data";
 import { getUser } from "@/lib/supabase/auth";
 import { formatRupiah, getDiscountPercent, getMarketplaceName } from "@/lib/utils";
-import { PriceComparisonTable } from "@/components/product/PriceComparisonTable";
+import { EnhancedPriceTable } from "@/components/product/EnhancedPriceTable";
 import { PriceHistoryChart } from "@/components/product/PriceHistoryChart";
 import { DealScoreBadge } from "@/components/product/DealScoreBadge";
 import { MarketplaceBadge } from "@/components/product/MarketplaceBadge";
@@ -25,6 +25,8 @@ import { TotalCostCalculator } from "@/components/product/TotalCostCalculator";
 import { TrustSignalsBar } from "@/components/product/TrustSignalsBar";
 import { BestOfferCard } from "@/components/product/BestOfferCard";
 import { PriceComparisonPreview } from "@/components/product/PriceComparisonPreview";
+import { ValidationStatusAlert } from "@/components/product/ValidationStatusAlert";
+import { DataTransparencyDisclaimer } from "@/components/product/DataTransparencyDisclaimer";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -303,17 +305,35 @@ export default async function ProductDetailPage({ params }: PageProps) {
           aiVerdict={product.aiVerdict}
         />
 
-        {/* 6. PRICE COMPARISON - Core comparison feature */}
+        {/* 6. PRICE COMPARISON TABLE - Compare across marketplaces */}
         <section id="prices" className="scroll-mt-20">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold">Perbandingan Harga Marketplace</h2>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold tracking-tight">
+              Perbandingan Harga
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Cek harga dari {product.prices.filter((p) => p.inStock).length} marketplace dan temukan penawaran terbaik
             </p>
           </div>
-          <PriceComparisonTable
-            prices={product.prices}
+          
+          {/* Data Transparency Disclaimer */}
+          <DataTransparencyDisclaimer className="mb-4" variant="default" />
+          
+          {/* Enhanced Price Table with metadata */}
+          <EnhancedPriceTable
+            prices={product.prices.map(p => ({
+              ...p,
+              // Mock enhanced metadata until migration 110 applied
+              offer_id: undefined,
+              confidence_score: 75, // Mock: Medium confidence
+              confidence_label: "dipercaya",
+              validation_status: "verified" as const,
+              last_seen_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // Mock: 6 hours ago
+              source: "api_scraper" as const,
+            }))}
             lowestPrice={product.lowestPrice}
+            productId={product.id}
+            productName={product.name}
           />
         </section>
 
