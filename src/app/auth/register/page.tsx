@@ -18,7 +18,7 @@ export default function RegisterPage() {
               <Tag className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold">
-              Price<span className="text-primary">Hunt</span>
+              Bijak<span className="text-primary">Beli</span>
             </span>
           </Link>
           <h1 className="mt-4 text-2xl font-bold">Buat Akun</h1>

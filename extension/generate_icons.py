@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate PriceHunt Extension Icons
+Generate BijakBeli Extension Icons
 Run: python generate_icons.py
 
 Requirements: pip install pillow
@@ -14,7 +14,7 @@ except ImportError:
     exit(1)
 
 def create_icon(size, filename):
-    """Create a simple PriceHunt icon"""
+    """Create a simple BijakBeli icon"""
     # Create image with gradient-like background
     img = Image.new('RGB', (size, size), color='#2563eb')
     draw = ImageDraw.Draw(img)
@@ -42,7 +42,7 @@ def create_icon(size, filename):
     print(f"✓ Created {filename} ({size}x{size})")
 
 def main():
-    print("Generating PriceHunt extension icons...")
+    print("Generating BijakBeli extension icons...")
     print()
     
     # Generate required sizes

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PriceHunt Indonesia - Browser Collector CLI
+BijakBeli Indonesia - Browser Collector CLI
 Semi-automated browser-based price data collection tool
 """
 
@@ -32,8 +32,8 @@ def get_collector(marketplace: str):
 
 
 def send_to_api(data: dict, client: IngestionClient) -> bool:
-    """Send data to PriceHunt API and handle response"""
-    console.print("\n[cyan]📤 Sending to PriceHunt API...[/cyan]")
+    """Send data to BijakBeli API and handle response"""
+    console.print("\n[cyan]📤 Sending to BijakBeli API...[/cyan]")
     
     response = client.send_offer_snapshot(data)
     
@@ -63,7 +63,7 @@ def send_to_api(data: dict, client: IngestionClient) -> bool:
 @click.pass_context
 def cli(ctx):
     """
-    PriceHunt Browser Collector
+    BijakBeli Browser Collector
     
     Semi-automated tool untuk collect data harga dari marketplace Indonesia
     """
@@ -87,7 +87,7 @@ def cli(ctx):
 @click.command()
 def test():
     """Test API connection"""
-    console.print("[cyan]🔍 Testing PriceHunt API connection...[/cyan]\n")
+    console.print("[cyan]🔍 Testing BijakBeli API connection...[/cyan]\n")
     
     if not validate_config():
         console.print("\n[red]❌ Configuration errors. Check your .env file.[/red]")
@@ -98,7 +98,7 @@ def test():
     if client.test_connection():
         console.print("\n[green]✅ All good! Ready to collect data.[/green]")
     else:
-        console.print("\n[red]❌ Cannot connect to API. Make sure PriceHunt is running.[/red]")
+        console.print("\n[red]❌ Cannot connect to API. Make sure BijakBeli is running.[/red]")
         sys.exit(1)
 
 

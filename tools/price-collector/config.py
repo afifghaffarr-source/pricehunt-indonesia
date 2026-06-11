@@ -1,5 +1,5 @@
 """
-Configuration for PriceHunt Browser Collector
+Configuration for BijakBeli Browser Collector
 """
 
 import os
@@ -15,7 +15,7 @@ OUTPUT_DIR = PROJECT_ROOT / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # API Configuration
-API_URL = os.getenv("PRICEHUNT_API_URL", "http://localhost:3000")
+API_URL = os.getenv("BIJAKBELI_API_URL", "http://localhost:3000")
 INGESTION_SECRET = os.getenv("INGESTION_SECRET", "")
 INGESTION_ENDPOINT = f"{API_URL}/api/ingestion/offer-snapshot"
 
@@ -62,7 +62,7 @@ def validate_config():
     errors = []
     
     if not API_URL:
-        errors.append("❌ PRICEHUNT_API_URL not set")
+        errors.append("❌ BIJAKBELI_API_URL not set")
     
     if not INGESTION_SECRET:
         errors.append("⚠️  INGESTION_SECRET not set (required for authentication)")

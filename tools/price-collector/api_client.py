@@ -1,5 +1,5 @@
 """
-API Client for PriceHunt Ingestion
+API Client for BijakBeli Ingestion
 """
 
 import requests
@@ -12,7 +12,7 @@ console = Console()
 
 
 class IngestionClient:
-    """Client for sending data to PriceHunt ingestion API"""
+    """Client for sending data to BijakBeli ingestion API"""
     
     def __init__(self):
         self.endpoint = INGESTION_ENDPOINT
@@ -74,7 +74,7 @@ class IngestionClient:
         except requests.exceptions.ConnectionError:
             return {
                 "success": False,
-                "message": f"Connection error. Is PriceHunt running at {self.endpoint}?",
+                "message": f"Connection error. Is BijakBeli running at {self.endpoint}?",
                 "code": "CONNECTION_ERROR",
             }
         except Exception as e:

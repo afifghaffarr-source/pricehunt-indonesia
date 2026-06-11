@@ -201,7 +201,7 @@ class BaseCollector(ABC):
     
     def confirm_send(self) -> bool:
         """Ask user to confirm sending data"""
-        response = console.input("\n[bold yellow]Send this data to PriceHunt? (y/n): [/bold yellow]")
+        response = console.input("\n[bold yellow]Send this data to BijakBeli? (y/n): [/bold yellow]")
         return response.strip().lower() in ['y', 'yes']
     
     def normalize_extracted_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:

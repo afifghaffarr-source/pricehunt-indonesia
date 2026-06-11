@@ -64,7 +64,7 @@ Run daily at 2 AM to collect data:
 ## Configuration
 
 `.env` file (already configured):
-- `PRICEHUNT_API_URL`: Production URL
+- `BIJAKBELI_API_URL`: Production URL
 - `INGESTION_SECRET`: Matches Vercel environment variable
 - `DEFAULT_MARKETPLACE`: tokopedia
 - `COLLECTOR_HEADLESS`: false (shows browser)

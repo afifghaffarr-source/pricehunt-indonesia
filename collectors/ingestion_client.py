@@ -1,5 +1,5 @@
 """
-Ingestion API client for sending scraped data to PriceHunt.
+Ingestion API client for sending scraped data to BijakBeli.
 Handles authentication, retries, and error handling.
 """
 
@@ -35,7 +35,7 @@ class IngestionResult:
 
 
 class IngestionClient:
-    """Client for PriceHunt ingestion API."""
+    """Client for BijakBeli ingestion API."""
     
     def __init__(self):
         self.config = get_config()
@@ -44,7 +44,7 @@ class IngestionClient:
         self.session.headers.update({
             "Authorization": f"Bearer {self.config.ingestion_secret}",
             "Content-Type": "application/json",
-            "User-Agent": f"PriceHunt-Collector/{self.config.collector_name}",
+            "User-Agent": f"BijakBeli-Collector/{self.config.collector_name}",
         })
     
     def ingest(

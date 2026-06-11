@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PriceHunt Automated Refresh Cron Job
+BijakBeli Automated Refresh Cron Job
 
 Runs periodically to:
 1. Calculate refresh priorities for all crawl targets
@@ -12,7 +12,7 @@ Usage:
   python refresh_cron.py [--limit N] [--dry-run]
 
 Schedule with crontab:
-  */30 * * * * cd ~/projects/pricehunt-indonesia && python tools/refresh_cron.py >> logs/refresh_cron.log 2>&1
+  */30 * * * * cd ~/projects/bijakbeli-app && python tools/refresh_cron.py >> logs/refresh_cron.log 2>&1
 """
 
 import argparse
@@ -31,7 +31,7 @@ from rich.table import Table
 console = Console()
 
 # Configuration
-API_BASE_URL = os.getenv("PRICEHUNT_API_URL", "http://localhost:3000")
+API_BASE_URL = os.getenv("BIJAKBELI_API_URL", "http://localhost:3000")
 COLLECTOR_PATH = Path(__file__).parent / "price-collector" / "collector.py"
 MAX_CONCURRENT_CRAWLS = int(os.getenv("MAX_CONCURRENT_CRAWLS", "5"))
 
@@ -133,13 +133,13 @@ def display_queue_summary(queue: List[Dict]):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PriceHunt Automated Refresh")
+    parser = argparse.ArgumentParser(description="BijakBeli Automated Refresh")
     parser.add_argument("--limit", type=int, default=20, help="Max targets to process")
     parser.add_argument("--dry-run", action="store_true", help="Don't actually crawl")
     parser.add_argument("--recalculate", action="store_true", help="Recalculate priorities first")
     args = parser.parse_args()
     
-    console.print(f"\n[bold blue]PriceHunt Automated Refresh[/bold blue]")
+    console.print(f"\n[bold blue]BijakBeli Automated Refresh[/bold blue]")
     console.print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
     
     # Step 1: Optionally recalculate priorities

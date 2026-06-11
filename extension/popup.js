@@ -6,9 +6,9 @@ function formatRupiah(amount) {
   }).format(amount);
 }
 
-const PRICEHUNT_API = "https://bijakbeli-app.vercel.app/api/search";
-const BUY_OR_WAIT_API = "https://bijakbeli-app.vercel.app/api/recommendation/buy-or-wait";
-const FAKE_DISCOUNT_API = "https://bijakbeli-app.vercel.app/api/recommendation/fake-discount";
+const BIJAKBELI_API = "https://www.bijakbeli.app/api/search";
+const BUY_OR_WAIT_API = "https://www.bijakbeli.app/api/recommendation/buy-or-wait";
+const FAKE_DISCOUNT_API = "https://www.bijakbeli.app/api/recommendation/fake-discount";
 
 /**
  * Safely render results using DOM manipulation instead of innerHTML
@@ -42,7 +42,7 @@ function renderMessage(title, message, productName) {
 }
 
 async function fetchBijakBeliResults(productName) {
-  const response = await fetch(`${PRICEHUNT_API}?q=${encodeURIComponent(productName)}&vexo=false&limit=5`);
+  const response = await fetch(`${BIJAKBELI_API}?q=${encodeURIComponent(productName)}&vexo=false&limit=5`);
   if (!response.ok) {
     throw new Error("API BijakBeli belum tersedia");
   }
