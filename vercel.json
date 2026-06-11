@@ -4,21 +4,5 @@
   "buildCommand": "bun run build",
   "installCommand": "bun install",
   "regions": ["sin1"],
-  "crons": [
-    {
-      "path": "/api/cron/alerts",
-      "schedule": "0 */2 * * *",
-      "description": "Check price alerts every 2 hours"
-    },
-    {
-      "path": "/api/cron/prices",
-      "schedule": "0 */6 * * *",
-      "description": "Update product prices every 6 hours"
-    },
-    {
-      "path": "/api/cron/digest",
-      "schedule": "0 9 * * 1",
-      "description": "Send weekly email digest every Monday 9 AM"
-    }
-  ]
+  "crons": []
 }
