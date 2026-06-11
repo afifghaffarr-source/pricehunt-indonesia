@@ -13,7 +13,7 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bijakbeli.id";
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.bijakbeli.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
