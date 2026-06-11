@@ -1,13 +1,14 @@
 """
-Tokopedia Marketplace Collector
+Tokopedia Marketplace Collector (Enhanced with Anti-Detection)
 
-Scrapes product data from Tokopedia using Playwright.
+Scrapes product data from Tokopedia using Playwright with stealth mode.
 Sends data to PriceHunt ingestion API.
 """
 
 import asyncio
 import re
 import logging
+import random
 from typing import Optional, Dict, Any
 from playwright.async_api import async_playwright, Page, Browser
 from base_collector import BaseCollector
@@ -16,11 +17,18 @@ logger = logging.getLogger(__name__)
 
 
 class TokopediaCollector(BaseCollector):
-    """Tokopedia marketplace collector using Playwright."""
+    """Tokopedia marketplace collector using Playwright with anti-detection."""
     
     def __init__(self):
         super().__init__(marketplace_name="tokopedia")
         self.base_url = "https://www.tokopedia.com"
+        
+        # Realistic user agents
+        self.user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        ]
         
     async def scrape_product(self, product_url: str) -> Optional[Dict[str, Any]]:
         """
@@ -33,13 +41,57 @@ class TokopediaCollector(BaseCollector):
             Dict with product data or None if failed
         """
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
+            # Launch with anti-detection settings
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-dev-shm-usage',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-web-security',
+                ]
+            )
+            
+            # Create context with realistic settings
+            context = await browser.new_context(
+                user_agent=random.choice(self.user_agents),
+                viewport={'width': 1920, 'height': 1080},
+                locale='id-ID',
+                timezone_id='Asia/Jakarta',
+                extra_http_headers={
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                    'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1',
+                    'Cache-Control': 'max-age=0',
+                }
+            )
+            
+            page = await context.new_page()
+            
+            # Manual stealth: Override navigator.webdriver
+            await page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => false,
+                });
+            """)
             
             try:
                 self.logger.info(f"Scraping: {product_url}")
+                
+                # Random delay before navigation (human-like)
+                await asyncio.sleep(random.uniform(1.0, 3.0))
+                
                 await page.goto(product_url, wait_until="domcontentloaded", timeout=30000)
-                await page.wait_for_timeout(2000)  # Wait for JS rendering
+                
+                # Wait with random delay (human-like)
+                await page.wait_for_timeout(random.randint(2000, 4000))
                 
                 # Extract price
                 price = await self._extract_price(page)
