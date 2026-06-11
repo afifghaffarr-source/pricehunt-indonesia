@@ -1,16 +1,37 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { Bell, Plus, Trash2, Loader2 } from "lucide-react";
-import { createPriceAlert, deletePriceAlert } from "@/app/actions/data";
-import { Input } from "@/components/ui/input";
-import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { formatRupiah, cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+import { useState, useTransition } from 'react';
+import { formatRupiah } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+  createPriceAlert,
+  updatePriceAlert,
+  togglePriceAlert,
+  deletePriceAlert,
+} from '@/app/actions/alerts';
+import { Bell, BellOff, Edit2, Trash2, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-interface AlertItem {
+interface PriceAlert {
   id: string;
   target_price: number;
   is_active: boolean;
@@ -19,7 +40,7 @@ interface AlertItem {
 interface PriceAlertFormProps {
   productId: string;
   currentLowestPrice: number;
-  initialAlerts: AlertItem[];
+  initialAlerts: PriceAlert[];
 }
 
 export function PriceAlertForm({
@@ -27,155 +48,302 @@ export function PriceAlertForm({
   currentLowestPrice,
   initialAlerts,
 }: PriceAlertFormProps) {
-  const [alerts, setAlerts] = useState(initialAlerts);
-  const [targetPrice, setTargetPrice] = useState("");
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
   const router = useRouter();
+  const [alerts, setAlerts] = useState<PriceAlert[]>(initialAlerts);
+  const [targetPrice, setTargetPrice] = useState<string>('');
+  const [editingAlert, setEditingAlert] = useState<PriceAlert | null>(null);
+  const [editPrice, setEditPrice] = useState<string>('');
+  const [isPending, startTransition] = useTransition();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const handleCreate = () => {
-    setError(null);
-    setMessage(null);
-    const price = parseInt(targetPrice.replace(/\D/g, ""), 10);
+  // Suggested price: 10% below current lowest price
+  const suggestedPrice = Math.floor(currentLowestPrice * 0.9);
+
+  const handleCreateAlert = () => {
+    const price = parseInt(targetPrice.replace(/\D/g, ''));
+    
     if (!price || price <= 0) {
-      setError("Masukkan harga target yang valid.");
+      alert('Masukkan target harga yang valid');
+      return;
+    }
+
+    if (price >= currentLowestPrice) {
+      alert('Target harga harus lebih rendah dari harga saat ini');
       return;
     }
 
     startTransition(async () => {
       const result = await createPriceAlert(productId, price);
-      if (result.error) {
-        if (result.error.includes("login")) {
-          router.push("/auth/login");
-          return;
-        }
-        setError(result.error);
-      } else if (result.success && result.alert) {
-        // ✅ Use real database ID from server response
-        setAlerts((prev) => [
-          ...prev,
-          {
-            id: result.alert.id,
-            target_price: result.alert.target_price,
-            is_active: result.alert.is_active,
-          },
-        ]);
-        setTargetPrice("");
-        setShowForm(false);
-        setMessage("Alert berhasil dibuat. Kami akan memberi tahu saat harga mencapai target.");
+      
+      if (result.success && result.data) {
+        setAlerts([...alerts, result.data]);
+        setTargetPrice('');
+        setIsDialogOpen(false);
+        router.refresh();
+      } else {
+        alert(result.error || 'Gagal membuat price alert');
       }
     });
   };
 
-  const handleDelete = (alertId: string) => {
+  const handleUpdateAlert = () => {
+    if (!editingAlert) return;
+
+    const price = parseInt(editPrice.replace(/\D/g, ''));
+    
+    if (!price || price <= 0) {
+      alert('Masukkan target harga yang valid');
+      return;
+    }
+
+    if (price >= currentLowestPrice) {
+      alert('Target harga harus lebih rendah dari harga saat ini');
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await updatePriceAlert(editingAlert.id, price);
+      
+      if (result.success && result.data) {
+        setAlerts(alerts.map(a => a.id === editingAlert.id ? result.data : a));
+        setEditingAlert(null);
+        setEditPrice('');
+        setIsEditDialogOpen(false);
+        router.refresh();
+      } else {
+        alert(result.error || 'Gagal update price alert');
+      }
+    });
+  };
+
+  const handleToggleAlert = (alertId: string, currentStatus: boolean) => {
+    startTransition(async () => {
+      const result = await togglePriceAlert(alertId, !currentStatus);
+      
+      if (result.success && result.data) {
+        setAlerts(alerts.map(a => a.id === alertId ? result.data : a));
+        router.refresh();
+      } else {
+        alert(result.error || 'Gagal mengubah status alert');
+      }
+    });
+  };
+
+  const handleDeleteAlert = (alertId: string) => {
+    if (!confirm('Yakin ingin menghapus price alert ini?')) return;
+
     startTransition(async () => {
       const result = await deletePriceAlert(alertId);
+      
       if (result.success) {
-        setAlerts((prev) => prev.filter((a) => a.id !== alertId));
-        setMessage("Alert berhasil dihapus.");
-      } else if (result.error) {
-        setError(result.error);
+        setAlerts(alerts.filter(a => a.id !== alertId));
+        router.refresh();
+      } else {
+        alert(result.error || 'Gagal menghapus price alert');
       }
     });
   };
 
-  const suggestedPrice = Math.round(currentLowestPrice * 0.9);
+  const openEditDialog = (alert: PriceAlert) => {
+    setEditingAlert(alert);
+    setEditPrice(alert.target_price.toString());
+    setIsEditDialogOpen(true);
+  };
+
+  const formatInputPrice = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return '';
+    return formatRupiah(parseInt(numbers));
+  };
+
+  const handlePriceInput = (value: string, setter: (val: string) => void) => {
+    const numbers = value.replace(/\D/g, '');
+    setter(numbers);
+  };
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Bell className="h-4 w-4" />
-          Pantau Harga
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          Dapat notifikasi saat harga turun di bawah target Anda.
-        </p>
-
-        {message && (
-          <div className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/10 px-3 py-2 text-xs text-green-700 dark:text-green-400">
-            {message}
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Pantau Harga
+            </CardTitle>
+            <CardDescription>
+              Dapatkan notifikasi saat harga turun ke target Anda
+            </CardDescription>
           </div>
-        )}
-
-        {alerts.length > 0 ? (
-          <div className="space-y-2">
-            {alerts.map((alert) => (
-              <div
-                key={alert.id}
-                className="flex items-center justify-between rounded-lg border p-2"
-              >
-                <div className="flex items-center gap-2">
-                  <Badge variant={alert.is_active ? "default" : "secondary"}>
-                    {alert.is_active ? "Aktif" : "Nonaktif"}
-                  </Badge>
-                  <span className="text-sm font-medium">
-                    {formatRupiah(alert.target_price)}
-                  </span>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" disabled={isPending}>
+                <Plus className="mr-2 h-4 w-4" />
+                Buat Alert
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Buat Price Alert</DialogTitle>
+                <DialogDescription>
+                  Atur target harga dan kami akan memberi tahu Anda ketika harga turun
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="target-price">Target Harga</Label>
+                  <Input
+                    id="target-price"
+                    type="text"
+                    placeholder={formatRupiah(suggestedPrice)}
+                    value={formatInputPrice(targetPrice)}
+                    onChange={(e) => handlePriceInput(e.target.value, setTargetPrice)}
+                    disabled={isPending}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Harga saat ini: {formatRupiah(currentLowestPrice)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Saran: {formatRupiah(suggestedPrice)} (hemat 10%)
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(alert.id)}
-                  disabled={isPending}
-                  aria-label={`Hapus alert ${formatRupiah(alert.target_price)}`}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-4 text-sm text-muted-foreground">
-            Belum ada pantauan harga. Tambahkan target agar PriceHunt memberi tahu saat harga turun.
-          </div>
-        )}
-
-        {showForm ? (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder={`Contoh: ${suggestedPrice.toLocaleString("id-ID")}`}
-                value={targetPrice}
-                onChange={(e) => setTargetPrice(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              />
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={isPending}
-                className={buttonVariants({ size: "default" })}
-              >
-                {isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Simpan"
-                )}
-              </button>
-            </div>
-            {error && <p className="text-xs text-destructive">{error}</p>}
-            <p className="text-xs text-muted-foreground">
-              Harga terendah saat ini: {formatRupiah(currentLowestPrice)}
+              
+              <DialogFooter>
+                <Button
+                  onClick={handleCreateAlert}
+                  disabled={isPending || !targetPrice}
+                >
+                  {isPending ? 'Membuat...' : 'Buat Alert'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        {alerts.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-8 text-center">
+            <Bell className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <h3 className="mt-4 text-sm font-semibold">Belum ada price alert</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Buat alert pertama Anda untuk mulai memantau harga produk ini
             </p>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "w-full"
-            )}
-          >
-            <Plus className="mr-2 h-3 w-3" />
-            Tambah Alert
-          </button>
+          <div className="space-y-3">
+            {alerts.map((alert) => (
+              <div
+                key={alert.id}
+                className="flex items-center justify-between rounded-lg border bg-muted/30 p-4"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold">
+                      {formatRupiah(alert.target_price)}
+                    </p>
+                    <Badge variant={alert.is_active ? 'default' : 'secondary'}>
+                      {alert.is_active ? 'Aktif' : 'Nonaktif'}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {alert.target_price < currentLowestPrice
+                      ? `Hemat ${formatRupiah(currentLowestPrice - alert.target_price)}`
+                      : 'Target tercapai - harga sudah turun!'}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleToggleAlert(alert.id, alert.is_active)}
+                    disabled={isPending}
+                    title={alert.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                  >
+                    {alert.is_active ? (
+                      <BellOff className="h-4 w-4" />
+                    ) : (
+                      <Bell className="h-4 w-4" />
+                    )}
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => openEditDialog(alert)}
+                    disabled={isPending}
+                    title="Edit target harga"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDeleteAlert(alert.id)}
+                    disabled={isPending}
+                    title="Hapus alert"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Target Harga</DialogTitle>
+              <DialogDescription>
+                Ubah target harga untuk alert ini
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Target Harga Baru</Label>
+                <Input
+                  id="edit-price"
+                  type="text"
+                  placeholder={formatRupiah(suggestedPrice)}
+                  value={formatInputPrice(editPrice)}
+                  onChange={(e) => handlePriceInput(e.target.value, setEditPrice)}
+                  disabled={isPending}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Harga saat ini: {formatRupiah(currentLowestPrice)}
+                </p>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingAlert(null);
+                  setEditPrice('');
+                }}
+                disabled={isPending}
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handleUpdateAlert}
+                disabled={isPending || !editPrice}
+              >
+                {isPending ? 'Menyimpan...' : 'Simpan'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
