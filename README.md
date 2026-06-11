@@ -4,7 +4,7 @@
 
 Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, Blibli, TikTok Shop) dalam satu tempat. Tahu kapan waktu terbaik untuk membeli dengan data, bukan hype.
 
-🎯 **Production-Ready MVP** | ✅ 59 Tests Passing | 🚀 TypeScript Zero Errors
+🎯 **Production-Ready MVP** | ✅ 211 Tests Passing | 🚀 TypeScript Zero Errors | 🤖 Python Browser Collector
 
 ## ✨ Features
 
@@ -18,12 +18,14 @@ Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, B
 ### Core Features
 - 🔍 **Smart Search** - Natural language search dengan AI
 - 📊 **Price Comparison** - Bandingkan harga real-time dari 6 marketplace
-- 📈 **Price History** - Grafik tren harga 30-90 hari dengan Recharts visualization (NEW!)
+- 📈 **Price History** - Grafik tren harga 30-90 hari dengan Recharts visualization
 - 🎯 **Price Alerts** - Notifikasi otomatis saat harga turun
 - ⭐ **Wishlist** - Simpan produk favorit
 - 🤖 **AI Advisor** - Rekomendasi beli/tunggu berbasis AI
 - 🔮 **Price Prediction** - Prediksi harga 7-28 hari ke depan
 - 📱 **PWA Support** - Install sebagai app di mobile/desktop
+- 🛠️ **Semi-Automated Data Collection** - Python browser collector (NEW!)
+- 🔐 **Data Validation & Confidence Scoring** - Trust-based price data (NEW!)
 
 ### Advanced Features
 - 🎮 **Gamification** - Badges, levels, points system
@@ -158,11 +160,22 @@ bun run test
 pricehunt-indonesia/
 ├── .github/
 │   └── workflows/        # CI/CD workflows
+├── docs/                 # Project documentation (NEW!)
+│   ├── PHASE_1_COMPLETE.md
+│   ├── PHASE_2_COMPLETE.md
+│   └── PROGRESS.md
 ├── extension/            # Chrome browser extension
 │   ├── manifest.json
 │   ├── popup.html
 │   ├── popup.js
 │   └── content.js
+├── tools/                # Development tools (NEW!)
+│   └── price-collector/  # Python browser collector
+│       ├── collector.py  # Main CLI (3 modes: manual, URL, keyword)
+│       ├── marketplaces/ # Marketplace-specific parsers
+│       ├── api_client.py
+│       ├── normalizer.py
+│       └── README.md
 ├── public/
 │   ├── icons/           # PWA icons
 │   ├── manifest.json    # PWA manifest
@@ -172,6 +185,7 @@ pricehunt-indonesia/
 │   │   ├── actions/     # Server actions (auth, data, admin, settings)
 │   │   ├── admin/       # Admin dashboard & product management
 │   │   ├── api/         # REST API routes (31+ endpoints)
+│   │   │   └── ingestion/ # Data ingestion endpoints (NEW!)
 │   │   ├── auth/        # Login, register, forgot password, reset password
 │   │   ├── compare/     # Product comparison page
 │   │   ├── dashboard/   # User dashboard
@@ -279,6 +293,67 @@ pricehunt-indonesia/
 | /api/health | GET | System health check |
 | /api/cron/prices | GET | Update all prices (runs setiap 12 jam) |
 | /api/cron/digest | GET | Send weekly email digest (Minggu 8am) |
+| /api/ingestion/offer-snapshot | POST | Ingest single offer from browser collector (NEW!) |
+
+## 🤖 Python Browser Collector
+
+Semi-automated tool untuk collect data harga secara manual dari browser real.
+
+**Philosophy:** Bukan scraper massal - tool ini membantu admin collect data dengan cara yang respectful dan legal.
+
+### Features
+- ✅ **3 Collection Modes**: Manual (browse freely), URL (direct), Keyword (search & select)
+- ✅ **Tokopedia Integration**: Apollo GraphQL cache extraction (proven working)
+- ✅ **Generic Parser**: Fallback untuk marketplace lain (OG tags, JSON-LD, selectors)
+- ✅ **Rich CLI**: Preview data, confirmation, error handling
+- ✅ **Safety**: Rate limiting, no captcha bypass, no PII collection
+- ✅ **Data Normalization**: Client-side + server-side validation
+- ✅ **Confidence Scoring**: Automatic trust scoring untuk setiap data
+
+### Installation
+
+```bash
+cd tools/price-collector
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Install browser
+playwright install chromium
+
+# Configure
+cp .env.example .env
+# Edit .env dengan PRICEHUNT_API_URL dan INGESTION_SECRET
+```
+
+### Usage
+
+**Test Connection:**
+```bash
+python collector.py test
+```
+
+**Manual Mode** (User browses, tool extracts):
+```bash
+python collector.py manual
+# Browser opens → Navigate to product → Press Enter → Confirm → Send
+```
+
+**URL Mode** (Direct product URL):
+```bash
+python collector.py url "https://www.tokopedia.com/product-url"
+```
+
+**Keyword Mode** (Search & select):
+```bash
+python collector.py keyword "iphone 15" --marketplace tokopedia --limit 10
+```
+
+**Full Documentation:** See `tools/price-collector/README.md`
 
 ## 🔧 Available Scripts
 
