@@ -6,7 +6,7 @@ import { Trophy, Medal, Award } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Leaderboard",
-  description: "Lihat peringkat pengguna PriceHunt berdasarkan poin aktivitas.",
+  description: "Lihat peringkat pengguna BijakBeli berdasarkan poin aktivitas.",
 };
 
 export const revalidate = 60;
@@ -30,7 +30,7 @@ export default async function LeaderboardPage() {
       const points = wishlists * 10 + alerts * 15 + searches * 5 + Math.min(loginStreak, 30) * 10 + comparisons * 20;
 
       let title = "Pemula";
-      if (points >= 3000) title = "Legend PriceHunt";
+      if (points >= 3000) title = "Legend BijakBeli";
       else if (points >= 1500) title = "Raja Harga";
       else if (points >= 700) title = "Master Perbandingan";
       else if (points >= 300) title = "Ahli Harga";
@@ -54,7 +54,7 @@ export default async function LeaderboardPage() {
       <div className="mb-8 text-center">
         <Trophy className="mx-auto mb-3 h-10 w-10 text-yellow-500" />
         <h1 className="text-2xl font-bold">Leaderboard</h1>
-        <p className="text-muted-foreground">Peringkat pengguna PriceHunt berdasarkan poin aktivitas.</p>
+        <p className="text-muted-foreground">Peringkat pengguna BijakBeli berdasarkan poin aktivitas.</p>
       </div>
 
       {leaderboard.length > 0 ? (

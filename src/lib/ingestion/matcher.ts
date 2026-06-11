@@ -1,5 +1,5 @@
 /**
- * Product Matcher for PriceHunt Indonesia
+ * Product Matcher for BijakBeli.app
  * 
  * Prevents wrong product/variant merging by:
  * - Detecting negative keywords (bekas, replika, KW, etc.)

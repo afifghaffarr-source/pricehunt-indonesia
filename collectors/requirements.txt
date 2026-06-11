@@ -1,4 +1,4 @@
-# PriceHunt Indonesia - Price Collectors Dependencies
+# BijakBeli.app - Price Collectors Dependencies
 
 # Browser Automation
 playwright==1.40.0

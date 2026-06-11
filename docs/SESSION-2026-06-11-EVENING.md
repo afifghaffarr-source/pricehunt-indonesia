@@ -1,4 +1,4 @@
-# PriceHunt Development Session - 2026-06-11 Evening
+# BijakBeli Development Session - 2026-06-11 Evening
 
 **Duration:** 107 minutes (1h 47m)  
 **Focus:** Phase 5 - Sample Data + Automation Setup  
@@ -65,7 +65,7 @@
 
 **Hermes Cron Job Created:**
 - ✅ Job ID: `560a516e2f72`
-- ✅ Name: "PriceHunt Collector Health Check"
+- ✅ Name: "BijakBeli Collector Health Check"
 - ✅ Schedule: Daily at 2:00 AM WIB
 - ✅ Next run: 2026-06-12T02:00:00+08:00
 - ✅ Delivers to: Telegram (this chat)
@@ -174,7 +174,7 @@ E-commerce sites have sophisticated bot detection:
 **Option A: Laptop/Desktop Collection (BEST)**
 ```bash
 # From laptop with display and residential IP
-cd ~/projects/pricehunt-indonesia/tools/price-collector
+cd ~/projects/bijakbeli-app/tools/price-collector
 source venv/bin/activate
 python collector.py manual --marketplace shopee
 # Browse to products, extract, sends to production API

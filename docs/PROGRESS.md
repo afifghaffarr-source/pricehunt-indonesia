@@ -1,7 +1,7 @@
-# PriceHunt Indonesia - Progress Tracker
+# BijakBeli.app - Progress Tracker
 
 ## 🎯 Project Goal
-Build realistic data collection system untuk PriceHunt Indonesia MVP - semi-automated browser collector dengan database pipeline yang transparan ke user.
+Build realistic data collection system untuk BijakBeli.app MVP - semi-automated browser collector dengan database pipeline yang transparan ke user.
 
 ---
 

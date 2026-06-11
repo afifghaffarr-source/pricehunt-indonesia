@@ -13,16 +13,16 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt.id";
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bijakbeli.id";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: "PriceHunt Indonesia — Bandingkan Harga Marketplace",
-    template: "%s | PriceHunt Indonesia",
+    default: "BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat",
+    template: "%s | BijakBeli.app",
   },
   description:
-    "Bandingkan harga produk dari Tokopedia, Shopee, Bukalapak, Lazada, Blibli, dan TikTok Shop dalam satu tempat. Temukan harga terbaik dan hemat uang!",
+    "Beli yang Tepat, di Waktu yang Tepat. Bandingkan harga dari Tokopedia, Shopee, Bukalapak, Lazada, Blibli, dan TikTok Shop. Deteksi diskon palsu, rekomendasi kapan beli, hemat uang dengan cerdas!",
   keywords: [
     "perbandingan harga",
     "marketplace indonesia",
@@ -35,21 +35,21 @@ export const metadata: Metadata = {
     "harga termurah",
     "bandingkan harga",
   ],
-  authors: [{ name: "PriceHunt Indonesia" }],
+  authors: [{ name: "BijakBeli.app" }],
   openGraph: {
     type: "website",
     locale: "id_ID",
-    siteName: "PriceHunt Indonesia",
-    title: "PriceHunt Indonesia — Bandingkan Harga Marketplace",
+    siteName: "BijakBeli.app",
+    title: "BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat",
     description:
-      "Bandingkan harga dari 6 marketplace Indonesia dalam satu tempat. Temukan harga terbaik!",
+      "Beli yang Tepat, di Waktu yang Tepat. Bandingkan harga dari 6 marketplace Indonesia, deteksi diskon palsu, rekomendasi kapan beli!",
     url: baseUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "PriceHunt Indonesia — Bandingkan Harga Marketplace",
+    title: "BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat",
     description:
-      "Bandingkan harga dari 6 marketplace Indonesia dalam satu tempat.",
+      "Beli yang Tepat, di Waktu yang Tepat. Deteksi diskon palsu, rekomendasi kapan beli, hemat cerdas!",
   },
   robots: {
     index: true,

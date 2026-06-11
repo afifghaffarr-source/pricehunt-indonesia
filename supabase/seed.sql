@@ -1,5 +1,5 @@
 -- =============================================
--- PriceHunt Indonesia — Seed Data
+-- BijakBeli.app — Seed Data
 -- =============================================
 -- Jalankan SETELAH schema migration.
 -- Paste di Supabase SQL Editor > New Query > Run.

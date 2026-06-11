@@ -16,7 +16,7 @@ export function ExportWishlistButton() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `pricehunt-wishlist-${new Date().toISOString().split('T')[0]}.csv`
+        a.download = `bijakbeli-wishlist-${new Date().toISOString().split('T')[0]}.csv`
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)

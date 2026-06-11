@@ -1,4 +1,4 @@
-# 🎯 PriceHunt Improvements Summary
+# 🎯 BijakBeli Improvements Summary
 
 **Date:** 2026-06-11  
 **Status:** ✅ Implementation Complete
@@ -7,7 +7,7 @@
 
 ## 📋 Overview
 
-Research dan implementasi improvements untuk PriceHunt Indonesia berdasarkan best practices dari GitHub repos dan user experience patterns.
+Research dan implementasi improvements untuk BijakBeli.app berdasarkan best practices dari GitHub repos dan user experience patterns.
 
 ## ✅ Completed Implementations
 
@@ -57,8 +57,8 @@ import { PriceHistoryChart } from '@/components/product/price-history-chart';
 
 **A. Natural Language First**
 ```
-User: "cek status pricehunt"
-Kiro: 📊 Checking PriceHunt...
+User: "cek status bijakbeli"
+Kiro: 📊 Checking BijakBeli...
       ✅ All systems operational
       [Details] [Refresh] [Menu]
 ```
@@ -134,7 +134,7 @@ ph help      # Command help
 
 **Usage via Telegram:**
 ```
-User: "cek status pricehunt"
+User: "cek status bijakbeli"
 Kiro: [runs ph status automatically]
 ```
 
@@ -173,7 +173,7 @@ Kiro: [runs ph status automatically]
 
 **Recommendation:** 
 ```bash
-cd ~/projects/pricehunt-indonesia
+cd ~/projects/bijakbeli-app
 npm audit fix
 # Or for breaking changes: npm audit fix --force
 ```
@@ -227,7 +227,7 @@ npm audit fix
 
 ### Via Terminal (SSH):
 ```bash
-ph status        # Check PriceHunt status
+ph status        # Check BijakBeli status
 ph health        # Full health check
 ph test          # Run tests
 ph menu          # Show Telegram guide
@@ -236,18 +236,18 @@ ph menu          # Show Telegram guide
 ### Via Telegram (Chat):
 ```
 Natural language:
-"cek status pricehunt"
+"cek status bijakbeli"
 "jalankan test"
 "ada error ga?"
 
 Or voice message:
-[hold mic] "cek status pricehunt"
+[hold mic] "cek status bijakbeli"
 
 Or buttons:
-/menu → [PriceHunt] → [Status]
+/menu → [BijakBeli] → [Status]
 ```
 
-### In PriceHunt Code:
+### In BijakBeli Code:
 ```tsx
 // New component available:
 import { PriceHistoryChart } from '@/components/product/price-history-chart';
@@ -274,10 +274,10 @@ import { PriceHistoryChart } from '@/components/product/price-history-chart';
 
 3. **Skills:**
    - `telegram-ux-simple` - Response patterns
-   - Enhanced `pricehunt-development` - Updated conventions
+   - Enhanced `bijakbeli-development` - Updated conventions
 
 4. **Scripts:**
-   - `ph.sh` - PriceHunt quick commands
+   - `ph.sh` - BijakBeli quick commands
    - `ph-agent.sh` - Agent delegation helper
 
 ---
@@ -288,7 +288,7 @@ import { PriceHistoryChart } from '@/components/product/price-history-chart';
 
 1. **Security Fix**
    ```bash
-   cd ~/projects/pricehunt-indonesia
+   cd ~/projects/bijakbeli-app
    npm audit fix
    ```
 
@@ -343,7 +343,7 @@ import { PriceHistoryChart } from '@/components/product/price-history-chart';
 - ✅ Voice message capability
 - ✅ Simple shortcuts
 
-### For PriceHunt:
+### For BijakBeli:
 - ✅ Better UX (price charts)
 - ✅ Production-ready components
 - ✅ Improved maintainability
@@ -376,7 +376,7 @@ import { PriceHistoryChart } from '@/components/product/price-history-chart';
 - Simple command shortcuts
 
 **Scripts Added:**
-- `ph` command for PriceHunt operations
+- `ph` command for BijakBeli operations
 - Telegram menu guide
 
 ---
@@ -393,14 +393,14 @@ ph menu
 
 **Telegram:**
 ```
-"cek status pricehunt"
+"cek status bijakbeli"
 "show me the menu"
 [or send voice message]
 ```
 
 **Code:**
 ```tsx
-// In any PriceHunt page:
+// In any BijakBeli page:
 <PriceHistoryChart data={prices} />
 ```
 

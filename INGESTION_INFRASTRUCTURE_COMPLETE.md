@@ -26,7 +26,7 @@
 
 **Usage:**
 ```bash
-curl -X POST https://pricehunt-indonesia.vercel.app/api/ingestion \
+curl -X POST https://bijakbeli-app.vercel.app/api/ingestion \
   -H "Authorization: Bearer your-ingestion-secret" \
   -H "Content-Type: application/json" \
   -d '{
@@ -152,7 +152,7 @@ curl -X POST https://pricehunt-indonesia.vercel.app/api/ingestion \
 
 ### 1. Configure Environment
 
-**PriceHunt (Next.js):**
+**BijakBeli (Next.js):**
 Add to `.env.local`:
 ```env
 INGESTION_SECRET=generate-a-secure-32-char-secret-here

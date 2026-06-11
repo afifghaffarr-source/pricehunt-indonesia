@@ -1,5 +1,5 @@
 -- =============================================
--- PriceHunt Indonesia — Reviews System Schema
+-- BijakBeli.app — Reviews System Schema
 -- =============================================
 -- Migration: Add product reviews and ratings
 -- Run this after 002_performance_indexes.sql

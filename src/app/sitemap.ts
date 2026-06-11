@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 export const dynamic = "force-dynamic"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt-indonesia.vercel.app"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bijakbeli-app.vercel.app"
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [

@@ -14,7 +14,7 @@
 ### 1. Login to Supabase Dashboard
 - Open: https://supabase.com/dashboard
 - Login with your credentials
-- Select project: **PriceHunt Indonesia** (oklaxwjoyttpwgxhphko)
+- Select project: **BijakBeli.app** (oklaxwjoyttpwgxhphko)
 
 ### 2. Open SQL Editor
 - Click **"SQL Editor"** in left sidebar (database icon)
@@ -49,7 +49,7 @@ If you see any **ERROR** messages:
 
 ## 📄 Migration 110 SQL Content
 
-**File:** `~/projects/pricehunt-indonesia/supabase/migrations/110_enhanced_data_collection.sql`
+**File:** `~/projects/bijakbeli-app/supabase/migrations/110_enhanced_data_collection.sql`
 
 **Size:** 215 lines, 10,219 bytes
 

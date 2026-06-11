@@ -27,7 +27,7 @@ export function DataExportSection() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `pricehunt-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `bijakbeli-data-export-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

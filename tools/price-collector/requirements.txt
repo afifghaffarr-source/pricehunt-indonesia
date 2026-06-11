@@ -1,4 +1,4 @@
-# PriceHunt Indonesia - Browser Collector Dependencies
+# BijakBeli.app - Browser Collector Dependencies
 # Python 3.11+
 
 # Core

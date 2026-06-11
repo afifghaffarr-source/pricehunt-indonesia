@@ -1,6 +1,6 @@
-﻿# PriceHunt Indonesia
+﻿# BijakBeli.app
 
-**Asisten belanja pintar untuk Indonesia** - Platform perbandingan harga marketplace dengan **AI-powered recommendations**, **fake discount detection**, dan **smart buy/wait recommendations**.
+**Beli yang Tepat, di Waktu yang Tepat** - Platform perbandingan harga marketplace dengan **AI-powered recommendations**, **fake discount detection**, dan **smart buy/wait recommendations**.
 
 Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, Blibli, TikTok Shop) dalam satu tempat. Tahu kapan waktu terbaik untuk membeli dengan data, bukan hype.
 
@@ -79,8 +79,8 @@ Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, B
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/afifghaffarr-source/pricehunt-indonesia.git
-cd pricehunt-indonesia
+git clone https://github.com/afifghaffarr-source/bijakbeli-app.git
+cd bijakbeli-app
 ```
 
 ### 2. Install Dependencies
@@ -157,7 +157,7 @@ bun run test
 ## 📁 Project Structure
 
 ```
-pricehunt-indonesia/
+bijakbeli-app/
 ├── .github/
 │   └── workflows/        # CI/CD workflows
 ├── docs/                 # Project documentation (NEW!)

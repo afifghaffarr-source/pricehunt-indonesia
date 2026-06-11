@@ -81,7 +81,7 @@ export function detectFakeDiscount(input: FakeDiscountInput): FakeDiscountOutput
         priceStability: 'unknown',
       },
       flags: ['insufficient_history'],
-      explanation: 'Belum ada cukup data riwayat harga untuk mendeteksi keaslian diskon. PriceHunt akan terus memantau produk ini.',
+      explanation: 'Belum ada cukup data riwayat harga untuk mendeteksi keaslian diskon. BijakBeli akan terus memantau produk ini.',
       shortExplanation: 'Data belum cukup',
     };
   }

@@ -138,7 +138,7 @@ export default function NotificationSettingsPage() {
             Pengaturan Notifikasi
           </h1>
           <p className="text-gray-600">
-            Atur cara PriceHunt memberi tahu Anda tentang perubahan harga dan promo
+            Atur cara BijakBeli memberi tahu Anda tentang perubahan harga dan promo
           </p>
           {userEmail && (
             <p className="text-sm text-gray-500 mt-2">

@@ -20,7 +20,7 @@ This guide helps you implement a basic Tokopedia price collector that:
 
 **1.1 Install Dependencies**
 ```bash
-cd ~/projects/pricehunt-indonesia/collectors
+cd ~/projects/bijakbeli-app/collectors
 
 # Create virtual environment
 python3 -m venv venv
@@ -40,7 +40,7 @@ cp .env.example .env
 
 **Edit `.env`:**
 ```env
-# PriceHunt API
+# BijakBeli API
 PRICEHUNT_API_URL=https://your-app.vercel.app
 INGESTION_SECRET=demo-ingestion-secret-67890
 
@@ -230,7 +230,7 @@ WHERE slug = 'samsung-galaxy-s24-ultra';
 
 **3.2 Run Test**
 ```bash
-cd ~/projects/pricehunt-indonesia/collectors
+cd ~/projects/bijakbeli-app/collectors
 source venv/bin/activate
 python tokopedia_collector.py
 ```
@@ -272,7 +272,7 @@ railway login
 
 # Create new project
 railway init
-# Project name: pricehunt-collectors
+# Project name: bijakbeli-collectors
 
 # Set environment variables
 railway variables set PRICEHUNT_API_URL=https://your-app.vercel.app
@@ -309,7 +309,7 @@ services:
 
 ```bash
 # On VPS
-cd /opt/pricehunt-collectors
+cd /opt/bijakbeli-collectors
 git clone <repo>
 cd collectors
 python3 -m venv venv
@@ -321,7 +321,7 @@ playwright install chromium
 crontab -e
 
 # Add line:
-0 */2 * * * cd /opt/pricehunt-collectors/collectors && /opt/pricehunt-collectors/collectors/venv/bin/python tokopedia_collector.py >> /var/log/tokopedia-collector.log 2>&1
+0 */2 * * * cd /opt/bijakbeli-collectors/collectors && /opt/bijakbeli-collectors/collectors/venv/bin/python tokopedia_collector.py >> /var/log/tokopedia-collector.log 2>&1
 ```
 
 ---

@@ -1,6 +1,6 @@
-# PriceHunt Indonesia - Deployment Guide
+# BijakBeli.app - Deployment Guide
 
-Complete guide untuk deploy PriceHunt Indonesia ke production.
+Complete guide untuk deploy BijakBeli.app ke production.
 
 ---
 
@@ -101,7 +101,7 @@ Semua harus `rowsecurity = true`.
 
 1. Login ke [vercel.com](https://vercel.com)
 2. Import Git Repository
-3. Select: `afifghaffarr-source/pricehunt-indonesia`
+3. Select: `afifghaffarr-source/bijakbeli-app`
 
 ### 2. Configure Build Settings
 
@@ -164,7 +164,7 @@ Click **Deploy** button. Vercel akan:
 ### 5. Configure Custom Domain (Optional)
 
 1. Vercel Dashboard → Settings → Domains
-2. Add your domain (e.g., `pricehunt.id`)
+2. Add your domain (e.g., `bijakbeli.id`)
 3. Follow DNS configuration instructions
 4. Update `NEXT_PUBLIC_APP_URL` environment variable
 
@@ -172,7 +172,7 @@ Click **Deploy** button. Vercel akan:
 
 ## ⚙️ Cron Jobs Setup
 
-PriceHunt memiliki 2 cron jobs yang perlu di-setup di Vercel.
+BijakBeli memiliki 2 cron jobs yang perlu di-setup di Vercel.
 
 **vercel.json** sudah configured:
 
@@ -452,7 +452,7 @@ All critical indexes already created in migrations:
 - Playwright: https://playwright.dev/python/
 
 **Repository:**
-- GitHub: https://github.com/afifghaffarr-source/pricehunt-indonesia
+- GitHub: https://github.com/afifghaffarr-source/bijakbeli-app
 
 ---
 

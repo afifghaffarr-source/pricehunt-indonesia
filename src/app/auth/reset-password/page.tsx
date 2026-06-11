@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ResetPasswordForm } from "./ResetPasswordForm";
 
 export const metadata = {
-  title: "Reset Password - PriceHunt Indonesia",
+  title: "Reset Password - BijakBeli.app",
   description: "Buat password baru untuk akun Anda",
 };
 

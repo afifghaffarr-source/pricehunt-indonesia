@@ -44,7 +44,7 @@ export function getLevel(points: number): { level: number; title: string; nextLe
     { level: 3, title: "Ahli Harga", minPoints: 300 },
     { level: 4, title: "Master Perbandingan", minPoints: 700 },
     { level: 5, title: "Raja Harga", minPoints: 1500 },
-    { level: 6, title: "Legend PriceHunt", minPoints: 3000 },
+    { level: 6, title: "Legend BijakBeli", minPoints: 3000 },
   ];
 
   let current = levels[0];

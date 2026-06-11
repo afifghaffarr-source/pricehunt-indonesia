@@ -47,7 +47,7 @@ export async function exportBackup() {
 export function generateSeedSQL(backup: {
   data: Record<string, unknown[]>;
 }): string {
-  let sql = "-- PriceHunt Auto-Generated Seed\n";
+  let sql = "-- BijakBeli Auto-Generated Seed\n";
   sql += `-- Generated: ${new Date().toISOString()}\n\n`;
 
   sql += "-- Marketplaces\n";

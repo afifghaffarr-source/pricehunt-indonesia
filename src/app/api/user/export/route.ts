@@ -101,7 +101,7 @@ export async function GET(_request: NextRequest) {
     return new NextResponse(JSON.stringify(exportData, null, 2), {
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="pricehunt-data-export-${new Date().toISOString().split('T')[0]}.json"`,
+        "Content-Disposition": `attachment; filename="bijakbeli-data-export-${new Date().toISOString().split('T')[0]}.json"`,
         "Cache-Control": "no-store, no-cache, must-revalidate, private",
       },
     });

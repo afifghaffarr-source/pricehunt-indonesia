@@ -5,7 +5,7 @@ import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = {
   title: "Login",
-  description: "Masuk ke akun PriceHunt Indonesia Anda.",
+  description: "Masuk ke akun BijakBeli.app Anda.",
 };
 
 export default function LoginPage() {

@@ -1,4 +1,4 @@
-# PriceHunt Indonesia - Price Collectors
+# BijakBeli.app - Price Collectors
 
 Python-based price collectors untuk scraping data harga dari marketplace Indonesia.
 
@@ -34,8 +34,8 @@ cp .env.example .env
 **Required Environment Variables:**
 
 ```env
-# PriceHunt API
-PRICEHUNT_API_URL=https://pricehunt-indonesia.vercel.app
+# BijakBeli API
+PRICEHUNT_API_URL=https://bijakbeli-app.vercel.app
 INGESTION_SECRET=your-ingestion-secret-here
 
 # Supabase (untuk query product/marketplace IDs)

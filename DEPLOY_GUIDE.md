@@ -1,4 +1,4 @@
-# 🚀 QUICK START: Deploy PriceHunt Demo ke Vercel
+# 🚀 QUICK START: Deploy BijakBeli Demo ke Vercel
 
 **Goal:** Tampilkan data di demo Vercel app dalam 30 menit  
 **Date:** 11 Juni 2026
@@ -20,7 +20,7 @@
 ```
 1. Buka: https://supabase.com/dashboard
 2. Klik "New Project"
-3. Nama: pricehunt-indonesia
+3. Nama: bijakbeli-app
 4. Database Password: [generate strong password]
 5. Region: Southeast Asia (Singapore)
 6. Klik "Create new project"
@@ -69,7 +69,7 @@
 
 2. Buka: https://vercel.com/new
 3. Import Git Repository
-4. Pilih: pricehunt-indonesia
+4. Pilih: bijakbeli-app
 5. Framework Preset: Next.js (auto-detected)
 6. Root Directory: ./ (default)
 7. Klik "Deploy" (JANGAN dulu!)
@@ -108,14 +108,14 @@ INGESTION_SECRET=demo-ingestion-secret-67890
 ```
 1. Klik "Deploy"
 2. Tunggu ~2-3 menit
-3. Note deployment URL: https://pricehunt-indonesia-xxx.vercel.app
+3. Note deployment URL: https://bijakbeli-app-xxx.vercel.app
 ```
 
 **2.4 Update NEXT_PUBLIC_APP_URL**
 ```
 1. Vercel Dashboard → Settings → Environment Variables
 2. Edit NEXT_PUBLIC_APP_URL
-3. Value: https://pricehunt-indonesia-xxx.vercel.app
+3. Value: https://bijakbeli-app-xxx.vercel.app
 4. Save
 5. Redeploy: Deployments → Latest → ... menu → Redeploy
 ```
@@ -129,7 +129,7 @@ Karena belum ada real marketplace data, kita simulate price updates:
 **3.1 Manual Trigger Cron**
 ```bash
 # Replace dengan URL Anda dan CRON_SECRET dari env vars
-curl "https://pricehunt-indonesia-xxx.vercel.app/api/cron/prices?secret=demo-secret-change-in-production-12345"
+curl "https://bijakbeli-app-xxx.vercel.app/api/cron/prices?secret=demo-secret-change-in-production-12345"
 ```
 
 **Expected Response:**
@@ -146,7 +146,7 @@ curl "https://pricehunt-indonesia-xxx.vercel.app/api/cron/prices?secret=demo-sec
 
 Buka app Anda:
 ```
-https://pricehunt-indonesia-xxx.vercel.app
+https://bijakbeli-app-xxx.vercel.app
 ```
 
 **Harus terlihat:**
@@ -290,7 +290,7 @@ LIMIT 20;
 
 **Questions:**
 - Email: [your-email]
-- Slack: #pricehunt-tech
+- Slack: #bijakbeli-tech
 
 ---
 

@@ -1,10 +1,10 @@
-# PriceHunt Indonesia - Price Collector
+# BijakBeli.app - Price Collector
 
 Browser-based semi-automated price data collection tool untuk marketplace Indonesia.
 
 ## Status: ✅ CONFIGURED & READY
 
-**Production API:** https://pricehunt-indonesia.vercel.app  
+**Production API:** https://bijakbeli-app.vercel.app  
 **Authentication:** INGESTION_SECRET configured in Vercel + local .env  
 **Last tested:** 2026-06-11 (API connection successful)
 
@@ -19,7 +19,7 @@ Browser-based semi-automated price data collection tool untuk marketplace Indone
 
 ### Activate venv
 ```bash
-cd ~/projects/pricehunt-indonesia/tools/price-collector
+cd ~/projects/bijakbeli-app/tools/price-collector
 source venv/bin/activate
 ```
 
@@ -50,7 +50,7 @@ python collector.py manual --marketplace shopee
 
 ### Quick Manual Run
 ```bash
-cd ~/projects/pricehunt-indonesia/tools/price-collector && \
+cd ~/projects/bijakbeli-app/tools/price-collector && \
 source venv/bin/activate && \
 python collector.py keyword --marketplace tokopedia --keyword "smartphone" --limit 3
 ```
@@ -58,7 +58,7 @@ python collector.py keyword --marketplace tokopedia --keyword "smartphone" --lim
 ### Cron Job Example
 Run daily at 2 AM to collect data:
 ```cron
-0 2 * * * cd ~/projects/pricehunt-indonesia/tools/price-collector && source venv/bin/activate && python collector.py keyword --marketplace tokopedia --keyword "trending" --limit 10 >> ~/logs/price-collector.log 2>&1
+0 2 * * * cd ~/projects/bijakbeli-app/tools/price-collector && source venv/bin/activate && python collector.py keyword --marketplace tokopedia --keyword "trending" --limit 10 >> ~/logs/price-collector.log 2>&1
 ```
 
 ## Configuration
@@ -140,5 +140,5 @@ All data is stored in:
 
 ---
 
-**For automation questions, see:** `pricehunt-development` skill  
-**For schema questions, see:** Memory (PriceHunt critical schema notes)
+**For automation questions, see:** `bijakbeli-development` skill  
+**For schema questions, see:** Memory (BijakBeli critical schema notes)

@@ -5,7 +5,7 @@ import { DataCollectionStats } from "@/components/admin/data-collection-stats";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
-  title: "Data Collection | Admin | PriceHunt Indonesia",
+  title: "Data Collection | Admin | BijakBeli.app",
   description: "Manage data collection, offers, conflicts, and recheck requests",
 };
 

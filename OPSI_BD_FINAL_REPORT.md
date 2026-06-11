@@ -149,7 +149,7 @@
 **TODAY (You or Me):**
 ```bash
 # OPTION B: Deploy demo NOW
-cd ~/projects/pricehunt-indonesia
+cd ~/projects/bijakbeli-app
 cat DEPLOY_GUIDE.md
 # Follow steps → Demo live in 30 min
 ```

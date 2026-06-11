@@ -1,6 +1,6 @@
-# 🤖 PriceHunt Multi-Agent System
+# 🤖 BijakBeli Multi-Agent System
 
-Sistem multi-agent untuk autonomous monitoring dan parallel development PriceHunt Indonesia.
+Sistem multi-agent untuk autonomous monitoring dan parallel development BijakBeli.app.
 
 ---
 
@@ -27,7 +27,7 @@ Specialized agents yang di-spawn saat dibutuhkan untuk development tasks.
 
 **Report Format:**
 ```
-🧪 PriceHunt QA Report - {date}
+🧪 BijakBeli QA Report - {date}
 ├─ Test Results: X passed, Y failed
 ├─ TypeScript: Clean / Errors
 ├─ Linting: Clean / Warnings
@@ -45,7 +45,7 @@ Specialized agents yang di-spawn saat dibutuhkan untuk development tasks.
 
 **Report Format:**
 ```
-🔒 PriceHunt Security Audit - {date}
+🔒 BijakBeli Security Audit - {date}
 ├─ Outdated packages: X found
 ├─ Exposed secrets: None / Found
 ├─ Risk Level: 🟢 Low / 🟡 Medium / 🔴 High
@@ -63,7 +63,7 @@ Specialized agents yang di-spawn saat dibutuhkan untuk development tasks.
 
 **Report Format:**
 ```
-🐍 PriceHunt Collectors Health - {date}
+🐍 BijakBeli Collectors Health - {date}
 ├─ Python: version X.X.X
 ├─ Dependencies: ✅ All installed
 ├─ Collectors: X found
@@ -81,7 +81,7 @@ Specialized agents yang di-spawn saat dibutuhkan untuk development tasks.
 
 **Report Format:**
 ```
-📊 PriceHunt Performance Report - {date}
+📊 BijakBeli Performance Report - {date}
 ├─ Build: ✅ Success (X seconds)
 ├─ Bundle Size: X MB
 ├─ First Load JS: X kB
@@ -93,7 +93,7 @@ Specialized agents yang di-spawn saat dibutuhkan untuk development tasks.
 ## 👥 On-Demand Specialists (Delegation)
 
 ### 1. **Backend Developer**
-- **Skill:** pricehunt-backend-dev
+- **Skill:** bijakbeli-backend-dev
 - **Expertise:**
   - API routes & server actions
   - Supabase database operations
@@ -108,7 +108,7 @@ Delegate task ke backend specialist:
 ```
 
 ### 2. **Frontend Developer**
-- **Skill:** pricehunt-frontend-dev
+- **Skill:** bijakbeli-frontend-dev
 - **Expertise:**
   - React components (Server & Client)
   - shadcn/ui integration
@@ -123,7 +123,7 @@ Delegate task ke frontend specialist:
 ```
 
 ### 3. **Test Engineer**
-- **Skill:** pricehunt-test-engineer
+- **Skill:** bijakbeli-test-engineer
 - **Expertise:**
   - Vitest unit testing
   - Business logic tests
@@ -138,7 +138,7 @@ Delegate task ke test engineer:
 ```
 
 ### 4. **Bug Hunter**
-- **Skill:** pricehunt-bug-hunter
+- **Skill:** bijakbeli-bug-hunter
 - **Expertise:**
   - Systematic debugging
   - Root cause analysis
@@ -153,7 +153,7 @@ Delegate task ke bug hunter:
 ```
 
 ### 5. **Documentation Writer**
-- **Skill:** pricehunt-doc-writer
+- **Skill:** bijakbeli-doc-writer
 - **Expertise:**
   - API documentation
   - Code comments & JSDoc
@@ -329,7 +329,7 @@ hermes cron pause <job_id>
 4. Review error logs
 
 ### Delegation Not Working
-1. Verify skill exists: `hermes skills list pricehunt`
+1. Verify skill exists: `hermes skills list bijakbeli`
 2. Check toolsets enabled
 3. Ensure context is clear
 4. Try simpler task first
@@ -362,17 +362,17 @@ Review weekly and adjust:
 
 All specialist skills located at:
 ```
-~/.hermes/skills/pricehunt/
-├── pricehunt-backend-dev/
-├── pricehunt-frontend-dev/
-├── pricehunt-test-engineer/
-├── pricehunt-bug-hunter/
-└── pricehunt-doc-writer/
+~/.hermes/skills/bijakbeli/
+├── bijakbeli-backend-dev/
+├── bijakbeli-frontend-dev/
+├── bijakbeli-test-engineer/
+├── bijakbeli-bug-hunter/
+└── bijakbeli-doc-writer/
 ```
 
 Inspect skill:
 ```bash
-hermes skills inspect pricehunt-backend-dev
+hermes skills inspect bijakbeli-backend-dev
 ```
 
 ---

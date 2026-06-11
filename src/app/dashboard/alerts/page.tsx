@@ -8,7 +8,7 @@ import Link from "next/link";
 import { formatRupiah } from "@/lib/utils";
 
 export const metadata = {
-  title: "Pantau Harga - PriceHunt Indonesia",
+  title: "Pantau Harga - BijakBeli.app",
   description: "Pantau harga produk favorit dan dapatkan notifikasi saat harga turun.",
 };
 

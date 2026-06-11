@@ -1,4 +1,4 @@
-# 🔒 Security Status - PriceHunt Indonesia
+# 🔒 Security Status - BijakBeli.app
 
 **Date:** 11 Juni 2026, 06:06 WIB  
 **Status:** 🟡 Good (4 moderate issues - Next.js canary)

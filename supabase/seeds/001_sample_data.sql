@@ -1,4 +1,4 @@
--- Sample Data for PriceHunt Indonesia
+-- Sample Data for BijakBeli.app
 -- Run this in Supabase SQL Editor to populate test data
 
 -- Insert sample products

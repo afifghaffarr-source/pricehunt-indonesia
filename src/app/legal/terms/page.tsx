@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service - PriceHunt Indonesia",
-  description: "Syarat dan ketentuan penggunaan layanan PriceHunt Indonesia.",
+  title: "Terms of Service - BijakBeli.app",
+  description: "Syarat dan ketentuan penggunaan layanan BijakBeli.app.",
 };
 
 export default function TermsOfServicePage() {
@@ -18,7 +18,7 @@ export default function TermsOfServicePage() {
         <section className="mt-8">
           <h2 className="text-2xl font-semibold mb-4">1. Penerimaan Syarat</h2>
           <p>
-            Dengan mengakses dan menggunakan PriceHunt Indonesia, Anda setuju untuk terikat dengan 
+            Dengan mengakses dan menggunakan BijakBeli.app, Anda setuju untuk terikat dengan 
             syarat dan ketentuan ini. Jika Anda tidak setuju, harap tidak menggunakan layanan kami.
           </p>
         </section>
@@ -26,7 +26,7 @@ export default function TermsOfServicePage() {
         <section className="mt-8">
           <h2 className="text-2xl font-semibold mb-4">2. Deskripsi Layanan</h2>
           <p>
-            PriceHunt Indonesia adalah platform pembanding harga yang membantu pengguna:
+            BijakBeli.app adalah platform pembanding harga yang membantu pengguna:
           </p>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li>Membandingkan harga produk dari berbagai marketplace Indonesia</li>
@@ -74,7 +74,7 @@ export default function TermsOfServicePage() {
               <strong>Harga bisa berubah kapan saja</strong> tanpa pemberitahuan sebelumnya oleh marketplace.
             </li>
             <li>
-              Data harga di PriceHunt adalah <strong>referensi</strong> dan mungkin berbeda dengan 
+              Data harga di BijakBeli adalah <strong>referensi</strong> dan mungkin berbeda dengan 
               harga aktual saat checkout.
             </li>
             <li>
@@ -93,7 +93,7 @@ export default function TermsOfServicePage() {
         <section className="mt-8">
           <h2 className="text-2xl font-semibold mb-4">5. Affiliate Disclosure</h2>
           <p>
-            PriceHunt Indonesia adalah peserta dalam program affiliate dari berbagai marketplace Indonesia. 
+            BijakBeli.app adalah peserta dalam program affiliate dari berbagai marketplace Indonesia. 
             Ketika Anda mengklik link produk dan melakukan pembelian, kami mungkin menerima komisi affiliate 
             <strong> tanpa biaya tambahan untuk Anda</strong>.
           </p>
@@ -131,7 +131,7 @@ export default function TermsOfServicePage() {
         <section className="mt-8">
           <h2 className="text-2xl font-semibold mb-4">8. Intellectual Property</h2>
           <p>
-            Semua konten di PriceHunt Indonesia, termasuk teks, grafik, logo, dan software, 
+            Semua konten di BijakBeli.app, termasuk teks, grafik, logo, dan software, 
             adalah milik kami atau pemberi lisensi kami dan dilindungi oleh hak cipta.
           </p>
           <p className="mt-2">
@@ -212,8 +212,8 @@ export default function TermsOfServicePage() {
             Jika Anda memiliki pertanyaan tentang syarat dan ketentuan ini:
           </p>
           <ul className="list-none mt-2 space-y-1">
-            <li>Email: legal@pricehunt.id</li>
-            <li>Website: pricehunt-indonesia.vercel.app</li>
+            <li>Email: legal@bijakbeli.id</li>
+            <li>Website: bijakbeli-app.vercel.app</li>
           </ul>
         </section>
 

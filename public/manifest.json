@@ -1,6 +1,6 @@
 {
-  "name": "PriceHunt Indonesia",
-  "short_name": "PriceHunt",
+  "name": "BijakBeli.app",
+  "short_name": "BijakBeli",
   "description": "Bandingkan harga marketplace Indonesia dalam satu tempat",
   "start_url": "/",
   "display": "standalone",

@@ -13,7 +13,7 @@ The `manifest.json` references these icon files that need to be created:
 ## Design Specifications
 
 ### Design Concept
-PriceHunt Indonesia logo/icon should represent:
+BijakBeli.app logo/icon should represent:
 - Price comparison / shopping intelligence
 - Indonesian market focus
 - Trust and reliability
@@ -85,7 +85,7 @@ Small "Indonesia" text below
 ### Using AI Tools
 Prompt example for AI image generators:
 ```
-"A modern, flat design app icon for PriceHunt, a price comparison app. 
+"A modern, flat design app icon for BijakBeli, a price comparison app. 
 Blue and green colors. Features a price tag or magnifying glass symbol. 
 Minimalist style. High contrast. Professional look. Square format."
 ```

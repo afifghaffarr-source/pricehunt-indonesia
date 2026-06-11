@@ -52,7 +52,7 @@ export default async function HomePage() {
               </span>
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-muted-foreground sm:text-xl">
-              PriceHunt menganalisis harga dari 6 marketplace Indonesia, mendeteksi diskon mencurigakan, dan memberi rekomendasi kapan waktu terbaik membeli berdasarkan data historis.
+              BijakBeli menganalisis harga dari 6 marketplace Indonesia, mendeteksi diskon mencurigakan, dan memberi rekomendasi kapan waktu terbaik membeli berdasarkan data historis.
             </p>
             <div className="mt-10">
               <SearchBar size="lg" />
@@ -122,10 +122,10 @@ export default async function HomePage() {
               Intelligence in Action
             </Badge>
             <h2 className="text-3xl font-bold sm:text-4xl">
-              Lihat PriceHunt Bekerja
+              Lihat BijakBeli Bekerja
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-              Bukan sekadar daftar harga. PriceHunt menganalisis pola, mendeteksi anomali, dan memberi rekomendasi berdasarkan data.
+              Bukan sekadar daftar harga. BijakBeli menganalisis pola, mendeteksi anomali, dan memberi rekomendasi berdasarkan data.
             </p>
           </div>
 
@@ -219,7 +219,7 @@ export default async function HomePage() {
             <Sparkles className="mr-1 h-3 w-3" />
             3 Langkah Mudah
           </Badge>
-          <h2 className="text-3xl font-bold sm:text-4xl">Cara Kerja PriceHunt</h2>
+          <h2 className="text-3xl font-bold sm:text-4xl">Cara Kerja BijakBeli</h2>
           <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
             Dari pencarian hingga keputusan, semua dalam hitungan detik
           </p>
@@ -253,7 +253,7 @@ export default async function HomePage() {
               </div>
               <h3 className="mb-2 text-lg font-semibold">Analisis Otomatis</h3>
               <p className="text-sm text-muted-foreground">
-                PriceHunt membandingkan harga, menghitung deal score, dan deteksi diskon palsu
+                BijakBeli membandingkan harga, menghitung deal score, dan deteksi diskon palsu
               </p>
             </div>
           </div>
@@ -360,7 +360,7 @@ export default async function HomePage() {
             <CardContent className="p-6">
               <Bell className="mb-4 h-7 w-7 text-emerald-600" />
               <h3 className="font-semibold">Alert saat harga masuk target</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Pasang target harga dan biarkan PriceHunt mengingatkan saat waktunya lebih masuk akal untuk beli.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Pasang target harga dan biarkan BijakBeli mengingatkan saat waktunya lebih masuk akal untuk beli.</p>
             </CardContent>
           </Card>
           <Card className="border-sky-200 bg-sky-50/60 dark:bg-sky-950/20">
@@ -410,7 +410,7 @@ export default async function HomePage() {
                 Perbandingan Harga Langsung di Marketplace
               </h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                Install extension PriceHunt dan lihat perbandingan harga otomatis saat Anda browsing di Tokopedia, Shopee, atau marketplace lainnya.
+                Install extension BijakBeli dan lihat perbandingan harga otomatis saat Anda browsing di Tokopedia, Shopee, atau marketplace lainnya.
               </p>
               <ul className="mt-6 space-y-3">
                 <li className="flex items-start gap-3">
@@ -449,7 +449,7 @@ export default async function HomePage() {
                     <Download className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <div className="font-semibold">PriceHunt Extension</div>
+                    <div className="font-semibold">BijakBeli Extension</div>
                     <div className="text-xs text-muted-foreground">Chrome • Edge • Brave</div>
                   </div>
                 </div>
@@ -487,18 +487,18 @@ export default async function HomePage() {
           <Badge variant="secondary" className="mb-4">FAQ</Badge>
           <h2 className="text-3xl font-bold sm:text-4xl">Pertanyaan Umum</h2>
           <p className="mt-3 text-muted-foreground">
-            Hal yang sering ditanyakan tentang PriceHunt
+            Hal yang sering ditanyakan tentang BijakBeli
           </p>
         </div>
 
         <div className="space-y-4">
           <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
             <summary className="flex cursor-pointer items-center justify-between font-semibold">
-              Apakah PriceHunt gratis?
+              Apakah BijakBeli gratis?
               <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
             </summary>
             <p className="mt-4 text-sm text-muted-foreground">
-              Ya, PriceHunt sepenuhnya gratis untuk digunakan. Anda dapat membandingkan harga, mendapatkan alert, dan mengakses semua fitur intelligence tanpa biaya apapun.
+              Ya, BijakBeli sepenuhnya gratis untuk digunakan. Anda dapat membandingkan harga, mendapatkan alert, dan mengakses semua fitur intelligence tanpa biaya apapun.
             </p>
           </details>
 
@@ -508,7 +508,7 @@ export default async function HomePage() {
               <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
             </summary>
             <p className="mt-4 text-sm text-muted-foreground">
-              PriceHunt mengumpulkan data harga secara otomatis dari marketplace. Harga dapat berubah sewaktu-waktu, jadi kami sarankan untuk selalu cek harga final di marketplace saat checkout. Data historis kami update berkala untuk analisis yang akurat.
+              BijakBeli mengumpulkan data harga secara otomatis dari marketplace. Harga dapat berubah sewaktu-waktu, jadi kami sarankan untuk selalu cek harga final di marketplace saat checkout. Data historis kami update berkala untuk analisis yang akurat.
             </p>
           </details>
 
@@ -518,7 +518,7 @@ export default async function HomePage() {
               <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
             </summary>
             <p className="mt-4 text-sm text-muted-foreground">
-              PriceHunt mendukung 6 marketplace terbesar di Indonesia: Tokopedia, Shopee, Bukalapak, Lazada, Blibli, dan JD.ID. Kami terus menambah coverage marketplace lainnya.
+              BijakBeli mendukung 6 marketplace terbesar di Indonesia: Tokopedia, Shopee, Bukalapak, Lazada, Blibli, dan JD.ID. Kami terus menambah coverage marketplace lainnya.
             </p>
           </details>
 
@@ -528,7 +528,7 @@ export default async function HomePage() {
               <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
             </summary>
             <p className="mt-4 text-sm text-muted-foreground">
-              PriceHunt menganalisis riwayat harga produk selama 30-90 hari terakhir. Jika harga &ldquo;original&rdquo; yang dicoret tiba-tiba naik drastis sebelum diskon, atau jika diskon terlihat tidak konsisten dengan pola harga historis, sistem akan menandai sebagai diskon yang terindikasi mencurigakan.
+              BijakBeli menganalisis riwayat harga produk selama 30-90 hari terakhir. Jika harga &ldquo;original&rdquo; yang dicoret tiba-tiba naik drastis sebelum diskon, atau jika diskon terlihat tidak konsisten dengan pola harga historis, sistem akan menandai sebagai diskon yang terindikasi mencurigakan.
             </p>
           </details>
 
@@ -538,7 +538,7 @@ export default async function HomePage() {
               <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
             </summary>
             <p className="mt-4 text-sm text-muted-foreground">
-              Ya. PriceHunt tidak menyimpan informasi pembayaran atau data sensitif Anda. Kami hanya menyimpan wishlist, price alert, dan preferensi yang Anda set. Data Anda dilindungi dan tidak dibagikan kepada pihak ketiga.
+              Ya. BijakBeli tidak menyimpan informasi pembayaran atau data sensitif Anda. Kami hanya menyimpan wishlist, price alert, dan preferensi yang Anda set. Data Anda dilindungi dan tidak dibagikan kepada pihak ketiga.
             </p>
           </details>
 
@@ -548,7 +548,7 @@ export default async function HomePage() {
               <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
             </summary>
             <p className="mt-4 text-sm text-muted-foreground">
-              Setelah Anda set target harga untuk suatu produk, PriceHunt akan memantau harga secara otomatis. Saat harga mencapai atau di bawah target Anda, kami akan mengirim notifikasi via email atau push notification (jika diaktifkan).
+              Setelah Anda set target harga untuk suatu produk, BijakBeli akan memantau harga secara otomatis. Saat harga mencapai atau di bawah target Anda, kami akan mengirim notifikasi via email atau push notification (jika diaktifkan).
             </p>
           </details>
         </div>

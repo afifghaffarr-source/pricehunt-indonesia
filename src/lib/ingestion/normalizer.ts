@@ -1,5 +1,5 @@
 /**
- * Data Normalizer for PriceHunt Indonesia
+ * Data Normalizer for BijakBeli.app
  * 
  * Handles various Indonesian data formats from different sources:
  * - Price formats: "Rp 1.299.000", "1,299,000", "Rp1.299.000"

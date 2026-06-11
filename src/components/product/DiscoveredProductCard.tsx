@@ -2,11 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Star } from "lucide-react";
 import { cn, formatRupiah, getMarketplaceColor, getMarketplaceName } from "@/lib/utils";
-import type { PriceHuntDiscoveredProduct } from "@/lib/vexo/types";
+import type { BijakBeliDiscoveredProduct } from "@/lib/vexo/types";
 import { toMarketplace } from "@/lib/vexo/normalizers";
 
 interface DiscoveredProductCardProps {
-  product: PriceHuntDiscoveredProduct;
+  product: BijakBeliDiscoveredProduct;
 }
 
 export function DiscoveredProductCard({ product }: DiscoveredProductCardProps) {

@@ -9,7 +9,7 @@ import { formatRupiah } from "@/lib/utils";
 import { calculateDealScore } from "@/lib/deal-score";
 
 export const metadata = {
-  title: "Promo Pintar - PriceHunt Indonesia",
+  title: "Promo Pintar - BijakBeli.app",
   description: "Temukan produk dengan deal terbaik, harga termurah, dan rekomendasi pintar.",
 };
 

@@ -422,7 +422,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <div>
             <h4 className="mb-3 text-sm font-semibold">Bagikan produk ini</h4>
             <SocialShare
-              url={`${process.env.NEXT_PUBLIC_APP_URL || "https://pricehunt-indonesia.vercel.app"}/product/${slug}`}
+              url={`${process.env.NEXT_PUBLIC_APP_URL || "https://bijakbeli-app.vercel.app"}/product/${slug}`}
               title={`${product.name} - mulai ${formatRupiah(product.lowestPrice)}`}
             />
           </div>

@@ -13,12 +13,11 @@ export function Footer() {
                 <Tag className="h-4 w-4 text-primary-foreground" />
               </div>
               <span className="text-lg font-bold">
-                Price<span className="text-primary">Hunt</span>
+                Bijak<span className="text-primary">Beli</span>
               </span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
-              Bandingkan harga, pantau penurunan, dan tahu kapan waktu terbaik
-              untuk membeli.
+              Beli yang Tepat, di Waktu yang Tepat. Bandingkan harga, deteksi diskon palsu, hemat cerdas.
             </p>
           </div>
 
@@ -100,7 +99,7 @@ export function Footer() {
         <Separator className="my-8" />
 
         <p className="text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} PriceHunt Indonesia. Semua harga
+          &copy; {new Date().getFullYear()} BijakBeli.app. Semua harga
           bersifat indikatif dan dapat berubah sewaktu-waktu.
         </p>
       </div>

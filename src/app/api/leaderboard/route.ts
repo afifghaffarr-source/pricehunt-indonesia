@@ -35,7 +35,7 @@ export async function GET() {
           comparisons * 20;
 
         let title = "Pemula";
-        if (points >= 3000) title = "Legend PriceHunt";
+        if (points >= 3000) title = "Legend BijakBeli";
         else if (points >= 1500) title = "Raja Harga";
         else if (points >= 700) title = "Master Perbandingan";
         else if (points >= 300) title = "Ahli Harga";

@@ -1,7 +1,7 @@
 import { searchWebWithFallback, askAIWithFallback, searchImagesWithFallback, isVexoConfigured, translateText } from "@/lib/vexo/client";
 import { normalizeSearchResult } from "@/lib/vexo/normalizers";
 import { MARKETPLACE_SITES } from "@/lib/vexo/endpoints";
-import type { PriceHuntDiscoveredProduct, VexoAIIntent } from "@/lib/vexo/types";
+import type { BijakBeliDiscoveredProduct, VexoAIIntent } from "@/lib/vexo/types";
 
 const MARKETPLACE_KEYS = Object.keys(MARKETPLACE_SITES);
 
@@ -12,7 +12,7 @@ function sanitizeDiscoveryQuery(query: string): string {
 export async function discoverProducts(
   query: string,
   marketplace?: string
-): Promise<PriceHuntDiscoveredProduct[]> {
+): Promise<BijakBeliDiscoveredProduct[]> {
   if (!isVexoConfigured()) return [];
 
   const safeQuery = sanitizeDiscoveryQuery(query);
@@ -23,7 +23,7 @@ export async function discoverProducts(
 
   try {
     const searchResults = await searchWebWithFallback(searchQuery);
-    const products: PriceHuntDiscoveredProduct[] = [];
+    const products: BijakBeliDiscoveredProduct[] = [];
 
     if (searchResults.data?.results) {
       const source = searchResults.data.searchEngine === "google" ? "vexo-google" : "vexo-duckduckgo";
@@ -43,7 +43,7 @@ export async function discoverProducts(
 export async function discoverProductsAcrossMarketplaces(
   query: string,
   limitPerMarketplace = 4
-): Promise<PriceHuntDiscoveredProduct[]> {
+): Promise<BijakBeliDiscoveredProduct[]> {
   if (!isVexoConfigured()) return [];
 
   const results = await Promise.allSettled(

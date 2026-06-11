@@ -1,4 +1,4 @@
-# PriceHunt Indonesia - Robots.txt
+# BijakBeli.app - Robots.txt
 
 # Allow all crawlers
 User-agent: *
@@ -20,7 +20,7 @@ Allow: /deals
 Allow: /legal
 
 # Sitemap location
-Sitemap: https://pricehunt-indonesia.vercel.app/sitemap.xml
+Sitemap: https://bijakbeli-app.vercel.app/sitemap.xml
 
 # Crawl delay (be nice to servers)
 Crawl-delay: 1

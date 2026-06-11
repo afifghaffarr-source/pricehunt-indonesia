@@ -199,7 +199,7 @@ export function BuyOrWaitDecision({
                 </Badge>
               </div>
               <CardTitle className="text-2xl font-bold sm:text-3xl">
-                Rekomendasi PriceHunt
+                Rekomendasi BijakBeli
               </CardTitle>
               <p className="mt-1 text-sm font-medium text-muted-foreground">
                 Berdasarkan analisis data harga yang tersedia

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, GitCompare, Loader2 } from "lucide-react";
 import { formatRupiah, getMarketplaceColor, getMarketplaceName } from "@/lib/utils";
 import { toMarketplace } from "@/lib/vexo/normalizers";
-import type { PriceHuntDiscoveredProduct } from "@/lib/vexo/types";
+import type { BijakBeliDiscoveredProduct } from "@/lib/vexo/types";
 
 interface ProductMatcherProps {
   productName: string;
@@ -15,7 +15,7 @@ interface ProductMatcherProps {
 
 interface MatchGroup {
   canonicalTitle: string;
-  products: PriceHuntDiscoveredProduct[];
+  products: BijakBeliDiscoveredProduct[];
   avgConfidence: number;
 }
 
@@ -44,12 +44,12 @@ export function ProductMatcher({ productName, currentMarketplace }: ProductMatch
             intent: "product-matcher",
             context: data.results
               .slice(0, 8)
-              .map((r: PriceHuntDiscoveredProduct) => `${r.normalizedTitle} (${r.marketplace})`)
+              .map((r: BijakBeliDiscoveredProduct) => `${r.normalizedTitle} (${r.marketplace})`)
               .join(" | "),
           }),
         });
 
-        const byMarketplace = new Map<string, PriceHuntDiscoveredProduct[]>();
+        const byMarketplace = new Map<string, BijakBeliDiscoveredProduct[]>();
         for (const product of data.results) {
           if (product.marketplace === currentMarketplace) continue;
           if (product.marketplace === "unknown") continue;

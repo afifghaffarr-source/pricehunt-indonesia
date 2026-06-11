@@ -1,7 +1,7 @@
-# 📋 EXECUTIVE SUMMARY - PriceHunt Indonesia Audit
+# 📋 EXECUTIVE SUMMARY - BijakBeli.app Audit
 
 **Date:** 11 Juni 2026  
-**Project:** PriceHunt Indonesia E-Commerce Price Comparison  
+**Project:** BijakBeli.app E-Commerce Price Comparison  
 **Status:** 70% Complete - Demo Ready, Production Needs Work
 
 ---
@@ -209,7 +209,7 @@
 1. **Deploy Demo** (30 min)
    ```bash
    # Follow DEPLOY_GUIDE.md
-   cd ~/projects/pricehunt-indonesia
+   cd ~/projects/bijakbeli-app
    vercel --prod
    ```
 
@@ -373,7 +373,7 @@ Before proceeding, please answer:
 
 ## 📚 DOCUMENTATION CREATED
 
-All in `~/projects/pricehunt-indonesia/`:
+All in `~/projects/bijakbeli-app/`:
 
 1. **AUDIT_REPORT_2026-06-11.md** (12KB)
    - Full audit dengan scorecard
@@ -403,14 +403,14 @@ All in `~/projects/pricehunt-indonesia/`:
 
 ```bash
 # 1. Read deployment guide
-cat ~/projects/pricehunt-indonesia/DEPLOY_GUIDE.md
+cat ~/projects/bijakbeli-app/DEPLOY_GUIDE.md
 
 # 2. Deploy demo TODAY
-cd ~/projects/pricehunt-indonesia
+cd ~/projects/bijakbeli-app
 vercel --prod
 
 # 3. THIS WEEK: Implement Tokopedia scraper
-cat ~/projects/pricehunt-indonesia/COLLECTOR_QUICKSTART.md
+cat ~/projects/bijakbeli-app/COLLECTOR_QUICKSTART.md
 ```
 
 **Result:**

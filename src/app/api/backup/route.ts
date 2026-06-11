@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(sql, {
       headers: {
         "Content-Type": "text/plain",
-        "Content-Disposition": `attachment; filename="pricehunt-backup-${backup.timestamp}.sql"`,
+        "Content-Disposition": `attachment; filename="bijakbeli-backup-${backup.timestamp}.sql"`,
       },
     });
   } catch (error) {

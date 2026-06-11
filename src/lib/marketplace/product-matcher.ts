@@ -1,9 +1,9 @@
-import type { PriceHuntDiscoveredProduct } from "@/lib/vexo/types";
+import type { BijakBeliDiscoveredProduct } from "@/lib/vexo/types";
 import { normalizeTitle } from "@/lib/vexo/normalizers";
 
 interface MatchGroup {
   canonicalTitle: string;
-  products: PriceHuntDiscoveredProduct[];
+  products: BijakBeliDiscoveredProduct[];
   avgConfidence: number;
 }
 
@@ -15,7 +15,7 @@ function similarity(a: string, b: string): number {
   return union.size === 0 ? 0 : intersection.size / union.size;
 }
 
-export function matchProducts(products: PriceHuntDiscoveredProduct[]): MatchGroup[] {
+export function matchProducts(products: BijakBeliDiscoveredProduct[]): MatchGroup[] {
   const groups: MatchGroup[] = [];
   const used = new Set<string>();
 
@@ -51,11 +51,11 @@ export function matchProducts(products: PriceHuntDiscoveredProduct[]): MatchGrou
 
 export function findBestMatch(
   productName: string,
-  products: PriceHuntDiscoveredProduct[]
-): PriceHuntDiscoveredProduct | null {
+  products: BijakBeliDiscoveredProduct[]
+): BijakBeliDiscoveredProduct | null {
   const normalizedName = normalizeTitle(productName);
 
-  let best: { product: PriceHuntDiscoveredProduct; score: number } | null = null;
+  let best: { product: BijakBeliDiscoveredProduct; score: number } | null = null;
 
   for (const product of products) {
     const sim = similarity(normalizedName, product.normalizedTitle);

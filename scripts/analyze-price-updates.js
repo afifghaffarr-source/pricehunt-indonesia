@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PriceHunt Indonesia - Price Update Priority Analysis
+ * BijakBeli.app - Price Update Priority Analysis
  * Identifies products that need price updates and generates a priority report
  */
 
@@ -249,7 +249,7 @@ function formatTelegramReport(products) {
     minute: '2-digit'
   });
 
-  let report = `🔄 *Laporan Update Harga PriceHunt*\n`;
+  let report = `🔄 *Laporan Update Harga BijakBeli*\n`;
   report += `📅 ${dateStr}\n\n`;
   report += `Ditemukan *${products.length} produk* yang perlu diupdate:\n\n`;
 
@@ -300,7 +300,7 @@ function formatTelegramReport(products) {
   report += `• Jalankan crawler untuk produk prioritas tinggi\n`;
   report += `• Periksa dan validasi data confidence rendah\n`;
   report += `• Update harga manual jika crawler gagal\n\n`;
-  report += `_Report generated automatically by PriceHunt Cron_`;
+  report += `_Report generated automatically by BijakBeli Cron_`;
 
   return report;
 }

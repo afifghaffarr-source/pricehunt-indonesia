@@ -1,8 +1,8 @@
 # 🔍 COMPREHENSIVE PROJECT AUDIT
-## PriceHunt Indonesia - E-Commerce Price Comparison Platform
+## BijakBeli.app - E-Commerce Price Comparison Platform
 
 **Audit Date:** 11 Juni 2026, 07:50 WIB  
-**Project:** ~/projects/pricehunt-indonesia  
+**Project:** ~/projects/bijakbeli-app  
 **Status:** Frontend Ready, Data Pipeline Needs Implementation
 
 ---
@@ -259,7 +259,7 @@ Template exists: `.env.local.example` (2176 bytes)
 
 1. **Deploy to Vercel** (10 min)
    ```bash
-   cd ~/projects/pricehunt-indonesia
+   cd ~/projects/bijakbeli-app
    vercel --prod
    ```
 

@@ -5,7 +5,7 @@ import { RegisterForm } from "./RegisterForm";
 
 export const metadata: Metadata = {
   title: "Daftar",
-  description: "Buat akun PriceHunt Indonesia baru.",
+  description: "Buat akun BijakBeli.app baru.",
 };
 
 export default function RegisterPage() {

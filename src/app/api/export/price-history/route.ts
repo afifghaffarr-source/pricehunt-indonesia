@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     const csv = csvRows.join("\n");
 
     // Return CSV file
-    const filename = `pricehunt-price-history-${product.slug}-${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = `bijakbeli-price-history-${product.slug}-${new Date().toISOString().split('T')[0]}.csv`;
     
     return new NextResponse(csv, {
       headers: {

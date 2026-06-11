@@ -112,7 +112,7 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     await resend.emails.send({
-      from: "PriceHunt <onboarding@resend.dev>",
+      from: "BijakBeli <onboarding@resend.dev>",
       to: data.email,
       subject: `Harga ${data.productName} turun! ${formatRupiah(data.currentPrice)}`,
       html: `
@@ -120,7 +120,7 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 32px 24px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">🎉 Harga Turun!</h1>
-            <p style="color: #e0e7ff; margin: 8px 0 0; font-size: 14px;">PriceHunt Alert</p>
+            <p style="color: #e0e7ff; margin: 8px 0 0; font-size: 14px;">BijakBeli Alert</p>
           </div>
           
           <!-- Content -->
@@ -152,7 +152,7 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
           
           <!-- Footer -->
           <div style="padding: 20px 24px; text-align: center; background: #f9fafb; border-top: 1px solid #e5e7eb;">
-            <p style="color: #9ca3af; font-size: 12px; margin: 0;">Email dari <strong style="color: #2563eb;">PriceHunt Indonesia</strong></p>
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">Email dari <strong style="color: #2563eb;">BijakBeli.app</strong></p>
           </div>
         </div>
       `,
@@ -353,7 +353,7 @@ async function sendDigestEmail(data: DigestData): Promise<boolean> {
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 36px 24px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">PriceHunt</h1>
+          <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">BijakBeli</h1>
           <p style="color: #e0e7ff; margin: 10px 0 0; font-size: 15px; font-weight: 500;">Ringkasan Belanja Pintar Minggu Ini</p>
         </div>
 
@@ -387,16 +387,16 @@ async function sendDigestEmail(data: DigestData): Promise<boolean> {
 
         <!-- Footer -->
         <div style="padding: 24px; text-align: center; background: #f9fafb; border-top: 1px solid #e5e7eb;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px;">Email digest dikirim mingguan oleh <strong style="color: #2563eb;">PriceHunt Indonesia</strong></p>
+          <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px;">Email digest dikirim mingguan oleh <strong style="color: #2563eb;">BijakBeli.app</strong></p>
           <a href="${data.appUrl}/settings" style="color: #6b7280; text-decoration: underline; font-size: 11px;">Ubah preferensi email</a>
         </div>
       </div>
     `;
 
     await resend.emails.send({
-      from: "PriceHunt <onboarding@resend.dev>",
+      from: "BijakBeli <onboarding@resend.dev>",
       to: data.email,
-      subject: `Ringkasan Belanja Pintar PriceHunt`,
+      subject: `Ringkasan Belanja Pintar BijakBeli`,
       html,
     });
 

@@ -38,7 +38,7 @@ async function sendAlertEmail(input: {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   await resend.emails.send({
-    from: "PriceHunt <onboarding@resend.dev>",
+    from: "BijakBeli <onboarding@resend.dev>",
     to: input.email,
     subject: `Harga ${input.productName} sudah masuk target`,
     html: `

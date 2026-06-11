@@ -1,4 +1,4 @@
-# 🚀 PriceHunt Multi-Agent Quick Start
+# 🚀 BijakBeli Multi-Agent Quick Start
 
 ## ✅ System Ready
 
@@ -33,7 +33,7 @@
 "Lihat semua cron jobs"
 
 # Check specific job
-"Status job PriceHunt QA Monitor"
+"Status job BijakBeli QA Monitor"
 
 # Run job manually now
 "Jalankan QA Monitor sekarang"
@@ -109,9 +109,9 @@ ph-agent doc "Update README with comparison feature"
 ### Direct Commands
 ```bash
 # Development
-pricehunt dev              # Start dev server
-pricehunt test             # Run tests
-pricehunt health           # Full health check
+bijakbeli dev              # Start dev server
+bijakbeli test             # Run tests
+bijakbeli health           # Full health check
 
 # Monitoring
 vps-check                  # VPS health
@@ -230,7 +230,7 @@ Run 1-2 in parallel, then 3-4, then 5-6.
 hermes cron list
 
 # Skills
-hermes skills list pricehunt
+hermes skills list bijakbeli
 
 # Logs
 hermes cron logs <job_id>
@@ -251,10 +251,10 @@ hermes cron resume <job_id>
 ### Update Skills
 ```bash
 # Inspect skill
-hermes skills inspect pricehunt-backend-dev
+hermes skills inspect bijakbeli-backend-dev
 
 # Patch skill (via Kiro chat)
-"Update pricehunt-backend-dev skill to include 
+"Update bijakbeli-backend-dev skill to include 
 GraphQL endpoint patterns"
 ```
 
@@ -295,13 +295,13 @@ Review monthly and optimize.
 ## 📚 Documentation
 
 **Full Guide:**
-`~/projects/pricehunt-indonesia/MULTI_AGENT_SYSTEM.md`
+`~/projects/bijakbeli-app/MULTI_AGENT_SYSTEM.md`
 
 **Quick Reference:**
-`~/projects/pricehunt-indonesia/KIRO_QUICK_REFERENCE.md`
+`~/projects/bijakbeli-app/KIRO_QUICK_REFERENCE.md`
 
 **Skills Location:**
-`~/.hermes/skills/pricehunt/`
+`~/.hermes/skills/bijakbeli/`
 
 **Cron Logs:**
 `~/.hermes/cron/output/`
@@ -311,12 +311,12 @@ Review monthly and optimize.
 ## 🎓 Learning Resources
 
 **Skills to Load:**
-- `pricehunt-development` - Main development guide
-- `pricehunt-backend-dev` - Backend patterns
-- `pricehunt-frontend-dev` - Frontend patterns
-- `pricehunt-test-engineer` - Testing guide
-- `pricehunt-bug-hunter` - Debugging workflows
-- `pricehunt-doc-writer` - Documentation standards
+- `bijakbeli-development` - Main development guide
+- `bijakbeli-backend-dev` - Backend patterns
+- `bijakbeli-frontend-dev` - Frontend patterns
+- `bijakbeli-test-engineer` - Testing guide
+- `bijakbeli-bug-hunter` - Debugging workflows
+- `bijakbeli-doc-writer` - Documentation standards
 
 **Inspect via:**
 ```bash

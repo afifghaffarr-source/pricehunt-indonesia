@@ -10,7 +10,7 @@
 
 ### 1. Buka Deployments Tab
 ```
-Vercel App → pricehunt-indonesia → Deployments
+Vercel App → bijakbeli-app → Deployments
 ```
 
 ### 2. Cari Deployment Teratas
@@ -34,7 +34,7 @@ ATAU
 ### 5. Test (dari HP browser)
 Buka:
 ```
-https://pricehunt-indonesia.vercel.app/api/admin/data-collection/offers?limit=1
+https://bijakbeli-app.vercel.app/api/admin/data-collection/offers?limit=1
 ```
 
 **Expected Response:**

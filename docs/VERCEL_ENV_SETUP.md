@@ -13,7 +13,7 @@ Makanya production masih error: `"Your project's URL and Key are required"`
 ### Step 1: Buka Vercel Dashboard
 
 1. Login ke https://vercel.com
-2. Pilih project: **pricehunt-indonesia**
+2. Pilih project: **bijakbeli-app**
 3. Klik tab **Settings**
 4. Klik menu **Environment Variables** (di sidebar kiri)
 
@@ -53,7 +53,7 @@ Setelah redeploy selesai, test:
 
 ```bash
 # Test API (should return success: true)
-curl https://pricehunt-indonesia.vercel.app/api/admin/data-collection/offers?limit=1
+curl https://bijakbeli-app.vercel.app/api/admin/data-collection/offers?limit=1
 ```
 
 Kalau masih error, cek:

@@ -57,7 +57,7 @@ export interface VexoTranslateResponse extends VexoBaseResponse {
   };
 }
 
-export interface PriceHuntDiscoveredProduct {
+export interface BijakBeliDiscoveredProduct {
   id: string;
   title: string;
   normalizedTitle: string;

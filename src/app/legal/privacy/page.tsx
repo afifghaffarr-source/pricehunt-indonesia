@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - PriceHunt Indonesia",
-  description: "Kebijakan privasi PriceHunt Indonesia mengenai pengumpulan, penggunaan, dan perlindungan data pengguna.",
+  title: "Privacy Policy - BijakBeli.app",
+  description: "Kebijakan privasi BijakBeli.app mengenai pengumpulan, penggunaan, dan perlindungan data pengguna.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -125,8 +125,8 @@ export default function PrivacyPolicyPage() {
             Jika Anda memiliki pertanyaan tentang kebijakan privasi ini, hubungi kami di:
           </p>
           <ul className="list-none mt-2 space-y-1">
-            <li>Email: privacy@pricehunt.id</li>
-            <li>Website: pricehunt-indonesia.vercel.app</li>
+            <li>Email: privacy@bijakbeli.id</li>
+            <li>Website: bijakbeli-app.vercel.app</li>
           </ul>
         </section>
       </div>

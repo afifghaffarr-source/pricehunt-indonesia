@@ -127,7 +127,7 @@ Try marketplace with weaker anti-bot:
 **Steps:**
 ```bash
 # 1. Deploy to Vercel (30 min)
-cd ~/projects/pricehunt-indonesia
+cd ~/projects/bijakbeli-app
 vercel --prod
 
 # 2. Result: Demo live with 3 products
@@ -271,7 +271,7 @@ browser = await p.chromium.launch(headless=False)
 
 **Files Ready to Commit:**
 ```bash
-cd ~/projects/pricehunt-indonesia
+cd ~/projects/bijakbeli-app
 git add collectors/
 git commit -m "feat: Add Tokopedia collector infrastructure"
 ```

@@ -64,8 +64,8 @@ export function Header() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Tag className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold text-foreground">
-            Price<span className="text-primary">Hunt</span>
+          <span className="text-lg font-bold">
+            Bijak<span className="text-primary">Beli</span>
           </span>
         </Link>
 

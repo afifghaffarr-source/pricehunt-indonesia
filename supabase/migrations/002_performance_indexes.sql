@@ -1,5 +1,5 @@
 -- =============================================
--- PriceHunt Indonesia — Performance Indexes
+-- BijakBeli.app — Performance Indexes
 -- =============================================
 -- Migration: Add missing indexes for better query performance
 -- Run this in Supabase SQL Editor after running 001_initial_schema.sql

@@ -1,6 +1,6 @@
 -- Migration 108: Data Ingestion System
 -- Purpose: Add data sources tracking, ingestion logs, conflict detection, and enhanced offer/snapshot fields
--- Part of: Hybrid data ingestion architecture for PriceHunt Indonesia
+-- Part of: Hybrid data ingestion architecture for BijakBeli.app
 
 -- ============================================================================
 -- TABLE: data_sources

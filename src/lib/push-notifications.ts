@@ -23,7 +23,7 @@ export async function sendPushNotificationToUser(
   try {
     const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-    const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@pricehunt.id";
+    const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@bijakbeli.id";
 
     if (!vapidPublicKey || !vapidPrivateKey) {
       console.log("[Push] VAPID keys not configured, skipping push notification");

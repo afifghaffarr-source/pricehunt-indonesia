@@ -1,7 +1,7 @@
-import type { PriceHuntDiscoveredProduct, VexoSearchResultItem } from "./types";
+import type { BijakBeliDiscoveredProduct, VexoSearchResultItem } from "./types";
 import type { Marketplace } from "@/lib/types";
 
-const MARKETPLACE_PATTERNS: { pattern: RegExp; name: PriceHuntDiscoveredProduct["marketplace"] }[] = [
+const MARKETPLACE_PATTERNS: { pattern: RegExp; name: BijakBeliDiscoveredProduct["marketplace"] }[] = [
   { pattern: /tokopedia\.com/i, name: "tokopedia" },
   { pattern: /shopee\.co\.id/i, name: "shopee" },
   { pattern: /bukalapak\.com/i, name: "bukalapak" },
@@ -10,7 +10,7 @@ const MARKETPLACE_PATTERNS: { pattern: RegExp; name: PriceHuntDiscoveredProduct[
   { pattern: /tiktok\.com/i, name: "tiktok-shop" },
 ];
 
-export function detectMarketplace(url: string): PriceHuntDiscoveredProduct["marketplace"] {
+export function detectMarketplace(url: string): BijakBeliDiscoveredProduct["marketplace"] {
   for (const { pattern, name } of MARKETPLACE_PATTERNS) {
     if (pattern.test(url)) return name;
   }
@@ -69,9 +69,9 @@ export function calculateConfidence(item: VexoSearchResultItem, expectedMarketpl
 
 export function normalizeSearchResult(
   item: VexoSearchResultItem,
-  source: PriceHuntDiscoveredProduct["source"],
+  source: BijakBeliDiscoveredProduct["source"],
   expectedMarketplace?: string
-): PriceHuntDiscoveredProduct {
+): BijakBeliDiscoveredProduct {
   const marketplace = detectMarketplace(item.url);
   const estimatedPrice = extractPrice(item.snippet || item.price || "");
   const uniqueId = "vexo-" + simpleHash(item.url + "|" + item.title + "|" + source);
@@ -92,7 +92,7 @@ export function normalizeSearchResult(
   };
 }
 
-export function toMarketplace(mp: PriceHuntDiscoveredProduct["marketplace"]): Marketplace | null {
+export function toMarketplace(mp: BijakBeliDiscoveredProduct["marketplace"]): Marketplace | null {
   const map: Record<string, Marketplace> = {
     tokopedia: "tokopedia",
     shopee: "shopee",

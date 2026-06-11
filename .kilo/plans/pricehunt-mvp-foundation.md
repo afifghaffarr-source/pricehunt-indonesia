@@ -1,8 +1,8 @@
-﻿# PriceHunt Indonesia — MVP Foundation Plan
+﻿# BijakBeli.app — MVP Foundation Plan
 
 ## Ringkasan Pemahaman Project
 
-**PriceHunt Indonesia** adalah website perbandingan harga marketplace Indonesia. Target user adalah pembeli online yang ingin membandingkan harga dari beberapa marketplace (Tokopedia, Shopee, Bukalapak, Lazada, Blibli, TikTok Shop) agar hemat uang dan waktu.
+**BijakBeli.app** adalah website perbandingan harga marketplace Indonesia. Target user adalah pembeli online yang ingin membandingkan harga dari beberapa marketplace (Tokopedia, Shopee, Bukalapak, Lazada, Blibli, TikTok Shop) agar hemat uang dan waktu.
 
 ### State Saat Ini
 - Next.js **16.2.7** (bukan 14 — sudah terinstall, tidak perlu downgrade)

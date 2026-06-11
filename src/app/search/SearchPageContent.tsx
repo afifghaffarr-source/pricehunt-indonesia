@@ -11,7 +11,7 @@ import { SectionHeading } from "@/components/common/SectionHeading";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
 import { createClient } from "@/lib/supabase/client";
 import type { Product, Marketplace, MarketplacePrice } from "@/lib/types";
-import type { PriceHuntDiscoveredProduct } from "@/lib/vexo/types";
+import type { BijakBeliDiscoveredProduct } from "@/lib/vexo/types";
 import {
   Select,
   SelectContent,
@@ -69,7 +69,7 @@ export function SearchPageContent() {
   );
   const [sortBy, setSortBy] = useState<string>("deal-score");
   const [products, setProducts] = useState<Product[]>([]);
-  const [discovered, setDiscovered] = useState<PriceHuntDiscoveredProduct[]>([]);
+  const [discovered, setDiscovered] = useState<BijakBeliDiscoveredProduct[]>([]);
   const [vexoStatus, setVexoStatus] = useState<"loading" | "ok" | "error" | "unavailable">("loading");
   const [loading, setLoading] = useState(true);
 

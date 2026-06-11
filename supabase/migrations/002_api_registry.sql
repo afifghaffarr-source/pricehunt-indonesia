@@ -1,4 +1,4 @@
--- PriceHunt Indonesia - API Registry Schema
+-- BijakBeli.app - API Registry Schema
 
 CREATE TABLE IF NOT EXISTS api_source_categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -12,7 +12,7 @@
 - [x] **requirements.txt** (Playwright, Rich, Click, Requests)
 - [x] **config.py** (env vars, settings)
 - [x] **.env.example** (template konfigurasi)
-- [x] **api_client.py** (send data ke PriceHunt API)
+- [x] **api_client.py** (send data ke BijakBeli API)
 - [x] **normalizer.py** (price, marketplace, stock normalization)
 - [x] **base_collector.py** (base class dengan browser control)
 - [x] **generic_parser.py** (fallback parser untuk any marketplace)
@@ -126,7 +126,7 @@ python collector.py keyword "iphone 15" --marketplace tokopedia --limit 10
 tools/price-collector/
 ├── collector.py          # 370 lines - Main CLI (click commands)
 ├── config.py             # 90 lines - Configuration & env
-├── api_client.py         # 100 lines - PriceHunt API client
+├── api_client.py         # 100 lines - BijakBeli API client
 ├── normalizer.py         # 180 lines - Data normalization
 ├── base_collector.py     # 350 lines - Base class & browser control
 ├── generic_parser.py     # 350 lines - Fallback parser
@@ -180,9 +180,9 @@ Expected output:
 │ Stock              │ in_stock                             │
 └────────────────────┴──────────────────────────────────────┘
 
-Send this data to PriceHunt? (y/n): y
+Send this data to BijakBeli? (y/n): y
 
-📤 Sending to PriceHunt API...
+📤 Sending to BijakBeli API...
 
 ✅ SUCCESS!
 Offer ID: uuid-here

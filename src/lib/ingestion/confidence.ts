@@ -1,5 +1,5 @@
 /**
- * Confidence Score Calculator for PriceHunt Indonesia
+ * Confidence Score Calculator for BijakBeli.app
  * 
  * Calculates confidence scores (0-100) for price data based on:
  * - Source type (official API > extension > scraper)

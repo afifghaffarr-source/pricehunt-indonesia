@@ -172,7 +172,7 @@ npm install @radix-ui/react-tabs @radix-ui/react-label
 3. Run query
 
 # Via CLI (if credentials available)
-cd ~/projects/pricehunt-indonesia
+cd ~/projects/bijakbeli-app
 supabase db push
 ```
 

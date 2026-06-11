@@ -1,4 +1,4 @@
--- PriceHunt Indonesia - API Registry Seed Data
+-- BijakBeli.app - API Registry Seed Data
 
 INSERT INTO api_source_categories (name, slug, description) VALUES
 ('E-Commerce', 'e-commerce', 'API marketplace dan e-commerce Indonesia'),

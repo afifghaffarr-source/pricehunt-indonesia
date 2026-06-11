@@ -1,6 +1,6 @@
 -- Migration 110: Enhanced Data Collection System
 -- Purpose: Add tables and fields for semi-automated browser collector + targeted refresh
--- Part of: PriceHunt Indonesia realistic data collection MVP
+-- Part of: BijakBeli.app realistic data collection MVP
 
 -- ============================================================================
 -- ENHANCE: offers table with missing fields for browser collector

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pricehunt-v1'
-const RUNTIME_CACHE = 'pricehunt-runtime'
+const CACHE_NAME = 'bijakbeli-v1'
+const RUNTIME_CACHE = 'bijakbeli-runtime'
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
@@ -112,10 +112,10 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data ? event.data.json() : {}
   } catch {
-    payload = { title: 'PriceHunt', body: event.data?.text() }
+    payload = { title: 'BijakBeli', body: event.data?.text() }
   }
 
-  const title = payload.title || 'PriceHunt mengabari'
+  const title = payload.title || 'BijakBeli mengabari'
   const options = {
     body: payload.body || 'Ada update harga untuk produk yang Anda pantau.',
     icon: payload.icon || '/icons/icon-192.svg',

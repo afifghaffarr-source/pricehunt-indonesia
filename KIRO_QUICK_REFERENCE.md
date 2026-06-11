@@ -1,4 +1,4 @@
-# 🤖 Kiro Quick Reference - PriceHunt Indonesia
+# 🤖 Kiro Quick Reference - BijakBeli.app
 
 Generated: $(date '+%Y-%m-%d %H:%M')
 
@@ -8,7 +8,7 @@ Generated: $(date '+%Y-%m-%d %H:%M')
 
 ```bash
 # Development
-cd ~/projects/pricehunt-indonesia
+cd ~/projects/bijakbeli-app
 bun run dev              # Start dev server (localhost:3000)
 bun run build            # Production build
 bun run test             # Run 59 tests
@@ -261,7 +261,7 @@ Ask Kiro:
 - "Check why tests failing"
 - "Add new API endpoint for [feature]"
 
-Load skill: `hermes skills view pricehunt-development`
+Load skill: `hermes skills view bijakbeli-development`
 
 ---
 
