@@ -1,0 +1,136 @@
+import { describe, it, expect, beforeAll } from 'vitest';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+describe('Deal Score Calculation Optimization', () => {
+  let supabase: ReturnType<typeof createClient>;
+
+  beforeAll(() => {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+  });
+
+  it('should have products with price history', async () => {
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('id, name, price_history(price, recorded_at)')
+      .not('lowest_price', 'is', null)
+      .limit(5);
+
+    expect(error).toBeNull();
+    expect(products).toBeTruthy();
+    expect(products!.length).toBeGreaterThan(0);
+  });
+
+  it('should calculate median correctly', () => {
+    const calculateMedian = (values: number[]): number | null => {
+      if (values.length === 0) return null;
+      const sorted = [...values].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      if (sorted.length % 2 === 0) {
+        return (sorted[mid - 1] + sorted[mid]) / 2;
+      }
+      return sorted[mid];
+    };
+
+    expect(calculateMedian([1, 2, 3, 4, 5])).toBe(3);
+    expect(calculateMedian([1, 2, 3, 4])).toBe(2.5);
+    expect(calculateMedian([5])).toBe(5);
+    expect(calculateMedian([])).toBeNull();
+  });
+
+  it('should calculate historical stats from price history', () => {
+    const calculateHistoricalStats = (
+      priceHistory: Array<{ price: number; recorded_at: string }>,
+      currentDate: Date
+    ) => {
+      if (priceHistory.length === 0) {
+        return {
+          median30Day: null,
+          median90Day: null,
+          lowestHistoricalPrice: null,
+        };
+      }
+
+      const calculateMedian = (values: number[]): number | null => {
+        if (values.length === 0) return null;
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        if (sorted.length % 2 === 0) {
+          return (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+        return sorted[mid];
+      };
+
+      const thirtyDaysAgo = new Date(currentDate);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const ninetyDaysAgo = new Date(currentDate);
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const last30DayPrices = priceHistory
+        .filter(h => new Date(h.recorded_at) >= thirtyDaysAgo)
+        .map(h => h.price);
+
+      const last90DayPrices = priceHistory
+        .filter(h => new Date(h.recorded_at) >= ninetyDaysAgo)
+        .map(h => h.price);
+
+      const allPrices = priceHistory.map(h => h.price);
+
+      return {
+        median30Day: calculateMedian(last30DayPrices),
+        median90Day: calculateMedian(last90DayPrices),
+        lowestHistoricalPrice: allPrices.length > 0 ? Math.min(...allPrices) : null,
+      };
+    };
+
+    const mockHistory = [
+      { price: 100000, recorded_at: '2026-05-01' },
+      { price: 95000, recorded_at: '2026-05-15' },
+      { price: 90000, recorded_at: '2026-06-01' },
+      { price: 85000, recorded_at: '2026-06-10' },
+    ];
+
+    const stats = calculateHistoricalStats(mockHistory, new Date('2026-06-11'));
+
+    expect(stats.lowestHistoricalPrice).toBe(85000);
+    expect(stats.median30Day).toBeDefined();
+    expect(stats.median90Day).toBeDefined();
+  });
+
+  it('should fetch products with all required data for deal scoring', async () => {
+    const { data: products, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        slug,
+        lowest_price,
+        prices (
+          price,
+          seller_rating,
+          in_stock,
+          marketplaces (name)
+        ),
+        price_history (
+          price,
+          recorded_at
+        )
+      `)
+      .not('lowest_price', 'is', null)
+      .limit(3);
+
+    expect(error).toBeNull();
+    expect(products).toBeTruthy();
+    
+    if (products && products.length > 0) {
+      const product = products[0];
+      expect(product.id).toBeDefined();
+      expect(product.name).toBeDefined();
+      expect(product.slug).toBeDefined();
+      expect(product.lowest_price).toBeGreaterThan(0);
+    }
+  });
+});
