@@ -12,15 +12,16 @@ describe('Deal Score Calculation Optimization', () => {
   });
 
   it('should have products with price history', async () => {
-    const { data: products, error } = await supabase
+    const { data, error } = await supabase
       .from('products')
       .select('id, name, price_history(price, recorded_at)')
       .not('lowest_price', 'is', null)
       .limit(5);
 
     expect(error).toBeNull();
-    expect(products).toBeTruthy();
-    expect(products!.length).toBeGreaterThan(0);
+    expect(data).toBeTruthy();
+    // @ts-expect-error - Supabase type inference issue with complex queries
+    expect(data?.length).toBeGreaterThan(0);
   });
 
   it('should calculate median correctly', () => {
@@ -101,7 +102,7 @@ describe('Deal Score Calculation Optimization', () => {
   });
 
   it('should fetch products with all required data for deal scoring', async () => {
-    const { data: products, error } = await supabase
+    const { data, error } = await supabase
       .from('products')
       .select(`
         id,
@@ -122,10 +123,14 @@ describe('Deal Score Calculation Optimization', () => {
       .not('lowest_price', 'is', null)
       .limit(3);
 
+    // Supabase type inference issue with complex queries - cast to any
+    const products = data as any;
+
     expect(error).toBeNull();
     expect(products).toBeTruthy();
+    expect(Array.isArray(products) && products.length).toBeGreaterThan(0);
     
-    if (products && products.length > 0) {
+    if (Array.isArray(products) && products.length > 0) {
       const product = products[0];
       expect(product.id).toBeDefined();
       expect(product.name).toBeDefined();
