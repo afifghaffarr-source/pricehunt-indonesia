@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - PHASE 4: User-Facing UI Features (2026-06-11)
+- **Data Transparency Components** (9 new UI components)
+  - ConfidenceBadge: Visual trust indicators (High/Medium/Low)
+  - SourceLabel: Data source badges (Browser/Manual/Auto)
+  - LastCheckedTimestamp: Relative time with stale warnings
+  - StaleDataBadge: Compact "Data Lama" indicator
+  - ValidationStatusAlert: Status-specific alerts for non-verified data
+  - DataTransparencyDisclaimer: Legal disclaimer (2 variants)
+  - RecheckPriceButton: User-triggered price refresh
+  - ReportPriceForm: Modal for reporting incorrect prices
+  - EnhancedPriceTable: Extended comparison table with metadata
+
+- **API Endpoints** (stubbed, pending migration 110)
+  - POST /api/recheck-request: User recheck requests
+  - POST /api/price-report: Price error reporting
+
+- **UI Components**
+  - Dialog component (Radix UI wrapper)
+  - Updated Select component
+
+### Dependencies
+- Added @radix-ui/react-dialog
+- Added @radix-ui/react-select
+
+### Documentation
+- Created docs/PHASE_4_PROGRESS.md (86% feature completion)
+
+## [Unreleased - PHASE 3]
+
+### Added - PHASE 3: Admin Dashboard (2026-06-11)
+- **Admin Data Collection Dashboard** (`/admin/data-collection`)
+  - Statistics cards with real-time metrics (offers, conflicts, rechecks, stale data)
+  - Offers management table with search and filters (status, marketplace)
+  - Price conflicts resolution interface with side-by-side comparison
+  - Recheck requests queue with priority scoring
+  - Manual offer input form with full validation
+  
+- **UI Components** (7 new files)
+  - `DataCollectionDashboard` - Main tabs container
+  - `DataCollectionStats` - Statistics cards (server component)
+  - `OffersList` - Searchable offers table with filters
+  - `ConflictsList` - Price conflicts management
+  - `RechecksList` - Recheck queue management
+  - `ManualOfferForm` - Manual offer input form
+  - Base UI: `Tabs`, `Label`, `Textarea` (Radix UI)
+
+- **API Routes** (6 endpoints)
+  - `GET /api/admin/data-collection/offers` - List offers with filters
+  - `GET /api/admin/data-collection/conflicts` - List unresolved conflicts
+  - `GET /api/admin/data-collection/rechecks` - List pending rechecks
+  - `PATCH /api/admin/data-collection/rechecks/[id]` - Update recheck status
+  - `POST /api/admin/data-collection/resolve-conflict` - Resolve conflict
+  - `POST /api/admin/data-collection/manual-offer` - Submit manual offer
+
+- **Documentation**
+  - `docs/PHASE_3_COMPLETE.md` - Complete PHASE 3 documentation
+  - `docs/DEPLOYMENT.md` - Production deployment guide
+  - Updated `docs/PROGRESS.md` - Project progress tracker
+
+### Changed
+- Updated `README.md` with PHASE 1 & 2 progress (211 tests, Python collector)
+- Added project structure with new `docs/` and collector directories
+
+### Technical
+- Installed `@radix-ui/react-tabs`, `@radix-ui/react-label`
+- API routes use mock data until migration 110 applied
+- Full implementations ready (commented out, awaiting migration)
+- Next.js 16 async params API compatibility
+
+### Notes
+- **PHASE 3 Status:** Code complete (90%), blocked by migration 110
+- **Files Created:** 16 files, ~2,400 lines
+- **Activation Required:** Apply migration 110, uncomment implementations
+
+---
+
 ## [2026-06-11 09:48] - PHASE 1 & 2: Data Collection System
 
 ### Added
