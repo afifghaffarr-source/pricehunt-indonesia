@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added - PHASE 5: Automation & Refresh System (2026-06-11)
+### Added
+
+## [0.5.0] - 2026-06-11
+
+### Added - Migration 110 Activation
+- **Database Schema Applied:** 3 new tables (`crawl_targets`, `recheck_requests`, `price_reports`) + 5 new offer columns
+- **Admin APIs Activated (5):** offers list, conflicts list, resolve conflict, rechecks list, update recheck status
+- **User APIs Activated (2):** recheck request, price report submission
+- **Column Naming:** Used `crawl_status`, `request_status`, `report_status` to avoid PostgreSQL reserved keywords
+- **Documentation:** Created MIGRATION_110_ACTIVATION.md with complete activation log
+
+### Changed
+- Replaced all stubbed API endpoints (503 responses) with real Supabase implementations
+- Updated migration 110 SQL file with correct column names
+- Removed `@ts-ignore` comments from user-facing endpoints
+
+### Fixed
+- PostgreSQL reserved keyword conflicts (`status` → `crawl_status`/`request_status`/`report_status`)
+- Foreign key constraints to auth.users (removed, using plain UUID + RLS policies) - PHASE 5: Automation & Refresh System (2026-06-11)
 - **Refresh Priority Calculator** (`src/lib/refresh-priority.ts`)
   - Intelligent scoring: staleness, engagement, volatility, user requests
   - Dynamic crawl frequency: 1h to 48h based on priority

@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
         created_at,
         processed_at,
         result_message,
-        offer:offers(id, title, price, url),
-        product:products(name, slug)
+        offer_id,
+        product_id
       `)
       .order('created_at', { ascending: false })
       .limit(limit);
