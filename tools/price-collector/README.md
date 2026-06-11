@@ -1,266 +1,144 @@
-# PriceHunt Indonesia - Browser Collector
+# PriceHunt Indonesia - Price Collector
 
-Semi-automated browser-based price data collection tool untuk PriceHunt Indonesia.
+Browser-based semi-automated price data collection tool untuk marketplace Indonesia.
 
-## 🎯 Filosofi
+## Status: ✅ CONFIGURED & READY
 
-Bukan scraper massal. Ini adalah tool untuk **semi-automated data collection** yang:
-- ✅ Membuka browser seperti user biasa
-- ✅ User/admin bisa browse manual
-- ✅ Tool membaca data yang **terlihat** di halaman
-- ✅ User confirm sebelum kirim
-- ❌ TIDAK bypass captcha/login
-- ❌ TIDAK ambil data pribadi
-- ❌ TIDAK crawl ribuan halaman otomatis
+**Production API:** https://pricehunt-indonesia.vercel.app  
+**Authentication:** INGESTION_SECRET configured in Vercel + local .env  
+**Last tested:** 2026-06-11 (API connection successful)
 
-## 🚀 Quick Start
+## Setup (Already Done)
 
-### 1. Install Dependencies
+1. ✅ Python 3.11+ venv created with all dependencies
+2. ✅ INGESTION_SECRET generated and added to Vercel production
+3. ✅ `.env` configured to use production API
+4. ✅ API connection tested successfully
 
+## Usage
+
+### Activate venv
 ```bash
-cd tools/price-collector
-pip install -r requirements.txt
-playwright install chromium
+cd ~/projects/pricehunt-indonesia/tools/price-collector
+source venv/bin/activate
 ```
 
-### 2. Configure
-
-```bash
-cp .env.example .env
-# Edit .env - set PRICEHUNT_API_URL and INGESTION_SECRET
-```
-
-### 3. Test Connection
-
+### Test API Connection
 ```bash
 python collector.py test
 ```
 
-### 4. Run Collector
-
-**Manual Mode** (recommended untuk pertama kali):
+### Collect Data - URL Mode
+Extract data from a specific product URL:
 ```bash
-python collector.py manual
-# Browser akan terbuka → browse ke produk → tekan Enter → confirm send
+python collector.py url --marketplace tokopedia --url "https://www.tokopedia.com/..."
 ```
 
-**URL Mode** (extract single product):
+### Collect Data - Keyword Mode
+Search by keyword and select products:
 ```bash
-python collector.py url "https://www.tokopedia.com/..."
+python collector.py keyword --marketplace tokopedia --keyword "iphone 15 pro max" --limit 5
 ```
 
-**Keyword Mode** (search & select):
+### Collect Data - Manual Mode
+Open browser and manually browse, then extract:
 ```bash
-python collector.py keyword "iphone 15 128gb" --marketplace tokopedia --limit 10
+python collector.py manual --marketplace shopee
 ```
 
-## 📋 Modes
+## Automation
 
-### 1. Manual Mode
+### Quick Manual Run
 ```bash
-python collector.py manual [--marketplace tokopedia]
+cd ~/projects/pricehunt-indonesia/tools/price-collector && \
+source venv/bin/activate && \
+python collector.py keyword --marketplace tokopedia --keyword "smartphone" --limit 3
 ```
 
-- Browser terbuka (visible)
-- User bebas browse ke halaman produk mana saja
-- Setelah halaman ready, tekan Enter di terminal
-- Tool extract data yang terlihat
-- Preview data → confirm → send
-
-**Use case:** Eksplorasi, manual QA, edge cases
-
-### 2. URL Mode
-```bash
-python collector.py url <PRODUCT_URL> [--marketplace tokopedia]
+### Cron Job Example
+Run daily at 2 AM to collect data:
+```cron
+0 2 * * * cd ~/projects/pricehunt-indonesia/tools/price-collector && source venv/bin/activate && python collector.py keyword --marketplace tokopedia --keyword "trending" --limit 10 >> ~/logs/price-collector.log 2>&1
 ```
 
-- Input: Product URL langsung
-- Browser terbuka (headless)
-- Extract data otomatis
-- Preview → confirm → send
+## Configuration
 
-**Use case:** Targeted collection, specific products
+`.env` file (already configured):
+- `PRICEHUNT_API_URL`: Production URL
+- `INGESTION_SECRET`: Matches Vercel environment variable
+- `DEFAULT_MARKETPLACE`: tokopedia
+- `COLLECTOR_HEADLESS`: false (shows browser)
+- Rate limits: 2-5 second delays between requests
 
-### 3. Keyword Mode
-```bash
-python collector.py keyword <KEYWORD> --marketplace tokopedia --limit 10
-```
+## Schema Notes (CRITICAL!)
 
-- Search marketplace by keyword
-- Tampilkan hasil (max `limit`)
-- User pilih nomor produk mana yang mau di-collect
-- Loop: extract → preview → confirm → send
+**Actual offers table schema** (discovered 2026-06-11):
+- `price` (NOT current_price)
+- `in_stock` boolean (NOT stock_status enum)
+- `shipping_cost` (NOT shipping_estimate)
 
-**Use case:** Bulk collection dengan kontrol
+The collector sends data to `/api/ingestion/offer-snapshot` which:
+1. Normalizes the data
+2. Creates/finds product by URL
+3. Creates offer record in `offers` table
+4. Creates price_snapshot for history
+5. Runs confidence scoring and anomaly detection
 
-## 🛠️ Architecture
+## Supported Marketplaces
 
-```
-collector.py (CLI)
-├── config.py (settings, env vars)
-├── api_client.py (send to PriceHunt API)
-├── normalizer.py (price, marketplace, stock normalization)
-├── base_collector.py (base class, browser control)
-├── generic_parser.py (fallback parser - any marketplace)
-└── marketplaces/
-    ├── tokopedia.py (Apollo GraphQL cache extraction)
-    └── shopee.py (generic parser for now)
-```
+- ✅ Tokopedia (full support)
+- ✅ Shopee (full support)
+- ⏳ Lazada (parsers ready, not tested)
+- ⏳ Bukalapak (parsers ready, not tested)
+- ⏳ Blibli (parsers ready, not tested)
 
-## 🔍 Data Extraction
+## Output
 
-### Tokopedia
-- **Primary:** Apollo GraphQL cache extraction (most reliable)
-- **Fallback:** Generic parser
+Collector sends data to production API and displays:
+- ✅ Success with offer_id, confidence score, confidence label
+- ⚠️ Warnings if any (low confidence, potential anomalies)
+- ❌ Errors with details
 
-### Shopee
-- **Primary:** Generic parser (TODO: Shopee-specific)
+All data is stored in:
+- `offers` table (main offer data)
+- `price_snapshots` table (historical price tracking)
+- `ingestion_logs` table (audit trail)
 
-### Generic Parser
-Works on any marketplace with fallback strategies:
-1. Open Graph meta tags
-2. JSON-LD structured data
-3. Common HTML selectors
-4. Regex price pattern matching
+## Next Steps
 
-## 📊 Data Sent to API
+1. **Test real collection**: Run URL mode with actual product
+2. **Setup cron**: Schedule periodic data collection
+3. **Monitor**: Check ingestion_logs and offers table
+4. **Expand**: Add more keywords/products to track
 
-```json
-{
-  "marketplace": "tokopedia",
-  "product_url": "https://...",
-  "title": "Samsung Galaxy S24 Ultra...",
-  "price": 13250000,
-  "original_price": 15000000,
-  "seller_name": "Samsung Official Store",
-  "is_official_store": true,
-  "stock_status": "in_stock",
-  "rating": 5.0,
-  "image_url": "https://...",
-  "category_hint": "smartphone",
-  "source": "browser_collector",
-  "captured_at": "2026-06-11T01:30:00Z"
-}
-```
+## Troubleshooting
 
-API endpoint: `/api/ingestion/offer-snapshot`
+### API Connection Failed
+- Check INGESTION_SECRET matches Vercel env var
+- Verify production URL is accessible
+- Check network connectivity
 
-## ⚙️ Configuration (.env)
+### Browser Not Opening
+- Set `COLLECTOR_HEADLESS=false` in .env
+- Check Playwright is installed: `playwright install`
 
-```env
-# Required
-PRICEHUNT_API_URL=http://localhost:3000
-INGESTION_SECRET=your-secret-here
+### Data Not Appearing
+- Check ingestion_logs table for errors
+- Verify offers table has data
+- Remember: UI still uses old `prices` table (Phase 7 will migrate)
 
-# Optional
-DEFAULT_MARKETPLACE=tokopedia
-COLLECTOR_DEFAULT_LIMIT=10
-COLLECTOR_HEADLESS=false
-BROWSER_TIMEOUT=30000
-MIN_DELAY_SECONDS=2
-MAX_DELAY_SECONDS=5
-DEBUG=false
-```
+## Files
 
-## 🚨 Important Rules
+- `collector.py`: Main CLI entry point
+- `config.py`: Configuration loader
+- `api_client.py`: API communication
+- `base_collector.py`: Base collector class
+- `marketplaces/tokopedia.py`: Tokopedia scraper
+- `marketplaces/shopee.py`: Shopee scraper
+- `normalizer.py`: Data normalization
+- `generic_parser.py`: Generic HTML parser
 
-1. **Captcha:** Jika muncul captcha, tampilkan pesan: "Captcha detected. Solve it manually if authorized, then press Enter." **JANGAN bypass**.
+---
 
-2. **Rate Limiting:** Default delay 2-5 detik antar request. Hormati rate limit marketplace.
-
-3. **No Login:** Tool tidak login otomatis. Jika perlu login, user login manual di browser.
-
-4. **No PII:** Tool TIDAK ambil cookie, token, alamat, riwayat belanja, chat, checkout, atau data pribadi.
-
-5. **HTML Storage:** Hanya untuk debug lokal (SAVE_HTML=true). Jangan simpan HTML penuh ke database.
-
-## 🧪 Testing
-
-Test API connection:
-```bash
-python collector.py test
-```
-
-Test Tokopedia extraction:
-```bash
-python collector.py url "https://www.tokopedia.com/owllonenew/samsung-galaxy-s24-ultra-12-256-garansi-2026-1731786344964260912"
-```
-
-## 🔒 Security
-
-- `INGESTION_SECRET` required untuk auth ke API
-- Secret tidak boleh exposed ke browser
-- Tool ini internal/admin use only
-- Data sent: product info saja (no PII)
-
-## 📚 Files
-
-```
-tools/price-collector/
-├── collector.py          # Main CLI script
-├── config.py             # Configuration & env vars
-├── api_client.py         # API client untuk send data
-├── normalizer.py         # Data normalization
-├── base_collector.py     # Base collector class
-├── generic_parser.py     # Generic fallback parser
-├── marketplaces/
-│   ├── __init__.py
-│   ├── tokopedia.py      # Tokopedia collector
-│   └── shopee.py         # Shopee collector
-├── output/               # HTML snapshots (if SAVE_HTML=true)
-├── requirements.txt      # Python dependencies
-├── .env.example          # Example config
-└── README.md             # This file
-```
-
-## 🎓 Examples
-
-**Collect single product:**
-```bash
-python collector.py url "https://tokopedia.com/..."
-```
-
-**Manual browse & collect:**
-```bash
-python collector.py manual
-# → Browser opens → Navigate to product → Press Enter → Confirm
-```
-
-**Search & bulk collect:**
-```bash
-python collector.py keyword "macbook air m3" --marketplace tokopedia --limit 5
-# → Shows 5 results → Select which to collect → Confirm each
-```
-
-## 🐛 Troubleshooting
-
-**"Connection error":**
-- Check if PriceHunt Next.js app running (`npm run dev`)
-- Check `PRICEHUNT_API_URL` in `.env`
-
-**"Unauthorized":**
-- Check `INGESTION_SECRET` matches server config
-- Format: `Authorization: Bearer <secret>`
-
-**"Invalid price":**
-- Tool cannot find valid price on page
-- Try manual mode to inspect page
-- Check if page loaded correctly (wait longer)
-
-**Playwright install failed:**
-```bash
-playwright install --with-deps chromium
-```
-
-## 📈 Next Steps
-
-- [ ] Implement Shopee-specific parser
-- [ ] Add Lazada collector
-- [ ] Add Bukalapak collector
-- [ ] Chrome extension version (future)
-- [ ] Smarter product matching
-- [ ] Conflict detection integration
-
-## 📄 License
-
-Internal tool untuk PriceHunt Indonesia project.
+**For automation questions, see:** `pricehunt-development` skill  
+**For schema questions, see:** Memory (PriceHunt critical schema notes)
