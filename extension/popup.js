@@ -34,7 +34,7 @@ function renderMessage(title, message, productName) {
   appEl.appendChild(messageEl);
 
   const linkBtn = document.createElement("a");
-  linkBtn.href = `https://bijakbeli-app.vercel.app/search?q=${encodeURIComponent(productName || "")}`;
+  linkBtn.href = `https://www.bijakbeli.app/search?q=${encodeURIComponent(productName || "")}`;
   linkBtn.target = "_blank";
   linkBtn.className = "btn";
   linkBtn.textContent = "Cari manual di BijakBeli";
@@ -203,8 +203,8 @@ async function renderResults(productName, products) {
   // Wishlist button
   const wishlistBtn = document.createElement("a");
   wishlistBtn.href = productSlug 
-    ? `https://bijakbeli-app.vercel.app/product/${productSlug}#wishlist`
-    : `https://bijakbeli-app.vercel.app/search?q=${encodeURIComponent(productName)}`;
+    ? `https://www.bijakbeli.app/product/${productSlug}#wishlist`
+    : `https://www.bijakbeli.app/search?q=${encodeURIComponent(productName)}`;
   wishlistBtn.target = "_blank";
   wishlistBtn.style.cssText = "flex: 1; background: #10b981; color: white; padding: 10px; text-align: center; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;";
   wishlistBtn.textContent = "💚 Wishlist";
@@ -213,8 +213,8 @@ async function renderResults(productName, products) {
   // Price history button
   const historyBtn = document.createElement("a");
   historyBtn.href = productSlug 
-    ? `https://bijakbeli-app.vercel.app/product/${productSlug}#history`
-    : `https://bijakbeli-app.vercel.app/search?q=${encodeURIComponent(productName)}`;
+    ? `https://www.bijakbeli.app/product/${productSlug}#history`
+    : `https://www.bijakbeli.app/search?q=${encodeURIComponent(productName)}`;
   historyBtn.target = "_blank";
   historyBtn.style.cssText = "flex: 1; background: #6366f1; color: white; padding: 10px; text-align: center; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; cursor: pointer;";
   historyBtn.textContent = "📊 Riwayat";
@@ -227,8 +227,8 @@ async function renderResults(productName, products) {
   // Main detail link
   const linkBtn = document.createElement("a");
   linkBtn.href = productSlug
-    ? `https://bijakbeli-app.vercel.app/product/${productSlug}`
-    : `https://bijakbeli-app.vercel.app/search?q=${encodeURIComponent(productName)}`;
+    ? `https://www.bijakbeli.app/product/${productSlug}`
+    : `https://www.bijakbeli.app/search?q=${encodeURIComponent(productName)}`;
   linkBtn.target = "_blank";
   linkBtn.className = "btn";
   linkBtn.textContent = "Lihat detail lengkap di BijakBeli";
