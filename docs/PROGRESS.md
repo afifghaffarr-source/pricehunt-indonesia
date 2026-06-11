@@ -43,9 +43,38 @@ Build realistic data collection system untuk PriceHunt Indonesia MVP - semi-auto
 
 ---
 
+## 🟡 PHASE 5: AUTOMATION - IN PROGRESS (2026-06-11)
+
+**Status:** 🟡 60% COMPLETE (Logic Ready, Integration Pending)
+
+### Deliverables
+- [x] Refresh priority calculator (scoring algorithm)
+- [x] Price conflict detector (anomaly detection)
+- [x] Targeted refresh API endpoints (3 endpoints, stubbed)
+- [x] Update frequency logic (dynamic 1h-48h intervals)
+- [x] Automation script (Python cron job)
+- [ ] Wishlist/alert priority integration (needs migration 110)
+- [ ] Cron job deployment (needs migration 110)
+- [ ] Collector integration (needs testing)
+
+### Work Done
+- Created 2 core logic files (~433 lines)
+- Created 3 API endpoints (stubbed, ~350 lines)
+- Created Python automation script (195 lines)
+- Build successful, no TypeScript errors
+
+### Blocked By
+- Migration 110 (for crawl_targets, recheck_requests tables)
+- Python collector integration testing
+
+### Documentation
+- Created: docs/PHASE_5_PROGRESS.md
+
+---
+
 ## 🟡 PHASE 4: USER-FACING UI - IN PROGRESS (2026-06-11)
 
-**Status:** 🟡 60% COMPLETE (Components Ready, Integration Pending)
+**Status:** 🟡 80% COMPLETE (Components Ready, Integrated, Testing Pending)
 
 ### Deliverables
 - [x] Confidence badges (High/Medium/Low visual indicators)
@@ -56,7 +85,8 @@ Build realistic data collection system untuk PriceHunt Indonesia MVP - semi-auto
 - [x] "Laporkan harga salah" form
 - [x] Data transparency disclaimers
 - [x] Enhanced price comparison table
-- [ ] Integration with product detail page (NOT DONE)
+- [x] Integration with product detail page (DONE 2026-06-11)
+- [ ] Testing with real migration 110 data
 - [ ] Category image fallback templates (descoped to PHASE 6)
 
 ### Work Done
@@ -65,6 +95,7 @@ Build realistic data collection system untuk PriceHunt Indonesia MVP - semi-auto
 - Created EnhancedPriceTable (~200 lines)
 - Added Dialog and Select UI components
 - Installed @radix-ui dependencies
+- **INTEGRATED into product page with mock data**
 - Build successful, no TypeScript errors
 
 ### Blocked By
@@ -163,26 +194,26 @@ Build realistic data collection system untuk PriceHunt Indonesia MVP - semi-auto
 
 ## 📊 Overall Progress
 
-**Project Completion:** ~50% (3.5 of 6 phases)
+**Project Completion:** ~58% (4 of 6 phases)
 
 | Phase | Status | Progress | Notes |
 |-------|--------|----------|-------|
 | 1. Foundation | ✅ Complete | 100% | Migration 110 + API ready |
 | 2. Browser Collector | ✅ Complete | 100% | Python tool working |
 | 3. Admin Dashboard | 🟡 Code Complete | 90% | Blocked by migration 110 |
-| 4. User-Facing UI | 🟡 In Progress | 60% | Components ready, integration pending |
-| 5. Automation | ⏳ Pending | 0% | Refresh system, cron jobs |
+| 4. User-Facing UI | 🟡 Integrated | 80% | Components ready & integrated |
+| 5. Automation | 🟡 In Progress | 60% | Logic ready, integration pending |
 | 6. Polish & Deploy | ⏳ Pending | 0% | Tests, security, docs |
 
 **Visual Progress:**
 ```
-OVERALL: ██████████░░░░░░░░░░ 50% (3.5 of 6 phases)
+OVERALL: ███████████░░░░░░░░░ 58% (4 of 6 phases)
 
 PHASE 1: ████████████████████ 100% ✅ Database & API
 PHASE 2: ████████████████████ 100% ✅ Python Collector
 PHASE 3: ██████████████████░░  90% 🟡 Admin UI (blocked)
-PHASE 4: ████████████░░░░░░░░  60% 🟡 User UI (in progress)
-PHASE 5: ░░░░░░░░░░░░░░░░░░░░   0% ⏳ Automation
+PHASE 4: ████████████████░░░░  80% 🟡 User UI (integrated)
+PHASE 5: ████████████░░░░░░░░  60% 🟡 Automation (in progress)
 PHASE 6: ░░░░░░░░░░░░░░░░░░░░   0% ⏳ Polish & Deploy
 ```
 

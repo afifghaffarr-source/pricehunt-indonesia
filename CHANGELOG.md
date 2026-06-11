@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - PHASE 5: Automation & Refresh System (2026-06-11)
+- **Refresh Priority Calculator** (`src/lib/refresh-priority.ts`)
+  - Intelligent scoring: staleness, engagement, volatility, user requests
+  - Dynamic crawl frequency: 1h to 48h based on priority
+  - calculateRefreshPriority(), calculateNextCrawlTime()
+
+- **Price Conflict Detection** (`src/lib/price-conflict.ts`)
+  - Detects: price jumps, confidence drops, fake discounts, cross-marketplace anomalies
+  - Severity levels: low/medium/high
+  - Suggests resolution: review/recheck/flag
+
+- **Refresh API Endpoints** (3 endpoints, stubbed until migration 110)
+  - POST /api/refresh/calculate-priorities: Calculate priority scores
+  - POST /api/refresh/trigger: Manually enqueue targets for refresh
+  - GET /api/refresh/queue: Fetch pending crawl targets
+
+- **Automation Script** (`tools/refresh_cron.py`)
+  - Python CLI for automated refresh cron job
+  - Fetches queue, triggers collector, Rich CLI output
+  - Ready for crontab scheduling
+
+### Changed - PHASE 4: Integration (2026-06-11)
+- **Product Detail Page** (`src/app/product/[slug]/page.tsx`)
+  - Replaced PriceComparisonTable with EnhancedPriceTable
+  - Added DataTransparencyDisclaimer
+  - Integrated all PHASE 4 metadata components
+  - Mock data until migration 110
+
+### Documentation
+- Created docs/PHASE_5_PROGRESS.md (67% feature completion)
+
+## [Unreleased - PHASE 4]
+
 ### Added - PHASE 4: User-Facing UI Features (2026-06-11)
 - **Data Transparency Components** (9 new UI components)
   - ConfidenceBadge: Visual trust indicators (High/Medium/Low)

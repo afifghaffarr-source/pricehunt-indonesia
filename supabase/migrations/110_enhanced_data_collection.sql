@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS crawl_targets (
   product_id UUID REFERENCES products(id) ON DELETE SET NULL,
   offer_id UUID REFERENCES offers(id) ON DELETE SET NULL,
   priority_score INT NOT NULL DEFAULT 50 CHECK (priority_score >= 0 AND priority_score <= 100),
-  status TEXT NOT NULL DEFAULT 'queued' 
-    CHECK (status IN ('queued', 'processing', 'success', 'failed', 'blocked', 'paused', 'disabled')),
+  crawl_status TEXT NOT NULL DEFAULT 'queued' 
+    CHECK (crawl_status IN ('queued', 'processing', 'success', 'failed', 'blocked', 'paused', 'disabled')),
   last_crawled_at TIMESTAMPTZ,
   next_crawl_at TIMESTAMPTZ,
   last_status_code INT,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS crawl_targets (
 -- Indexes for targeted refresh scheduler
 CREATE INDEX IF NOT EXISTS idx_crawl_targets_next_crawl_at ON crawl_targets(next_crawl_at) WHERE status = 'queued';
 CREATE INDEX IF NOT EXISTS idx_crawl_targets_priority_score ON crawl_targets(priority_score DESC);
-CREATE INDEX IF NOT EXISTS idx_crawl_targets_status ON crawl_targets(status);
+CREATE INDEX IF NOT EXISTS idx_crawl_targets_status ON crawl_targets(crawl_status);
 CREATE INDEX IF NOT EXISTS idx_crawl_targets_product_id ON crawl_targets(product_id);
 CREATE INDEX IF NOT EXISTS idx_crawl_targets_offer_id ON crawl_targets(offer_id);
 CREATE INDEX IF NOT EXISTS idx_crawl_targets_domain ON crawl_targets(domain);
@@ -71,8 +71,8 @@ CREATE TABLE IF NOT EXISTS recheck_requests (
   product_id UUID REFERENCES products(id) ON DELETE SET NULL,
   requested_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   reason TEXT,
-  status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'processing', 'done', 'failed', 'ignored')),
+  request_status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (request_status IN ('pending', 'processing', 'done', 'failed', 'ignored')),
   priority_score INT NOT NULL DEFAULT 50 CHECK (priority_score >= 0 AND priority_score <= 100),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   processed_at TIMESTAMPTZ,
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS recheck_requests (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_recheck_requests_status ON recheck_requests(status);
+CREATE INDEX IF NOT EXISTS idx_recheck_requests_status ON recheck_requests(request_status);
 CREATE INDEX IF NOT EXISTS idx_recheck_requests_offer_id ON recheck_requests(offer_id);
 CREATE INDEX IF NOT EXISTS idx_recheck_requests_product_id ON recheck_requests(product_id);
 CREATE INDEX IF NOT EXISTS idx_recheck_requests_requested_by ON recheck_requests(requested_by);
@@ -102,8 +102,8 @@ CREATE TABLE IF NOT EXISTS price_reports (
     CHECK (report_type IN ('harga_berbeda', 'produk_salah', 'stok_habis', 'link_rusak', 'varian_berbeda', 'lainnya')),
   message TEXT,
   reported_price NUMERIC CHECK (reported_price IS NULL OR reported_price >= 0),
-  status TEXT NOT NULL DEFAULT 'open'
-    CHECK (status IN ('open', 'investigating', 'resolved', 'invalid')),
+  report_status TEXT NOT NULL DEFAULT 'open'
+    CHECK (report_status IN ('open', 'investigating', 'resolved', 'invalid')),
   resolution_note TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   resolved_at TIMESTAMPTZ,
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS price_reports (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_price_reports_status ON price_reports(status);
+CREATE INDEX IF NOT EXISTS idx_price_reports_status ON price_reports(report_status);
 CREATE INDEX IF NOT EXISTS idx_price_reports_offer_id ON price_reports(offer_id);
 CREATE INDEX IF NOT EXISTS idx_price_reports_product_id ON price_reports(product_id);
 CREATE INDEX IF NOT EXISTS idx_price_reports_user_id ON price_reports(user_id);

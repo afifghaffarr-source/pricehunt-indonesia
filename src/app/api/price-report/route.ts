@@ -4,29 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * POST /api/price-report
  * Submit a user report of incorrect price data
- * 
- * NOTE: Requires migration 110 (price_reports table).
- * Returns 503 until migration applied.
  */
-export async function POST(request: NextRequest) {
-  return NextResponse.json(
-    {
-      success: false,
-      error: "Migration 110 belum diterapkan. Fitur ini akan aktif setelah migration.",
-    },
-    { status: 503 }
-  );
-}
-
-/*
-// FULL IMPLEMENTATION (uncomment after migration 110):
-
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const body = await request.json();
 
-    const { offer_id, report_type, description, reported_price } = body;
+    const { offer_id, product_id, report_type, message, reported_price } = body;
 
     if (!offer_id || !report_type) {
       return NextResponse.json(
@@ -36,7 +20,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate report_type
-    const validTypes = ["price_incorrect", "out_of_stock", "fake_discount", "other"];
+    const validTypes = [
+      "harga_berbeda",
+      "produk_salah",
+      "stok_habis",
+      "link_rusak",
+      "varian_berbeda",
+      "lainnya",
+    ];
     if (!validTypes.includes(report_type)) {
       return NextResponse.json(
         { error: "Invalid report_type" },
@@ -49,16 +40,16 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // @ts-ignore - Migration 110 not applied yet
     const { data, error } = await supabase
       .from("price_reports")
       .insert({
         offer_id,
+        product_id,
         user_id: user?.id || null,
         report_type,
-        description: description || null,
+        message: message || null,
         reported_price: reported_price || null,
-        status: "pending",
+        report_status: "open",
       })
       .select()
       .single();
@@ -66,28 +57,21 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Price report error:", error);
       return NextResponse.json(
-        { error: "Gagal mengirim laporan" },
+        { success: false, error: error.message },
         { status: 500 }
       );
     }
 
-    // TODO: Send notification to admin (optional)
-    // TODO: If multiple reports on same offer, auto-flag for review
-
     return NextResponse.json({
       success: true,
-      message: "Laporan berhasil dikirim. Tim kami akan memeriksanya segera.",
-      data: {
-        id: data.id,
-        status: data.status,
-      },
+      data,
+      message: "Laporan harga berhasil dikirim. Terima kasih atas kontribusinya!",
     });
-  } catch (error) {
-    console.error("Price report failed:", error);
+  } catch (error: any) {
+    console.error("Price report exception:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }
 }
-*/
