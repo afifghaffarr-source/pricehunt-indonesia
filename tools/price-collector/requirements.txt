@@ -1,0 +1,16 @@
+# PriceHunt Indonesia - Browser Collector Dependencies
+# Python 3.11+
+
+# Core
+playwright==1.48.0
+python-dotenv==1.0.1
+requests==2.32.3
+pydantic==2.10.6
+
+# CLI & Output
+rich==13.9.4
+click==8.1.8
+
+# Optional: Better HTML parsing
+beautifulsoup4==4.12.3
+lxml==5.3.0

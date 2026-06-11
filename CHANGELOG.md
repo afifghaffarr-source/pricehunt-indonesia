@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2026-06-11 09:48] - PHASE 1 & 2: Data Collection System
+
+### Added
+- **Database Migration 110**: Enhanced data collection schema
+  - New tables: `crawl_targets`, `recheck_requests`, `price_reports`
+  - Enhanced `offers` table with validation_status, confidence_label, title, image_url, category_hint
+  - Enhanced `price_snapshots` table with confidence scoring
+- **API Endpoint**: `/api/ingestion/offer-snapshot` for single offer ingestion (419 lines)
+- **Python Browser Collector**: Semi-automated data collection tool (1,631 lines)
+  - 3 collection modes: manual (browser control), URL (direct), keyword (search & select)
+  - Tokopedia collector with Apollo GraphQL cache extraction (tested & working)
+  - Generic parser fallback for any marketplace
+  - Rich CLI with preview, confirmation, and error handling
+  - Data normalization matching server-side logic
+  - Rate limiting and safety features (no captcha bypass, no PII)
+- **Documentation**: Complete PHASE 1, PHASE 2, and progress tracking docs
+
+### Changed
+- Enhanced ingestion API route schema with new optional fields
+- Updated collectors/tokopedia_collector.py with 2026 selectors
+
+### Technical Details
+- Migration 110: 216 lines SQL with RLS policies and indexes
+- Browser collector: 9 Python files in tools/price-collector/
+- Dependencies: Playwright, Rich, Click, Requests, Pydantic
+- Test coverage: 211 tests passing
+- Build status: ✅ Successful
+
 ## [2026-06-11 07:11]
 
 ### Changed

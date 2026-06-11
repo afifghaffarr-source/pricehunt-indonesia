@@ -7,6 +7,9 @@ const OfferSchema = z.object({
   product_id: z.string().uuid(),
   marketplace_id: z.string().uuid(),
   marketplace_product_id: z.string().optional(),
+  title: z.string().optional(), // NEW: Product title from marketplace
+  image_url: z.string().url().optional(), // NEW: Product image URL
+  category_hint: z.string().optional(), // NEW: For template image fallback
   seller_name: z.string().optional(),
   seller_id: z.string().optional(),
   seller_rating: z.number().min(0).max(5).optional(),
@@ -26,6 +29,8 @@ const OfferSchema = z.object({
   voucher_text: z.string().optional(),
   source: z.string().default("collector"),
   confidence_score: z.number().int().min(0).max(100).default(80),
+  confidence_label: z.string().optional(), // NEW: Human-readable confidence
+  validation_status: z.enum(["pending", "valid", "conflict", "parser_error", "stale", "rejected"]).default("pending"), // NEW
 });
 
 const PriceSnapshotSchema = z.object({
