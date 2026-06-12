@@ -40,7 +40,7 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export const revalidate = 60;
+export const revalidate = 0; // Disabled during testing - re-enable later
 
 export async function generateMetadata({
   params,
