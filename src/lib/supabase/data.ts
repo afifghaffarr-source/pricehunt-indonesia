@@ -111,20 +111,28 @@ export async function getProductOffers(productId: string): Promise<Array<{
 
   if (error || !offers) return [];
 
-  return offers.map((offer) => ({
-    id: offer.id,
-    marketplace: (offer.marketplaces as Record<string, unknown>)?.name as string || "unknown",
-    url: offer.url,
-    current_price: offer.current_price,
-    seller_name: offer.seller_name,
-    stock_status: offer.stock_status,
-    confidence_score: offer.confidence_score,
-    confidence_label: offer.confidence_label,
-    validation_status: offer.validation_status,
-    last_checked_at: offer.last_checked_at,
-    source: offer.source,
-    is_active: offer.is_active,
-  }));
+  return offers.map((offer) => {
+    // Handle marketplace data (could be array or object depending on Supabase schema)
+    const marketplaceData: any = offer.marketplaces;
+    const marketplaceName = Array.isArray(marketplaceData) 
+      ? marketplaceData[0]?.name 
+      : marketplaceData?.name;
+    
+    return {
+      id: offer.id,
+      marketplace: (marketplaceName as string) || "unknown",
+      url: offer.url,
+      current_price: offer.current_price,
+      seller_name: offer.seller_name,
+      stock_status: offer.stock_status,
+      confidence_score: offer.confidence_score,
+      confidence_label: offer.confidence_label,
+      validation_status: offer.validation_status,
+      last_checked_at: offer.last_checked_at,
+      source: offer.source,
+      is_active: offer.is_active,
+    };
+  });
 }
 
 /**

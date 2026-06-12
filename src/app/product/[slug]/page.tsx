@@ -332,15 +332,37 @@ export default async function ProductDetailPage({ params }: PageProps) {
               );
               
               if (offer) {
+                // Map database validation_status to component expected values
+                const validationStatusMap: Record<string, "verified" | "pending" | "rejected" | "flagged"> = {
+                  'valid': 'verified',
+                  'conflict': 'flagged',
+                  'parser_error': 'rejected',
+                  'stale': 'flagged',
+                  'rejected': 'rejected',
+                  'pending': 'pending',
+                };
+                
+                // Map database source to component expected values
+                const sourceMap: Record<string, "browser_collector" | "manual_admin" | "api_scraper"> = {
+                  'official_api': 'api_scraper',
+                  'affiliate_feed': 'api_scraper',
+                  'browser_collector': 'browser_collector',
+                  'extension_snapshot': 'browser_collector',
+                  'targeted_crawler': 'browser_collector',
+                  'community_proof': 'manual_admin',
+                  'manual_admin': 'manual_admin',
+                  'api_scraper': 'api_scraper',
+                };
+                
                 // Use real offer data with trust metadata
                 return {
                   ...p,
                   offer_id: offer.id,
                   confidence_score: offer.confidence_score,
                   confidence_label: offer.confidence_label,
-                  validation_status: offer.validation_status as "pending" | "valid" | "conflict" | "parser_error" | "stale" | "rejected",
+                  validation_status: validationStatusMap[offer.validation_status] || 'pending',
                   last_seen_at: offer.last_checked_at,
-                  source: offer.source as "official_api" | "affiliate_feed" | "browser_collector" | "extension_snapshot" | "targeted_crawler" | "community_proof" | "manual_admin" | "api_scraper",
+                  source: sourceMap[offer.source] || 'api_scraper',
                 };
               }
               
