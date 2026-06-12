@@ -9,10 +9,13 @@ export async function GET(
     const { id } = await params;
     const supabase = await createClient();
 
+    // Support both UUID and slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    
     const { data: product, error } = await supabase
       .from("products")
       .select("*")
-      .eq("id", id)
+      .eq(isUUID ? "id" : "slug", id)
       .single();
 
     if (error || !product) {
@@ -22,13 +25,13 @@ export async function GET(
     const { data: prices } = await supabase
       .from("prices")
       .select("*, marketplaces(name, display_name, color)")
-      .eq("product_id", id)
+      .eq("product_id", product.id)
       .order("price", { ascending: true });
 
     const { data: history } = await supabase
       .from("price_history")
       .select("price, recorded_at, marketplaces(name)")
-      .eq("product_id", id)
+      .eq("product_id", product.id)
       .order("recorded_at", { ascending: true });
 
     return NextResponse.json({
