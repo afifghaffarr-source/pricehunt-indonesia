@@ -61,9 +61,19 @@ def normalize_text(text: str) -> str:
     """Normalize text for matching: lowercase, remove special chars, standardize spaces."""
     text = text.lower()
     # Remove common separators but keep alphanumeric
-    text = re.sub(r'[^\w\s]', ' ', text)
+    text = re.sub(r'[^\w\s]', ' ', text)  # Fixed: ^ inside brackets means "NOT"
     # Collapse multiple spaces
     text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+def slug_fingerprint(text: str) -> str:
+    """
+    Create a fingerprint for slug matching that ignores all separators.
+    Handles hyphen variations: 'wh-1000xm5', 'wh1000xm5', 'wh_1000xm5' all become 'wh1000xm5'.
+    """
+    text = text.lower()
+    # Remove ALL non-alphanumeric characters (hyphens, underscores, spaces, etc.)
+    text = re.sub(r'[^a-z0-9]', '', text)
     return text
 
 def extract_product_slug_from_url(url: str) -> str:
@@ -114,6 +124,14 @@ def find_best_product_match(offer: Dict) -> Optional[Tuple[Dict, float, str]]:
         if product['slug'] == url_slug:
             return (product, 1.0, f"exact_slug_match: '{url_slug}'")
     
+    # Strategy 1.5: Fingerprint match (ignores hyphens/underscores/spaces)
+    # Handles variations like 'wh-1000xm5' vs 'wh1000xm5'
+    url_fingerprint = slug_fingerprint(url_slug)
+    for product in PRODUCTS:
+        product_fingerprint = slug_fingerprint(product['slug'])
+        if product_fingerprint == url_fingerprint:
+            return (product, 0.98, f"fingerprint_match: '{url_slug}' ≈ '{product['slug']}' (both normalize to '{url_fingerprint}')")
+    
     # Strategy 2: Normalized slug match
     for product in PRODUCTS:
         normalized_product_slug = normalize_text(product['slug'])
@@ -132,11 +150,20 @@ def find_best_product_match(offer: Dict) -> Optional[Tuple[Dict, float, str]]:
         return (best_match, best_score, best_reason)
     
     # Strategy 4: URL slug is substring of product slug (0.88 confidence)
+    # If multiple matches, prefer shortest product slug (closest match)
+    substring_matches = []
     for product in PRODUCTS:
         normalized_product_slug = normalize_text(product['slug'])
         if len(normalized_url_slug) >= 5 and normalized_url_slug in normalized_product_slug:
-            # URL slug is contained in product slug (e.g., "wh-1000xm5" in "sony-wh-1000xm5")
-            return (product, 0.88, f"slug_substring_match: '{url_slug}' found in '{product['slug']}'")
+            # Calculate how much "extra" the product slug has
+            extra_length = len(normalized_product_slug) - len(normalized_url_slug)
+            substring_matches.append((product, extra_length))
+    
+    if substring_matches:
+        # Sort by extra_length (prefer shortest, i.e., closest match)
+        substring_matches.sort(key=lambda x: x[1])
+        best_product, extra_len = substring_matches[0]
+        return (best_product, 0.88, f"slug_substring_match: '{url_slug}' found in '{best_product['slug']}' (closest match, extra={extra_len})")
     
     # Strategy 5: Product name keywords in URL slug (>= 0.7)
     for product in PRODUCTS:
