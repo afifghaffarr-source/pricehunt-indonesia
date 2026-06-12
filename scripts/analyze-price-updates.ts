@@ -1,322 +1,433 @@
-#!/usr/bin/env tsx
 /**
- * BijakBeli Price Update Priority Analyzer
+ * Price Update Analysis Script
+ * Analyzes BijakBeli database to identify products needing price updates
  * 
- * Analyzes database to identify products that urgently need price updates
- * and generates a prioritized report in Indonesian for Telegram delivery.
+ * Checks:
+ * 1. Products with prices older than 24 hours
+ * 2. High-traffic products needing refresh
+ * 3. Products with alerts waiting for updates
+ * 
+ * Run: npx tsx scripts/analyze-price-updates.ts
  */
 
-import { createClient } from "@supabase/supabase-js";
-import { config } from "dotenv";
-import { resolve } from "path";
+import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
 
-// Load environment variables from .env.local
-config({ path: resolve(process.cwd(), ".env.local") });
+// Load environment variables
+dotenv.config({ path: '.env.local' });
 
-// Initialize Supabase admin client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Current time for analysis
+const NOW = new Date('2026-06-12T18:01:41.223Z');
+const TWENTY_FOUR_HOURS_AGO = new Date(NOW.getTime() - 24 * 60 * 60 * 1000);
 
-if (!supabaseUrl || !serviceRoleKey) {
-  console.error("❌ Missing required environment variables");
-  process.exit(1);
-}
+type AnalysisResult = {
+  timestamp: string;
+  summary: {
+    total_products_analyzed: number;
+    stale_prices_count: number;
+    high_priority_count: number;
+    alerts_waiting_count: number;
+    targets_to_refresh: number;
+  };
+  stale_prices: Array<{
+    product_id: string;
+    product_name: string;
+    oldest_price_hours: number;
+    last_updated: string;
+    marketplace_count: number;
+  }>;
+  high_priority_products: Array<{
+    product_id: string;
+    product_name: string;
+    deal_score: number;
+    hours_since_update: number;
+    view_count?: number;
+  }>;
+  products_with_alerts: Array<{
+    product_id: string;
+    product_name: string;
+    alert_count: number;
+    lowest_price: number | null;
+    hours_since_update: number;
+  }>;
+  refresh_targets: Array<{
+    target_id: string;
+    url: string;
+    product_name: string;
+    marketplace: string;
+    priority_score: number;
+    reason: string;
+  }>;
+};
 
-const supabase = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+async function analyzeDatabase(): Promise<AnalysisResult> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-interface PriorityProduct {
-  product_id: string;
-  product_name: string;
-  product_slug: string;
-  price_id: string;
-  marketplace: string;
-  current_price: number;
-  last_updated: string;
-  hours_stale: number;
-  url: string;
-  wishlist_count: number;
-  alert_count: number;
-  priority_score: number;
-  reasons: string[];
-}
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials');
+  }
 
-async function analyzeProductsNeedingUpdate(): Promise<PriorityProduct[]> {
-  const now = new Date();
-  const results: PriorityProduct[] = [];
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 
-  console.log("🔍 Analyzing products needing price updates...\n");
+  console.log('🔍 Analyzing BijakBeli database...');
+  console.log(`📅 Current time: ${NOW.toISOString()}`);
+  console.log(`⏰ Checking for prices older than: ${TWENTY_FOUR_HOURS_AGO.toISOString()}\n`);
 
-  // Query 1: Get all prices with their products and marketplaces
-  const { data: allPrices, error: pricesError } = await supabase
-    .from("prices")
+  // 1. Find products with stale prices (>24 hours old)
+  console.log('1️⃣  Checking for stale prices...');
+  const { data: stalePrices, error: stalePricesError } = await supabase
+    .from('prices')
     .select(`
       id,
       product_id,
-      marketplace_id,
-      price,
-      url,
       last_updated,
-      in_stock,
-      products(id, name, slug),
-      marketplaces(id, name, display_name)
+      products (id, name)
     `)
-    .order("last_updated", { ascending: true, nullsFirst: true })
-    .limit(100);
+    .lt('last_updated', TWENTY_FOUR_HOURS_AGO.toISOString())
+    .order('last_updated', { ascending: true });
 
-  if (pricesError) {
-    console.error("❌ Error fetching prices:", pricesError);
-    return [];
+  if (stalePricesError) {
+    console.error('❌ Error fetching stale prices:', stalePricesError);
   }
 
-  console.log(`📊 Found ${allPrices?.length || 0} price entries`);
-
-  if (!allPrices || allPrices.length === 0) {
-    console.log("⚠️ No prices found in database");
-    return [];
-  }
-
-  // Query 2: Get wishlist counts per product
-  const { data: wishlists, error: wishlistError } = await supabase
-    .from("wishlists")
-    .select("product_id");
-
-  const wishlistCounts = new Map<string, number>();
-  if (wishlists) {
-    for (const w of wishlists) {
-      wishlistCounts.set(w.product_id, (wishlistCounts.get(w.product_id) || 0) + 1);
-    }
-    console.log(`📊 Found ${wishlists.length} wishlist entries`);
-  }
-
-  // Query 3: Get active alert counts per product
-  const { data: alerts, error: alertError } = await supabase
-    .from("price_alerts")
-    .select("product_id")
-    .eq("is_active", true);
-
-  const alertCounts = new Map<string, number>();
-  if (alerts) {
-    for (const a of alerts) {
-      alertCounts.set(a.product_id, (alertCounts.get(a.product_id) || 0) + 1);
-    }
-    console.log(`📊 Found ${alerts.length} active price alerts`);
-  }
-
-  // Query 4: Get products with recent price changes (volatility indicator)
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const { data: priceHistory, error: historyError } = await supabase
-    .from("price_history")
-    .select("product_id, marketplace_id")
-    .gte("recorded_at", thirtyDaysAgo.toISOString().split('T')[0]);
-
-  const volatilityMap = new Map<string, number>();
-  if (priceHistory) {
-    for (const h of priceHistory) {
-      const key = `${h.product_id}-${h.marketplace_id}`;
-      volatilityMap.set(key, (volatilityMap.get(key) || 0) + 1);
-    }
-    console.log(`📊 Analyzed ${priceHistory.length} price history records`);
-  }
-
-  console.log("\n🧮 Calculating priority scores...\n");
-
-  // Build priority list
-  for (const priceEntry of allPrices) {
-    if (!priceEntry.products || !priceEntry.marketplaces) continue;
-
-    const product = Array.isArray(priceEntry.products) ? priceEntry.products[0] : priceEntry.products;
-    const marketplace = Array.isArray(priceEntry.marketplaces) ? priceEntry.marketplaces[0] : priceEntry.marketplaces;
-
-    if (!product || !marketplace) continue;
-
-    const lastUpdated = priceEntry.last_updated ? new Date(priceEntry.last_updated) : new Date(0);
-    const hoursSinceUpdate = (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
-
-    const wishlistCount = wishlistCounts.get(priceEntry.product_id) || 0;
-    const alertCount = alertCounts.get(priceEntry.product_id) || 0;
-    const volatilityKey = `${priceEntry.product_id}-${priceEntry.marketplace_id}`;
-    const priceChanges = volatilityMap.get(volatilityKey) || 0;
-
-    const reasons: string[] = [];
-    let priorityScore = 0;
-
-    // Factor 1: Staleness (0-40 points)
-    if (hoursSinceUpdate > 168) { // >7 days
-      priorityScore += 40;
-      reasons.push("Data sangat lama (>7 hari)");
-    } else if (hoursSinceUpdate > 72) { // >3 days
-      priorityScore += 35;
-      reasons.push("Data lama (>3 hari)");
-    } else if (hoursSinceUpdate > 48) { // >2 days
-      priorityScore += 25;
-      reasons.push("Data lama (>2 hari)");
-    } else if (hoursSinceUpdate > 24) { // >1 day
-      priorityScore += 15;
-      reasons.push("Data perlu refresh (>24 jam)");
-    } else if (hoursSinceUpdate > 12) {
-      priorityScore += 5;
-    }
-
-    // Factor 2: User engagement (0-30 points)
-    const totalEngagement = wishlistCount + alertCount * 2;
-    if (totalEngagement >= 10) {
-      priorityScore += 30;
-      reasons.push(`Engagement tinggi (${wishlistCount}👁️, ${alertCount}🔔)`);
-    } else if (totalEngagement >= 5) {
-      priorityScore += 20;
-      reasons.push(`Ada engagement (${wishlistCount}👁️, ${alertCount}🔔)`);
-    } else if (totalEngagement >= 1) {
-      priorityScore += 10;
-      reasons.push(`${wishlistCount} wishlist, ${alertCount} alert`);
-    }
-
-    // Factor 3: Price volatility (0-20 points)
-    if (priceChanges > 10) {
-      priorityScore += 20;
-      reasons.push("Harga sering berubah");
-    } else if (priceChanges > 5) {
-      priorityScore += 15;
-      reasons.push("Harga cukup dinamis");
-    } else if (priceChanges > 2) {
-      priorityScore += 10;
-      reasons.push("Ada perubahan harga");
-    }
-
-    // Factor 4: Out of stock penalty
-    if (priceEntry.in_stock === false) {
-      priorityScore += 10;
-      reasons.push("Stok habis - perlu verifikasi");
-    }
-
-    // Only include products with priority score > 10 or with engagement or stale data
-    if (priorityScore > 10 || totalEngagement > 0 || hoursSinceUpdate > 24) {
-      results.push({
-        product_id: priceEntry.product_id,
-        product_name: product.name || "Unknown",
-        product_slug: product.slug || "",
-        price_id: priceEntry.id,
-        marketplace: marketplace.display_name || marketplace.name || "Unknown",
-        current_price: priceEntry.price || 0,
-        last_updated: lastUpdated.toISOString(),
-        hours_stale: Math.floor(hoursSinceUpdate),
-        url: priceEntry.url || "",
-        wishlist_count: wishlistCount,
-        alert_count: alertCount,
-        priority_score: Math.min(100, priorityScore),
-        reasons,
-      });
+  // Group by product
+  const staleByProduct = new Map<string, { name: string; oldest: Date; count: number }>();
+  
+  if (stalePrices) {
+    for (const price of stalePrices) {
+      const product = price.products as any;
+      const productId = price.product_id as string;
+      const lastUpdated = new Date(price.last_updated as string);
+      
+      if (!staleByProduct.has(productId)) {
+        staleByProduct.set(productId, {
+          name: product?.name || 'Unknown',
+          oldest: lastUpdated,
+          count: 1,
+        });
+      } else {
+        const existing = staleByProduct.get(productId)!;
+        existing.count++;
+        if (lastUpdated < existing.oldest) {
+          existing.oldest = lastUpdated;
+        }
+      }
     }
   }
 
-  // Sort by priority score (highest first)
-  results.sort((a, b) => b.priority_score - a.priority_score);
+  const stalePricesList = Array.from(staleByProduct.entries()).map(([productId, data]) => ({
+    product_id: productId,
+    product_name: data.name,
+    oldest_price_hours: Math.round((NOW.getTime() - data.oldest.getTime()) / (1000 * 60 * 60) * 10) / 10,
+    last_updated: data.oldest.toISOString(),
+    marketplace_count: data.count,
+  })).sort((a, b) => b.oldest_price_hours - a.oldest_price_hours);
 
-  return results;
-}
+  console.log(`   Found ${stalePricesList.length} products with stale prices\n`);
 
-function formatTimeAgo(hours: number): string {
-  if (hours < 1) return "< 1 jam";
-  if (hours < 24) return `${Math.floor(hours)} jam`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "1 hari";
-  return `${days} hari`;
-}
+  // 2. Find high-traffic products (high deal_score) needing refresh
+  console.log('2️⃣  Checking high-priority products...');
+  const { data: highPriorityProducts, error: highPriorityError } = await supabase
+    .from('products')
+    .select(`
+      id,
+      name,
+      deal_score,
+      prices (last_updated)
+    `)
+    .gte('deal_score', 70)
+    .order('deal_score', { ascending: false })
+    .limit(50);
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(price);
-}
-
-function formatTelegramReport(products: PriorityProduct[]): string {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("id-ID", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const timeStr = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-
-  let report = `🔔 <b>Laporan Prioritas Update Harga</b>\n`;
-  report += `📅 ${dateStr}, ${timeStr}\n\n`;
-
-  if (products.length === 0) {
-    return "[SILENT]";
+  if (highPriorityError) {
+    console.error('❌ Error fetching high-priority products:', highPriorityError);
   }
 
-  report += `📊 <b>Ditemukan ${products.length} produk yang perlu update</b>\n`;
-  report += `Berikut 10 prioritas tertinggi:\n\n`;
+  const highPriorityList = (highPriorityProducts || [])
+    .map((product: any) => {
+      const prices = product.prices || [];
+      const mostRecentPrice = prices.reduce((latest: Date | null, price: any) => {
+        const updated = new Date(price.last_updated);
+        return !latest || updated > latest ? updated : latest;
+      }, null);
 
-  const top10 = products.slice(0, 10);
+      const hoursSinceUpdate = mostRecentPrice
+        ? Math.round((NOW.getTime() - mostRecentPrice.getTime()) / (1000 * 60 * 60) * 10) / 10
+        : 999;
 
-  for (let i = 0; i < top10.length; i++) {
-    const p = top10[i];
-    const rank = i + 1;
-    const emoji = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}.`;
+      return {
+        product_id: product.id,
+        product_name: product.name,
+        deal_score: product.deal_score,
+        hours_since_update: hoursSinceUpdate,
+      };
+    })
+    .filter((p: any) => p.hours_since_update > 24)
+    .sort((a: any, b: any) => b.deal_score - a.deal_score);
 
-    report += `${emoji} <b>${p.product_name}</b>\n`;
-    report += `   🏪 ${p.marketplace} • ${formatPrice(p.current_price)}\n`;
-    report += `   ⏰ Update terakhir: ${formatTimeAgo(p.hours_stale)} yang lalu\n`;
+  console.log(`   Found ${highPriorityList.length} high-priority products needing refresh\n`);
 
-    if (p.wishlist_count > 0 || p.alert_count > 0) {
-      report += `   👥 ${p.wishlist_count} wishlist, ${p.alert_count} alert aktif\n`;
+  // 3. Find products with active alerts waiting for updates
+  console.log('3️⃣  Checking products with active alerts...');
+  const { data: productsWithAlerts, error: alertsError } = await supabase
+    .from('price_alerts')
+    .select(`
+      product_id,
+      products (
+        id,
+        name,
+        lowest_price,
+        prices (last_updated)
+      )
+    `)
+    .eq('is_active', true)
+    .is('triggered_at', null);
+
+  if (alertsError) {
+    console.error('❌ Error fetching products with alerts:', alertsError);
+  }
+
+  // Group alerts by product
+  const alertsByProduct = new Map<string, { name: string; count: number; lowest_price: number | null; mostRecent: Date | null }>();
+  
+  if (productsWithAlerts) {
+    for (const alert of productsWithAlerts) {
+      const product = alert.products as any;
+      const productId = alert.product_id as string;
+      
+      if (!product) continue;
+
+      const prices = product.prices || [];
+      const mostRecentPrice = prices.reduce((latest: Date | null, price: any) => {
+        const updated = new Date(price.last_updated);
+        return !latest || updated > latest ? updated : latest;
+      }, null);
+
+      if (!alertsByProduct.has(productId)) {
+        alertsByProduct.set(productId, {
+          name: product.name,
+          count: 1,
+          lowest_price: product.lowest_price,
+          mostRecent: mostRecentPrice,
+        });
+      } else {
+        alertsByProduct.get(productId)!.count++;
+      }
     }
+  }
 
-    report += `   🎯 Priority Score: <b>${p.priority_score}</b>/100\n`;
-    report += `   📝 ${p.reasons.join(", ")}\n`;
+  const alertsList = Array.from(alertsByProduct.entries()).map(([productId, data]) => ({
+    product_id: productId,
+    product_name: data.name,
+    alert_count: data.count,
+    lowest_price: data.lowest_price,
+    hours_since_update: data.mostRecent
+      ? Math.round((NOW.getTime() - data.mostRecent.getTime()) / (1000 * 60 * 60) * 10) / 10
+      : 999,
+  })).sort((a, b) => b.alert_count - a.alert_count);
+
+  console.log(`   Found ${alertsList.length} products with active alerts\n`);
+
+  // 4. Get refresh targets that need priority updates
+  console.log('4️⃣  Identifying crawl targets to refresh...');
+  
+  // Query without marketplace join due to schema issue
+  const { data: crawlTargets, error: targetsError } = await supabase
+    .from('crawl_targets')
+    .select(`
+      id,
+      url,
+      product_id,
+      marketplace_id,
+      domain,
+      last_crawled_at,
+      crawl_status,
+      priority_score
+    `)
+    .order('priority_score', { ascending: false });
+
+  if (targetsError) {
+    console.error('❌ Error fetching crawl targets:', targetsError);
+  }
+  
+  // Get product and marketplace names separately
+  const productIds = crawlTargets ? [...new Set(crawlTargets.map(t => t.product_id).filter(Boolean))] : [];
+  const marketplaceIds = crawlTargets ? [...new Set(crawlTargets.map(t => t.marketplace_id).filter(Boolean))] : [];
+  
+  const productNames = new Map<string, string>();
+  const marketplaceNames = new Map<string, string>();
+  
+  if (productIds.length > 0) {
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, name')
+      .in('id', productIds);
     
-    if (p.url) {
-      report += `   🔗 <a href="${p.url}">Lihat di marketplace</a>\n`;
-    }
+    products?.forEach((p: any) => productNames.set(p.id, p.name));
+  }
+  
+  if (marketplaceIds.length > 0) {
+    const { data: marketplaces } = await supabase
+      .from('marketplaces')
+      .select('id, name')
+      .in('id', marketplaceIds);
     
-    report += `\n`;
+    marketplaces?.forEach((m: any) => marketplaceNames.set(m.id, m.name));
   }
 
-  report += `\n💡 <b>Rekomendasi:</b>\n`;
-  const highPriorityCount = products.filter(p => p.priority_score >= 70).length;
-  const veryStaleCount = products.filter(p => p.hours_stale > 48).length;
-  const withAlertsCount = products.filter(p => p.alert_count > 0).length;
+  // Collect all product IDs that need refresh
+  const productsNeedingRefresh = new Set<string>();
+  stalePricesList.forEach(p => productsNeedingRefresh.add(p.product_id));
+  highPriorityList.forEach((p: any) => productsNeedingRefresh.add(p.product_id));
+  alertsList.forEach(p => productsNeedingRefresh.add(p.product_id));
 
-  if (highPriorityCount > 0) {
-    report += `• ${highPriorityCount} produk prioritas tinggi (score ≥70)\n`;
-  }
-  if (veryStaleCount > 0) {
-    report += `• ${veryStaleCount} produk data >48 jam (perlu segera)\n`;
-  }
-  if (withAlertsCount > 0) {
-    report += `• ${withAlertsCount} produk dengan alert aktif\n`;
-  }
+  // Match crawl targets to products needing refresh
+  const targetsToRefresh = (crawlTargets || [])
+    .map((target: any) => {
+      const hoursSinceLastCheck = target.last_crawled_at
+        ? Math.round((NOW.getTime() - new Date(target.last_crawled_at).getTime()) / (1000 * 60 * 60) * 10) / 10
+        : 999;
 
-  report += `\n✨ <i>Auto-generated by BijakBeli Analyzer</i>`;
+      let reason = 'Regular refresh cycle';
+      let priorityBoost = 0;
 
-  return report;
+      if (productsNeedingRefresh.has(target.product_id)) {
+        reason = 'Product needs price update';
+        priorityBoost = 20;
+      }
+      if (hoursSinceLastCheck > 24) {
+        reason = 'Not checked for over 24 hours';
+        priorityBoost += 15;
+      }
+      if (target.crawl_status === 'failed') {
+        reason = 'Previous crawl failed';
+        priorityBoost += 10;
+      }
+
+      const calculatedScore = Math.min(100, (target.priority_score || 50) + priorityBoost);
+
+      return {
+        target_id: target.id,
+        url: target.url,
+        domain: target.domain || 'unknown',
+        product_id: target.product_id,
+        product_name: productNames.get(target.product_id) || 'Unknown',
+        marketplace: marketplaceNames.get(target.marketplace_id) || 'Unknown',
+        priority_score: calculatedScore,
+        hours_since_last_check: hoursSinceLastCheck,
+        crawl_status: target.crawl_status,
+        reason,
+      };
+    })
+    .filter((t: any) => t.priority_score >= 60 || productsNeedingRefresh.has(t.product_id))
+    .sort((a: any, b: any) => b.priority_score - a.priority_score)
+    .slice(0, 50);
+
+  console.log(`   Identified ${targetsToRefresh.length} crawl targets for refresh\n`);
+
+  const result: AnalysisResult = {
+    timestamp: NOW.toISOString(),
+    summary: {
+      total_products_analyzed: staleByProduct.size + new Set(highPriorityProducts?.map((p: any) => p.id) || []).size,
+      stale_prices_count: stalePricesList.length,
+      high_priority_count: highPriorityList.length,
+      alerts_waiting_count: alertsList.length,
+      targets_to_refresh: targetsToRefresh.length,
+    },
+    stale_prices: stalePricesList.slice(0, 20),
+    high_priority_products: highPriorityList.slice(0, 20),
+    products_with_alerts: alertsList.slice(0, 20),
+    refresh_targets: targetsToRefresh,
+  };
+
+  return result;
 }
 
 async function main() {
-  console.log("🚀 BijakBeli Price Update Analyzer\n");
-  console.log("=" .repeat(60));
-
   try {
-    const products = await analyzeProductsNeedingUpdate();
-    
-    console.log("\n" + "=".repeat(60));
-    console.log(`✅ Analysis complete: ${products.length} products need attention\n`);
+    const result = await analyzeDatabase();
 
-    const report = formatTelegramReport(products);
-    
-    // Output the report (this will be captured by the cron job)
-    console.log(report);
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📊 PRICE UPDATE ANALYSIS REPORT');
+    console.log('═══════════════════════════════════════════════════════\n');
+
+    console.log('📈 SUMMARY:');
+    console.log(`   • Total products analyzed: ${result.summary.total_products_analyzed}`);
+    console.log(`   • Products with stale prices (>24h): ${result.summary.stale_prices_count}`);
+    console.log(`   • High-priority products needing refresh: ${result.summary.high_priority_count}`);
+    console.log(`   • Products with active alerts: ${result.summary.alerts_waiting_count}`);
+    console.log(`   • Crawl targets to refresh: ${result.summary.targets_to_refresh}\n`);
+
+    if (result.stale_prices.length > 0) {
+      console.log('⚠️  TOP PRODUCTS WITH STALE PRICES:');
+      result.stale_prices.slice(0, 10).forEach((p, i) => {
+        console.log(`   ${i + 1}. ${p.product_name}`);
+        console.log(`      Last updated: ${p.oldest_price_hours}h ago (${p.marketplace_count} marketplace${p.marketplace_count > 1 ? 's' : ''})`);
+      });
+      console.log();
+    }
+
+    if (result.high_priority_products.length > 0) {
+      console.log('🔥 TOP HIGH-PRIORITY PRODUCTS:');
+      result.high_priority_products.slice(0, 10).forEach((p, i) => {
+        console.log(`   ${i + 1}. ${p.product_name}`);
+        console.log(`      Deal score: ${p.deal_score} | Last updated: ${p.hours_since_update}h ago`);
+      });
+      console.log();
+    }
+
+    if (result.products_with_alerts.length > 0) {
+      console.log('🔔 PRODUCTS WITH ACTIVE ALERTS:');
+      result.products_with_alerts.slice(0, 10).forEach((p, i) => {
+        console.log(`   ${i + 1}. ${p.product_name}`);
+        console.log(`      ${p.alert_count} alert${p.alert_count > 1 ? 's' : ''} waiting | Last updated: ${p.hours_since_update}h ago`);
+      });
+      console.log();
+    }
+
+    if (result.refresh_targets.length > 0) {
+      console.log('🎯 RECOMMENDED REFRESH TARGETS:');
+      result.refresh_targets.slice(0, 15).forEach((t, i) => {
+        console.log(`   ${i + 1}. [${t.marketplace}] ${t.product_name}`);
+        console.log(`      Priority: ${t.priority_score} | Reason: ${t.reason}`);
+      });
+      console.log();
+    }
+
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('✅ Analysis complete');
+    console.log('═══════════════════════════════════════════════════════\n');
+
+    // Save full report to file
+    const reportPath = `./logs/price-update-analysis-${NOW.toISOString().replace(/:/g, '-').split('.')[0]}.json`;
+    const fs = await import('fs/promises');
+    await fs.mkdir('./logs', { recursive: true });
+    await fs.writeFile(reportPath, JSON.stringify(result, null, 2));
+    console.log(`📄 Full report saved to: ${reportPath}\n`);
+
+    // Output for cron delivery
+    console.log('CRON JOB SUMMARY FOR DELIVERY:');
+    console.log(JSON.stringify({
+      status: 'completed',
+      timestamp: result.timestamp,
+      summary: result.summary,
+      recommendations: {
+        immediate_refresh_needed: result.summary.targets_to_refresh > 0,
+        critical_products: result.stale_prices.slice(0, 5).map(p => p.product_name),
+        high_priority_count: result.summary.high_priority_count,
+        alerts_waiting: result.summary.alerts_waiting_count,
+      },
+    }, null, 2));
 
   } catch (error) {
-    console.error("❌ Error during analysis:", error);
+    console.error('❌ Analysis failed:', error);
+    console.error(error instanceof Error ? error.stack : error);
     process.exit(1);
   }
 }
