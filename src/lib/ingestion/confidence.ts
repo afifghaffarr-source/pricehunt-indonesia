@@ -18,8 +18,9 @@
 export type DataSourceType =
   | "official_api"
   | "affiliate_feed"
+  | "browser_collector"
   | "extension_snapshot"
-  | "targeted_scraper"
+  | "targeted_crawler"
   | "community_proof"
   | "manual_admin";
 
@@ -58,9 +59,10 @@ const SOURCE_BASE_SCORES: Record<DataSourceType, number> = {
   official_api: 95,
   manual_admin: 90,
   affiliate_feed: 85,
-  extension_snapshot: 80,
+  extension_snapshot: 82,
+  browser_collector: 80,
   community_proof: 75,
-  targeted_scraper: 70,
+  targeted_crawler: 70,
 };
 
 const SOURCE_LABELS: Record<DataSourceType, string> = {
@@ -68,8 +70,9 @@ const SOURCE_LABELS: Record<DataSourceType, string> = {
   manual_admin: "Verifikasi admin",
   affiliate_feed: "Feed afiliasi",
   extension_snapshot: "Extension browser",
+  browser_collector: "Browser collector",
   community_proof: "Komunitas",
-  targeted_scraper: "Scraper terpilih",
+  targeted_crawler: "Scraper terpilih",
 };
 
 // ============================================================================
@@ -123,18 +126,18 @@ export function calculateConfidenceScore(input: ConfidenceInput): ConfidenceResu
   // ============================================================================
   
   if (!input.hasPrice) {
-    // Critical: no price data
-    score -= 10;
+    // Critical: no price data - major penalty
+    score -= 50;
     reasons.push("⚠️ Harga tidak tersedia");
   }
   
   if (input.hasSeller) {
-    score += 5;
+    score += 3;
     reasons.push("Informasi seller tersedia");
   }
   
   if (input.hasStock) {
-    score += 5;
+    score += 3;
     reasons.push("Status stok tersedia");
   }
   
@@ -148,26 +151,26 @@ export function calculateConfidenceScore(input: ConfidenceInput): ConfidenceResu
   // ============================================================================
   
   if (input.isOfficialStore) {
-    score += 10;
+    score += 5;
     reasons.push("✓ Official store");
   }
   
   if (input.crossValidated) {
-    score += 15;
+    score += 10;
     reasons.push("✓ Dikonfirmasi dari beberapa sumber");
   }
   
   // ============================================================================
-  // QUALITY ISSUES
+  // QUALITY ISSUES - STRICTER PENALTIES
   // ============================================================================
   
   if (input.parserError) {
-    score -= 20;
+    score -= 40;
     reasons.push("⚠️ Kesalahan parsing data");
   }
   
   if (input.conflictDetected) {
-    score -= 15;
+    score -= 25;
     reasons.push("⚠️ Perbedaan harga antar sumber terdeteksi");
   }
   
@@ -276,12 +279,13 @@ function mapSourceStringToType(source: string): DataSourceType {
   if (normalized.includes("admin")) return "manual_admin";
   if (normalized.includes("official") || normalized.includes("api")) return "official_api";
   if (normalized.includes("affiliate")) return "affiliate_feed";
+  if (normalized.includes("browser_collector") || normalized.includes("browser collector")) return "browser_collector";
   if (normalized.includes("extension")) return "extension_snapshot";
   if (normalized.includes("community")) return "community_proof";
-  if (normalized.includes("scraper")) return "targeted_scraper";
+  if (normalized.includes("crawler") || normalized.includes("scraper")) return "targeted_crawler";
   
   // Default
-  return "extension_snapshot";
+  return "browser_collector";
 }
 
 // ============================================================================

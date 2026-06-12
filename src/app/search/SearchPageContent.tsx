@@ -70,7 +70,8 @@ export function SearchPageContent() {
   const [sortBy, setSortBy] = useState<string>("deal-score");
   const [products, setProducts] = useState<Product[]>([]);
   const [discovered, setDiscovered] = useState<BijakBeliDiscoveredProduct[]>([]);
-  const [vexoStatus, setVexoStatus] = useState<"loading" | "ok" | "error" | "unavailable">("loading");
+  const [vexoStatus, setVexoStatus] = useState<"loading" | "ok" | "error" | "unavailable">("unavailable");
+  const [vexoEnabled, setVexoEnabled] = useState(false); // Explicit opt-in
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,12 +79,12 @@ export function SearchPageContent() {
       setLoading(true);
 
       try {
-        // Use /api/search which has proper input sanitization
+        // Use /api/search which now includes prices
         const params = new URLSearchParams();
         if (query) params.set("q", query);
         if (category) params.set("category", category);
         params.set("limit", "100");
-        params.set("vexo", "false"); // Vexo handled separately
+        // Don't include vexo in main search - handled separately
 
         const res = await fetch(`/api/search?${params.toString()}`);
         const data = await res.json();
@@ -95,35 +96,38 @@ export function SearchPageContent() {
           return;
         }
 
-        // Get prices for each product
-        const supabase = createClient();
-        const productIds = (data.results || []).map((p: Record<string, unknown>) => p.id);
+        // Transform API response to Product type
+        const result: Product[] = (data.results || []).map((p: any) => {
+          const prices = (p.prices || []).map((pr: any) => ({
+            marketplace: pr.marketplaces?.name || "tokopedia",
+            price: pr.price,
+            url: pr.url,
+            seller: pr.seller || "",
+            sellerRating: pr.seller_rating || 0,
+            inStock: pr.in_stock,
+            shippingCost: pr.shipping_cost || 0,
+            lastUpdated: pr.last_updated || "",
+          }));
 
-        if (productIds.length === 0) {
-          setProducts([]);
-          setLoading(false);
-          return;
-        }
+          return {
+            id: p.id,
+            slug: p.slug,
+            name: p.name,
+            category: p.category,
+            description: p.description || "",
+            imageUrl: p.image_url || "https://placehold.co/400x400/e2e8f0/64748b?text=Product",
+            prices,
+            priceHistory: [],
+            lowestPrice: p.lowest_price || 0,
+            highestPrice: p.highest_price || 0,
+            averagePrice: p.average_price || 0,
+            dealScore: p.deal_score || 0,
+            aiVerdict: p.ai_verdict || "",
+            specs: p.specs || {},
+          };
+        });
 
-        const { data: allPrices } = await supabase
-          .from("prices")
-          .select("*, marketplaces(name)")
-          .in("product_id", productIds);
-
-        const pricesByProduct = new Map<string, Record<string, unknown>[]>();
-        if (allPrices) {
-          for (const p of allPrices) {
-            const pid = p.product_id as string;
-            if (!pricesByProduct.has(pid)) pricesByProduct.set(pid, []);
-            pricesByProduct.get(pid)!.push(p);
-          }
-        }
-
-        const result: Product[] = (data.results || []).map((p: Record<string, unknown>) =>
-          transformDbProduct(p, pricesByProduct.get(p.id as string) || [])
-        );
-
-        // Client-side sorting since API returns by deal_score
+        // Client-side sorting
         switch (sortBy) {
           case "price-asc":
             result.sort((a, b) => a.lowestPrice - b.lowestPrice);
@@ -151,34 +155,45 @@ export function SearchPageContent() {
     fetchProducts();
   }, [query, category, sortBy]);
 
+  // Vexo search - only when explicitly enabled
   useEffect(() => {
-    if (!query) return;
-
-    let cancelled = false;
-
-    async function fetchVexo() {
-      try {
-        const res = await fetch(`/api/vexo/search?q=${encodeURIComponent(query)}&limit=8`);
-        const data = await res.json();
-
-        if (cancelled) return;
-
-        if (data.source === "vexo" && data.results?.length > 0) {
-          setDiscovered(data.results);
-          setVexoStatus("ok");
-        } else if (data.source === "vexo-unavailable") {
-          setVexoStatus("unavailable");
-        } else {
-          setVexoStatus("error");
-        }
-      } catch {
-        if (!cancelled) setVexoStatus("error");
-      }
+    if (!query || !vexoEnabled) {
+      setDiscovered([]);
+      setVexoStatus("unavailable");
+      return;
     }
 
-    fetchVexo();
-    return () => { cancelled = true; };
-  }, [query]);
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      async function fetchVexo() {
+        setVexoStatus("loading");
+        try {
+          const res = await fetch(`/api/vexo/search?q=${encodeURIComponent(query)}&limit=8`);
+          const data = await res.json();
+
+          if (cancelled) return;
+
+          if (data.source === "vexo" && data.results?.length > 0) {
+            setDiscovered(data.results);
+            setVexoStatus("ok");
+          } else if (data.source === "vexo-unavailable") {
+            setVexoStatus("unavailable");
+          } else {
+            setVexoStatus("error");
+          }
+        } catch {
+          if (!cancelled) setVexoStatus("error");
+        }
+      }
+
+      fetchVexo();
+    }, 800); // 800ms debounce
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [query, vexoEnabled]);
 
   const handleSearch = (q: string) => {
     setQuery(q);

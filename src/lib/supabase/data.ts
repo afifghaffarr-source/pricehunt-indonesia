@@ -68,6 +68,66 @@ function transformPriceHistory(rows: Record<string, unknown>[]): PriceHistoryPoi
 }
 
 /**
+ * Get offers with trust metadata for a product
+ * Returns real confidence scores, validation status, and source info
+ */
+export async function getProductOffers(productId: string): Promise<Array<{
+  id: string;
+  marketplace: string;
+  url: string;
+  current_price: number;
+  seller_name: string | null;
+  stock_status: string;
+  confidence_score: number;
+  confidence_label: string;
+  validation_status: string;
+  last_checked_at: string;
+  source: string;
+  is_active: boolean;
+}>> {
+  if (!hasSupabaseEnv()) return [];
+
+  const supabase = await createClient();
+
+  const { data: offers, error } = await supabase
+    .from("offers")
+    .select(`
+      id,
+      url,
+      current_price,
+      seller_name,
+      stock_status,
+      confidence_score,
+      confidence_label,
+      validation_status,
+      last_checked_at,
+      source,
+      is_active,
+      marketplaces(name)
+    `)
+    .eq("product_id", productId)
+    .eq("is_active", true)
+    .order("current_price", { ascending: true });
+
+  if (error || !offers) return [];
+
+  return offers.map((offer) => ({
+    id: offer.id,
+    marketplace: (offer.marketplaces as Record<string, unknown>)?.name as string || "unknown",
+    url: offer.url,
+    current_price: offer.current_price,
+    seller_name: offer.seller_name,
+    stock_status: offer.stock_status,
+    confidence_score: offer.confidence_score,
+    confidence_label: offer.confidence_label,
+    validation_status: offer.validation_status,
+    last_checked_at: offer.last_checked_at,
+    source: offer.source,
+    is_active: offer.is_active,
+  }));
+}
+
+/**
  * ✅ OPTIMIZED: Get products with prices in a single query using JOIN
  * Reduced from 2 queries to 1 query
  * 

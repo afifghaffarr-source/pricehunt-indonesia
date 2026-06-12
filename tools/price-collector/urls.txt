@@ -1,0 +1,33 @@
+# BijakBeli.app - Product URLs for Batch Collection
+# Format: One URL per line (Tokopedia, Shopee, or Bukalapak)
+# Lines starting with # are ignored
+
+# Sony WH-1000XM5 Headphone (READY)
+https://www.tokopedia.com/sony-audio-official/sony-wh-1000xm5-wireless-noise-cancelling-headphone-wh1000xm5-1729506610007411140?extParam=ivf%3Dtrue%26keyword%3Dwh-1000xm5%26search_id%3D202606120303290BB4AEC17105211D7KDC%26src%3Dsearch&t_id=1781233429553&t_st=1&t_pp=search_result&t_efo=search_pure_goods_card&t_ef=goods_search&t_sm=&t_spt=search_result
+
+# Samsung Galaxy S24 Ultra 256GB (READY)
+https://www.tokopedia.com/kuninggedegameshop/samsung-galaxy-s24-ultra-256gb-grey-1731649215384618455
+
+# TODO: Add more product URLs below
+# Copy-paste from Tokopedia address bar setelah search product
+
+# iPhone 15 Pro Max 256GB
+# [PASTE URL HERE]
+
+# MacBook Pro 16 M3 Max
+# [PASTE URL HERE]
+
+# AirPods Pro 2 USB-C
+# [PASTE URL HERE]
+
+# LG Kulkas Side by Side 613L
+# [PASTE URL HERE]
+
+# Samsung AC Split 1 PK Inverter
+# [PASTE URL HERE]
+
+# Xiaomi Smart Band 8
+# [PASTE URL HERE]
+
+# Nintendo Switch OLED
+# [PASTE URL HERE]

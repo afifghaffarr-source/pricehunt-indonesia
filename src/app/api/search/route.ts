@@ -21,13 +21,25 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get("q") || "";
   const category = searchParams.get("category");
   const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 100);
-  const includeVexo = searchParams.get("vexo") !== "false";
+  const includeVexo = searchParams.get("vexo") === "true"; // Explicit opt-in
 
   if (!q && !category) {
     return NextResponse.json({ error: "Parameter 'q' atau 'category' diperlukan" }, { status: 400 });
   }
 
-  let queryBuilder = supabase.from("products").select("*");
+  let queryBuilder = supabase.from("products").select(`
+    *,
+    prices!inner (
+      price,
+      url,
+      seller,
+      seller_rating,
+      in_stock,
+      shipping_cost,
+      last_updated,
+      marketplaces (name)
+    )
+  `);
 
   if (q) {
     const escapedQ = escapeILIKEPattern(q);
@@ -58,7 +70,14 @@ export async function GET(request: NextRequest) {
     sources: [{ name: "database", count: data?.length || 0, status: "ok" }],
   };
 
+  // Vexo only if explicitly requested AND user is authenticated
   if (q && includeVexo && isVexoConfigured()) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(response); // Skip Vexo for anonymous users
+    }
+
     try {
       const vexoResults = await discoverProducts(q);
       if (vexoResults.length > 0) {
@@ -78,5 +97,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json(response);
+  return NextResponse.json(response, {
+    headers: {
+      'Cache-Control': 'private, max-age=60', // Cache for 1 minute
+    }
+  });
 }

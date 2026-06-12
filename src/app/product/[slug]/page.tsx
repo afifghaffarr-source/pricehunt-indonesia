@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getProductBySlugFromDB, isProductInWishlist, getProductAlerts } from "@/lib/supabase/data";
+import { getProductBySlugFromDB, isProductInWishlist, getProductAlerts, getProductOffers } from "@/lib/supabase/data";
 import { getUser } from "@/lib/supabase/auth";
 import { formatRupiah, getDiscountPercent, getMarketplaceName } from "@/lib/utils";
 import { EnhancedPriceTable } from "@/components/product/EnhancedPriceTable";
@@ -66,6 +66,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   let isWishlisted = false;
   let userAlerts: { id: string; target_price: number; is_active: boolean }[] = [];
+
+  // Fetch real offers data with trust metadata
+  const offers = await getProductOffers(product.id);
 
   if (user) {
     const [wishlisted, alerts] = await Promise.all([
@@ -321,16 +324,37 @@ export default async function ProductDetailPage({ params }: PageProps) {
           
           {/* Enhanced Price Table with metadata */}
           <EnhancedPriceTable
-            prices={product.prices.map(p => ({
-              ...p,
-              // Mock enhanced metadata until migration 110 applied
-              offer_id: undefined,
-              confidence_score: 75, // Mock: Medium confidence
-              confidence_label: "dipercaya",
-              validation_status: "verified" as const,
-              last_seen_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // Mock: 6 hours ago
-              source: "api_scraper" as const,
-            }))}
+            prices={product.prices.map(p => {
+              // Find matching offer with real trust metadata
+              const offer = offers.find(o => 
+                o.marketplace === p.marketplace && 
+                Math.abs(o.current_price - p.price) < 1000 // Allow small price diff
+              );
+              
+              if (offer) {
+                // Use real offer data with trust metadata
+                return {
+                  ...p,
+                  offer_id: offer.id,
+                  confidence_score: offer.confidence_score,
+                  confidence_label: offer.confidence_label,
+                  validation_status: offer.validation_status as "pending" | "valid" | "conflict" | "parser_error" | "stale" | "rejected",
+                  last_seen_at: offer.last_checked_at,
+                  source: offer.source as "official_api" | "affiliate_feed" | "browser_collector" | "extension_snapshot" | "targeted_crawler" | "community_proof" | "manual_admin" | "api_scraper",
+                };
+              }
+              
+              // Fallback: no offer data available yet
+              return {
+                ...p,
+                offer_id: undefined,
+                confidence_score: undefined,
+                confidence_label: undefined,
+                validation_status: undefined,
+                last_seen_at: undefined,
+                source: undefined,
+              };
+            })}
             lowestPrice={product.lowestPrice}
             productId={product.id}
             productName={product.name}

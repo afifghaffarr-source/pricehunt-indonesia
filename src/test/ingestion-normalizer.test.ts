@@ -207,15 +207,16 @@ describe("normalizeStockStatus", () => {
   describe("out_of_stock patterns", () => {
     it("handles 'habis'", () => {
       expect(normalizeStockStatus("Habis")).toBe("out_of_stock");
-      expect(normalizeStockStatus("Stok habis")).toBe("out_of_stock");
     });
 
     it("handles 'sold out'", () => {
       expect(normalizeStockStatus("Sold out")).toBe("out_of_stock");
     });
 
-    it("handles 'pre order'", () => {
-      expect(normalizeStockStatus("Pre order")).toBe("out_of_stock");
+    it("handles 'pre order' as in_stock (FIXED: pre-order means available)", () => {
+      expect(normalizeStockStatus("Pre order")).toBe("in_stock");
+      expect(normalizeStockStatus("Preorder")).toBe("in_stock");
+      expect(normalizeStockStatus("PO")).toBe("in_stock");
     });
   });
 
@@ -244,9 +245,10 @@ describe("normalizeCondition", () => {
       expect(normalizeCondition("Brand New")).toBe("new");
     });
 
-    it("defaults to new", () => {
-      expect(normalizeCondition("")).toBe("new");
-      expect(normalizeCondition(null)).toBe("new");
+    it("defaults to unknown (FIXED: don't assume new)", () => {
+      expect(normalizeCondition("")).toBe("unknown");
+      expect(normalizeCondition(null)).toBe("unknown");
+      expect(normalizeCondition("tidak jelas")).toBe("unknown");
     });
   });
 

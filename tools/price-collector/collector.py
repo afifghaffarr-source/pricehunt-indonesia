@@ -69,7 +69,7 @@ def cli(ctx):
     """
     if ctx.invoked_subcommand is None:
         console.print(Panel.fit(
-            "[bold cyan]PriceHunt Browser Collector[/bold cyan]\n\n"
+            "[bold cyan]BijakBeli Browser Collector[/bold cyan]\n\n"
             "Usage:\n"
             "  [yellow]python collector.py --manual[/yellow]                    Manual mode (browse freely)\n"
             "  [yellow]python collector.py --url <URL>[/yellow]                 Extract single product URL\n"

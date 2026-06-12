@@ -26,6 +26,11 @@ import type { OfferCondition, StockStatus } from "@/lib/supabase/offers";
  * - "1,299,000" → 1299000
  * - "1299000" → 1299000
  * - 1299000 → 1299000
+ * - "1.2 juta" → 1200000
+ * - "1,2 jt" → 1200000
+ * - "500 rb" → 500000
+ * - "500k" → 500000
+ * - "2.5 juta" → 2500000
  * 
  * @param raw - Raw price input (string or number)
  * @returns Normalized price as integer, or 0 if invalid
@@ -39,11 +44,36 @@ export function normalizePrice(raw: string | number | null | undefined): number 
   }
   
   // Convert to string and clean
-  const cleaned = String(raw)
+  let cleaned = String(raw)
     .trim()
     .toUpperCase()
     .replace(/RP\.?/g, "") // Remove "Rp" or "Rp."
-    .replace(/IDR/g, "")     // Remove "IDR"
+    .replace(/IDR/g, "");   // Remove "IDR"
+  
+  // Handle Indonesian shorthand formats
+  // "1.2 juta" or "1,2 juta" → 1200000
+  const jutaMatch = cleaned.match(/([\d.,]+)\s*(JUTA|JT)/);
+  if (jutaMatch) {
+    const baseNum = parseFloat(jutaMatch[1].replace(/\./g, "").replace(/,/g, "."));
+    return isNaN(baseNum) ? 0 : Math.round(baseNum * 1000000);
+  }
+  
+  // "500 rb" or "500 ribu" → 500000
+  const ribuMatch = cleaned.match(/([\d.,]+)\s*(RB|RIBU)/);
+  if (ribuMatch) {
+    const baseNum = parseFloat(ribuMatch[1].replace(/\./g, "").replace(/,/g, "."));
+    return isNaN(baseNum) ? 0 : Math.round(baseNum * 1000);
+  }
+  
+  // "500k" or "500K" → 500000
+  const kMatch = cleaned.match(/([\d.,]+)\s*K$/);
+  if (kMatch) {
+    const baseNum = parseFloat(kMatch[1].replace(/\./g, "").replace(/,/g, "."));
+    return isNaN(baseNum) ? 0 : Math.round(baseNum * 1000);
+  }
+  
+  // Standard number format
+  cleaned = cleaned
     .replace(/\s+/g, "")     // Remove all spaces
     .replace(/\./g, "")      // Remove dots (thousand separator in ID)
     .replace(/,/g, "");      // Remove commas
@@ -139,16 +169,25 @@ export function normalizeStockStatus(raw: string | null | undefined): StockStatu
     return "low_stock";
   }
   
-  // Out of stock patterns
+  // Out of stock patterns (FIXED: removed pre-order from here)
   if (
     cleaned.includes("habis") ||
     cleaned.includes("kosong") ||
     cleaned.includes("out of stock") ||
     cleaned.includes("tidak tersedia") ||
-    cleaned.includes("sold out") ||
-    cleaned.includes("pre") && cleaned.includes("order")
+    cleaned.includes("sold out")
   ) {
     return "out_of_stock";
+  }
+  
+  // Pre-order is NOT out_of_stock - it's available for order
+  // Map to in_stock since schema doesn't have pre_order status
+  if (
+    cleaned.includes("pre") && cleaned.includes("order") ||
+    cleaned.includes("preorder") ||
+    cleaned.includes("po")
+  ) {
+    return "in_stock"; // Pre-order means available, not out of stock
   }
   
   return "unknown";
@@ -165,9 +204,19 @@ export function normalizeStockStatus(raw: string | null | undefined): StockStatu
  * @returns Normalized condition
  */
 export function normalizeCondition(raw: string | null | undefined): OfferCondition {
-  if (!raw) return "new";
+  if (!raw) return "unknown"; // Changed: default to unknown, not new
   
   const cleaned = raw.toLowerCase().trim();
+  
+  // New patterns (explicit signals only)
+  if (
+    cleaned.includes("baru") ||
+    cleaned.includes("new") ||
+    cleaned.includes("bnib") ||
+    cleaned.includes("brand new")
+  ) {
+    return "new";
+  }
   
   // Used/second patterns
   if (
@@ -190,18 +239,8 @@ export function normalizeCondition(raw: string | null | undefined): OfferConditi
     return "refurbished";
   }
   
-  // New patterns (default)
-  if (
-    cleaned.includes("baru") ||
-    cleaned.includes("new") ||
-    cleaned.includes("original") ||
-    cleaned.includes("bnib") ||
-    cleaned.includes("brand new")
-  ) {
-    return "new";
-  }
-  
-  return "new"; // Default to new if unclear
+  // If no clear signal, return unknown
+  return "unknown";
 }
 
 // ============================================================================

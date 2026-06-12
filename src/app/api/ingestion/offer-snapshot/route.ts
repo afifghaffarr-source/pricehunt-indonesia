@@ -220,7 +220,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
     const normalizedPrice = normalizePrice(input.price);
     const normalizedOriginalPrice = input.original_price ? normalizePrice(input.original_price) : null;
     const normalizedStockStatus = normalizeStockStatus(input.stock_status || "unknown");
-    const normalizedCondition = normalizeCondition(input.condition || "new");
+    const normalizedCondition = normalizeCondition(input.condition); // Don't default to "new", normalizer handles it
     const normalizedTitle = normalizeProductTitle(input.title);
     
     // Validate price
@@ -252,18 +252,29 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
     }
     
     // 6. Calculate confidence score
+    // Map source string to proper sourceType
+    let sourceType: "browser_collector" | "extension_snapshot" | "manual_admin" | "targeted_crawler" = "browser_collector";
+    if (input.source === "manual_admin") {
+      sourceType = "manual_admin";
+    } else if (input.source === "extension_snapshot") {
+      sourceType = "extension_snapshot";
+    } else if (input.source === "targeted_crawler") {
+      sourceType = "targeted_crawler";
+    } else if (input.source === "browser_collector") {
+      sourceType = "browser_collector";
+    }
+    
     const confidenceResult = calculateConfidenceScore({
-      sourceType: input.source === "manual_admin" ? "manual_admin" : "extension_snapshot",
+      sourceType,
       capturedAt: input.captured_at ? new Date(input.captured_at) : new Date(),
-      hasPrice: true,
+      hasPrice: normalizedPrice > 0,
       hasSeller: !!input.seller_name,
-      hasStock: !!input.stock_status,
+      hasStock: normalizedStockStatus !== "unknown",
       hasVariant: !!input.variant,
       isOfficialStore: input.is_official_store,
       crossValidated: false,
       conflictDetected: false,
       parserError: false,
-      // productMatchStatus removed - not in ConfidenceInput type
     });
     
     // 7. Upsert offer

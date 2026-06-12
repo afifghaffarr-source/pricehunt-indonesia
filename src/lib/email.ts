@@ -2,6 +2,21 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
 import { sendPriceAlertPush } from "@/lib/push-notifications";
 
+/**
+ * Escape HTML special characters to prevent XSS in email templates
+ */
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;',
+  };
+  return text.replace(/[&<>"'/]/g, (char) => map[char] || char);
+}
+
 interface AlertEmail {
   email: string;
   userName: string;
@@ -111,10 +126,15 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
     const resend = new Resend(resendApiKey);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+    // Escape user-provided data to prevent XSS
+    const safeName = escapeHtml(data.userName);
+    const safeProductName = escapeHtml(data.productName);
+    const safeProductSlug = encodeURIComponent(data.productSlug); // URL encode for href
+
     await resend.emails.send({
       from: "BijakBeli <onboarding@resend.dev>",
       to: data.email,
-      subject: `Harga ${data.productName} turun! ${formatRupiah(data.currentPrice)}`,
+      subject: `Harga ${safeProductName} turun! ${formatRupiah(data.currentPrice)}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
           <!-- Header -->
@@ -126,8 +146,8 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
           <!-- Content -->
           <div style="padding: 32px 24px; background: #f9fafb;">
             <div style="background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <p style="color: #6b7280; margin: 0 0 8px; font-size: 14px;">Halo ${data.userName},</p>
-              <h2 style="color: #111827; margin: 0 0 20px; font-size: 20px; font-weight: 600;">${data.productName}</h2>
+              <p style="color: #6b7280; margin: 0 0 8px; font-size: 14px;">Halo ${safeName},</p>
+              <h2 style="color: #111827; margin: 0 0 20px; font-size: 20px; font-weight: 600;">${safeProductName}</h2>
               
               <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px; margin: 20px 0;">
                 <tr>
@@ -141,7 +161,7 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
               </table>
               
               <div style="text-align: center; margin-top: 24px;">
-                <a href="${appUrl}/product/${data.productSlug}" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Beli Sekarang</a>
+                <a href="${appUrl}/product/${safeProductSlug}" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Beli Sekarang</a>
               </div>
             </div>
             
@@ -300,6 +320,9 @@ async function sendDigestEmail(data: DigestData): Promise<boolean> {
     const { Resend } = await import("resend");
     const resend = new Resend(resendApiKey);
 
+    // Escape user-provided data
+    const safeName = escapeHtml(data.userName);
+
     // Build wishlist section
     let wishlistHtml = "";
     if (data.wishlistItems.length > 0) {
@@ -310,9 +333,9 @@ async function sendDigestEmail(data: DigestData): Promise<boolean> {
             .map(
               (item) => `
             <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px;">
-              <p style="margin: 0; font-weight: bold; color: #1f2937;">${item.name}</p>
+              <p style="margin: 0; font-weight: bold; color: #1f2937;">${escapeHtml(item.name)}</p>
               <p style="margin: 4px 0 0; color: #059669; font-weight: bold;">${formatRupiah(item.price)}</p>
-              <a href="${data.appUrl}/product/${item.slug}" style="color: #2563eb; text-decoration: none; font-size: 14px;">Lihat detail →</a>
+              <a href="${data.appUrl}/product/${encodeURIComponent(item.slug)}" style="color: #2563eb; text-decoration: none; font-size: 14px;">Lihat detail →</a>
             </div>
           `
             )
@@ -333,14 +356,14 @@ async function sendDigestEmail(data: DigestData): Promise<boolean> {
             <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #f9fafb;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div>
-                  <p style="margin: 0; font-weight: bold; color: #1f2937;">${deal.name}</p>
+                  <p style="margin: 0; font-weight: bold; color: #1f2937;">${escapeHtml(deal.name)}</p>
                   <p style="margin: 4px 0 0; color: #059669; font-weight: bold;">${formatRupiah(deal.price)}</p>
                 </div>
                 <div style="background: #2563eb; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">
-                  ${deal.score}
+                  ${Math.round(deal.score)}
                 </div>
               </div>
-              <a href="${data.appUrl}/product/${deal.slug}" style="color: #2563eb; text-decoration: none; font-size: 14px;">Lihat rekomendasi →</a>
+              <a href="${data.appUrl}/product/${encodeURIComponent(deal.slug)}" style="color: #2563eb; text-decoration: none; font-size: 14px;">Lihat rekomendasi →</a>
             </div>
           `
             )
@@ -360,7 +383,7 @@ async function sendDigestEmail(data: DigestData): Promise<boolean> {
         <!-- Content -->
         <div style="padding: 32px 24px; background: #f9fafb;">
           <div style="background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
-            <p style="color: #6b7280; margin: 0 0 4px; font-size: 14px;">Halo ${data.userName},</p>
+            <p style="color: #6b7280; margin: 0 0 4px; font-size: 14px;">Halo ${safeName},</p>
             <p style="color: #111827; margin: 0; font-size: 15px;">Berikut update harga dan rekomendasi belanja pintar untuk Anda 🛍️</p>
           </div>
 

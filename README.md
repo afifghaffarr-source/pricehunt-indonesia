@@ -4,7 +4,7 @@
 
 Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, Blibli, TikTok Shop) dalam satu tempat. Tahu kapan waktu terbaik untuk membeli dengan data, bukan hype.
 
-🎯 **Production-Ready MVP** | ✅ 211 Tests Passing | 🚀 TypeScript Zero Errors | 🤖 Python Browser Collector
+🎯 **Advanced MVP** | ✅ 215 Tests Passing | 🚀 TypeScript | 🤖 Transparent Browser Collector | 🔐 Data Trust System
 
 ## ✨ Features
 
@@ -17,7 +17,7 @@ Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, B
 
 ### Core Features
 - 🔍 **Smart Search** - Natural language search dengan AI
-- 📊 **Price Comparison** - Bandingkan harga real-time dari 6 marketplace
+- 📊 **Price Comparison** - Bandingkan harga dari 6 marketplace dengan timestamp dan confidence score
 - 📈 **Price History** - Grafik tren harga 30-90 hari dengan Recharts visualization
 - 🎯 **Price Alerts** - Notifikasi otomatis saat harga turun
 - ⭐ **Wishlist** - Simpan produk favorit

@@ -33,15 +33,19 @@ class BaseCollector(ABC):
         self.playwright_context = None
         
     def launch_browser(self, headless: bool = HEADLESS) -> Page:
-        """Launch Playwright browser and return page"""
+        """Launch Playwright browser and return page
+        
+        Note: This is a transparent semi-automated collector.
+        We do NOT hide automation signals or bypass anti-bot measures.
+        Admin manually reviews pages and approves data extraction.
+        """
         console.print(f"🌐 Launching browser ({'headless' if headless else 'visible'})...")
         
         self.playwright_context = sync_playwright().start()
         self.browser = self.playwright_context.chromium.launch(
             headless=headless,
             args=[
-                '--disable-blink-features=AutomationControlled',
-                '--disable-dev-shm-usage',
+                '--disable-dev-shm-usage',  # Reduce memory usage only
             ]
         )
         

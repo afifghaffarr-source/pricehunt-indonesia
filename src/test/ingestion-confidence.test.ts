@@ -50,9 +50,9 @@ describe("calculateConfidenceScore - Base Scores", () => {
     expect(result.score).toBeLessThan(90);
   });
 
-  it("assigns lower score to targeted_scraper", () => {
+  it("assigns lower score to targeted_crawler", () => {
     const result = calculateConfidenceScore({
-      sourceType: "targeted_scraper",
+      sourceType: "targeted_crawler",
       capturedAt: new Date(),
       hasPrice: true,
     });
@@ -219,8 +219,9 @@ describe("calculateConfidenceScore - Completeness", () => {
       hasPrice: true,
     });
 
-    // Complete should have +5 +5 +3 = +13 more points
-    expect(complete.score).toBeGreaterThan(minimal.score + 10);
+    // Complete should have +3 +3 +3 = +9 more points (FIXED: reduced bonuses)
+    expect(complete.score).toBeGreaterThan(minimal.score + 8);
+    expect(complete.score).toBeLessThanOrEqual(minimal.score + 10);
   });
 });
 
@@ -391,7 +392,7 @@ describe("calculateConfidenceScore - Labels", () => {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     
     const result = calculateConfidenceScore({
-      sourceType: "targeted_scraper",
+      sourceType: "targeted_crawler",
       capturedAt: weekAgo,
       hasPrice: true,
       conflictDetected: true,
@@ -426,7 +427,7 @@ describe("calculateConfidenceScore - Score Bounds", () => {
     const veryOld = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
     
     const minimal = calculateConfidenceScore({
-      sourceType: "targeted_scraper",
+      sourceType: "targeted_crawler",
       capturedAt: veryOld,
       hasPrice: false,
       parserError: true,

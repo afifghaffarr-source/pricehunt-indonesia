@@ -1,6 +1,20 @@
 # BijakBeli.app - Price Collector
 
-Browser-based semi-automated price data collection tool untuk marketplace Indonesia.
+**Transparent semi-automated** price data collection tool untuk marketplace Indonesia.
+
+## ⚖️ Ethics & Transparency
+
+This collector operates with full transparency:
+- ✅ **NO anti-detection tricks** (no stealth mode, no automation hiding)
+- ✅ **Semi-manual workflow** (admin reviews pages before extraction)
+- ✅ **Respectful rate limiting** (2-5 second delays)
+- ✅ **Public data only** (no login, no cookies, no personal data)
+- ✅ **Visible browser** (headless=false by default)
+- ❌ **NO captcha bypass**
+- ❌ **NO cloudflare evasion**
+- ❌ **NO bot detection hiding**
+
+**Purpose:** Help consumers compare prices from publicly visible product pages.
 
 ## Status: ✅ CONFIGURED & READY
 

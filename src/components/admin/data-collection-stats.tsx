@@ -17,24 +17,24 @@ export async function DataCollectionStats() {
       .from("offers")
       .select("id", { count: "exact", head: true }),
     
-    // Unresolved conflicts
+    // Unresolved conflicts (FIXED: status not resolved)
     supabase
       .from("price_conflicts")
       .select("id", { count: "exact", head: true })
-      .eq("resolved", false),
+      .eq("status", "open"),
     
-    // Pending rechecks
+    // Pending rechecks (FIXED: request_status not status)
     supabase
       .from("recheck_requests")
       .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
+      .eq("request_status", "pending"),
     
-    // Stale offers (not updated > 24 hours)
+    // Stale offers (FIXED: is_active not is_available, not updated > 24 hours)
     supabase
       .from("offers")
       .select("id", { count: "exact", head: true })
       .lt("last_checked_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .eq("is_available", true),
+      .eq("is_active", true),
   ]);
 
   const stats = [
