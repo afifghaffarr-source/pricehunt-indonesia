@@ -24,7 +24,14 @@ export async function GET(request: NextRequest) {
         processed_at,
         result_message,
         offer_id,
-        product_id
+        product_id,
+        requested_by,
+        offer:offers(
+          id,
+          title,
+          url,
+          marketplace:marketplaces(name)
+        )
       `)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -42,9 +49,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Transform to match component expectations
+    const transformed = data?.map((recheck: any) => ({
+      id: recheck.id,
+      offer_id: recheck.offer_id,
+      user_id: recheck.requested_by,
+      reason: recheck.reason,
+      status: recheck.request_status,
+      priority_score: recheck.priority_score || 50,
+      requested_at: recheck.created_at,
+      offer: recheck.offer || {
+        title: 'Unknown',
+        marketplace: { name: 'Unknown' },
+        url: null,
+      },
+    }));
+
     return NextResponse.json({
       success: true,
-      data,
+      data: transformed,
     });
   } catch (error: any) {
     return NextResponse.json(

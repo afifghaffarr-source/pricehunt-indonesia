@@ -60,7 +60,7 @@ export function RechecksList() {
       const response = await fetch(`/api/admin/data-collection/rechecks/${recheckId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ request_status: status }),
       });
 
       const data = await response.json();

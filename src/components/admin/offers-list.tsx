@@ -28,12 +28,12 @@ type Offer = {
   id: string;
   title: string;
   marketplace: { name: string };
-  price: number;
+  current_price: number;
   confidence_score: number;
   confidence_label: string;
   validation_status: string;
   last_checked_at: string;
-  is_available: boolean;
+  is_active: boolean;
   url: string | null;
 };
 
@@ -154,7 +154,7 @@ export function OffersList() {
                     {offer.title}
                   </TableCell>
                   <TableCell className="capitalize">{offer.marketplace.name}</TableCell>
-                  <TableCell>Rp {offer.price.toLocaleString("id-ID")}</TableCell>
+                  <TableCell>Rp {offer.current_price.toLocaleString("id-ID")}</TableCell>
                   <TableCell>
                     {getConfidenceBadge(offer.confidence_score, offer.confidence_label)}
                   </TableCell>
@@ -166,7 +166,7 @@ export function OffersList() {
                     })}
                   </TableCell>
                   <TableCell>
-                    {offer.is_available ? (
+                    {offer.is_active ? (
                       <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
                       <XCircle className="h-4 w-4 text-red-600" />

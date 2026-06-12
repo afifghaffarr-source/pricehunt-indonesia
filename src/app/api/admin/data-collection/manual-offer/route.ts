@@ -6,22 +6,7 @@ import { calculateConfidenceScore } from "@/lib/ingestion/confidence";
 /**
  * POST /api/admin/data-collection/manual-offer
  * Submit manual offer input from admin
- * 
- * NOTE: This endpoint requires migration 110 to be applied first.
- * Until then, use the browser collector tool instead.
  */
-export async function POST(request: NextRequest) {
-  return NextResponse.json(
-    { 
-      success: false, 
-      message: "This endpoint requires migration 110 to be applied. Please run the migration first or use the browser collector tool." 
-    },
-    { status: 503 }
-  );
-}
-
-/* IMPLEMENTATION READY - Uncomment after migration 110 is applied:
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -48,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // 1. Find or create marketplace
+    // 1. Find marketplace
     let { data: marketplaceData, error: marketplaceError } = await supabase
       .from("marketplaces")
       .select("id")
@@ -57,56 +42,29 @@ export async function POST(request: NextRequest) {
 
     if (marketplaceError || !marketplaceData) {
       // Create marketplace if not exists
-      // @ts-ignore - Migration 110 not applied yet, types will be correct after migration
       const { data: created, error: createError } = await supabase
         .from("marketplaces")
         .insert({
           name: marketplace.toLowerCase(),
-          url: `https://${marketplace.toLowerCase()}.com`,
-        })
+          base_url: `${marketplace.toLowerCase()}.com`,
+          display_name: marketplace,
+          logo_url: null,
+          color: "#000000",
+          is_active: true,
+        } as any)
         .select()
         .single();
 
       if (createError) {
         return NextResponse.json(
-          { success: false, message: "Failed to create marketplace" },
+          { success: false, message: "Failed to create marketplace: " + createError.message },
           { status: 500 }
         );
       }
       marketplaceData = created;
     }
 
-    // 2. Find or create product (simple title matching)
-    let { data: productData, error: productError } = await supabase
-      .from("products")
-      .select("id")
-      .ilike("name", title)
-      .limit(1)
-      .single();
-
-    if (productError || !productData) {
-      // Create new product
-      // @ts-ignore - Migration 110 not applied yet
-      const { data: created, error: createError } = await supabase
-        .from("products")
-        .insert({
-          name: title,
-          category: category_hint || "general",
-          image_url: image_url || null,
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        return NextResponse.json(
-          { success: false, message: "Failed to create product" },
-          { status: 500 }
-        );
-      }
-      productData = created;
-    }
-
-    // 3. Normalize prices
+    // 2. Normalize prices
     const normalizedPrice = normalizePrice(price);
     const normalizedOriginalPrice = original_price
       ? normalizePrice(original_price)
@@ -119,38 +77,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Calculate confidence score
-    // @ts-ignore - Migration 110 not applied yet
+    // 3. Calculate confidence score
     const confidenceResult = calculateConfidenceScore({
       sourceType: "manual_admin",
       capturedAt: new Date(),
       hasPrice: true,
-      hasTitle: true,
-      hasImage: !!image_url,
       hasSeller: !!seller_name,
+      hasStock: !!stock_status,
     });
 
-    // 5. Create offer
-    // @ts-ignore - Migration 110 fields not in generated types yet
+    // 4. Create offer (product_id can be null - will be matched later)
     const { data: offer, error: offerError } = await supabase
       .from("offers")
-      .insert({
-        product_id: productData!.id,
+      .upsert({
         marketplace_id: marketplaceData!.id,
         title,
         url,
-        price: normalizedPrice,
+        current_price: normalizedPrice,
         original_price: normalizedOriginalPrice,
         seller_name: seller_name || null,
         stock_status: stock_status || "in_stock",
-        condition: condition || "new",
+        condition: condition || "unknown",
         image_url: image_url || null,
         category_hint: category_hint || null,
         confidence_score: confidenceResult.score,
         confidence_label: confidenceResult.label,
-        validation_status: "validated",
-        is_available: true,
+        validation_status: "pending",
+        is_active: true,
         last_checked_at: new Date().toISOString(),
+        source: "manual_admin",
+      } as any, {
+        onConflict: "url",
       })
       .select()
       .single();
@@ -163,28 +120,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Create price snapshot
-    // @ts-ignore - Migration 110 not applied yet
+    // 5. Create price snapshot
     const { error: snapshotError } = await supabase
       .from("price_snapshots")
       .insert({
         offer_id: offer!.id,
-        price: normalizedPrice,
+        current_price: normalizedPrice,
         original_price: normalizedOriginalPrice,
-        discount_percent:
-          normalizedOriginalPrice && normalizedPrice
-            ? Math.round(
-                ((normalizedOriginalPrice - normalizedPrice) /
-                  normalizedOriginalPrice) *
-                  100
-              )
-            : null,
-        captured_at: new Date().toISOString(),
+        stock_status: stock_status || "in_stock",
+        source: "manual_admin",
         confidence_score: confidenceResult.score,
-      });
+        captured_at: new Date().toISOString(),
+      } as any);
 
     if (snapshotError) {
       console.error("[Admin] Create snapshot error:", snapshotError);
+      // Don't fail the request, snapshot is optional
     }
 
     return NextResponse.json({
@@ -192,16 +143,16 @@ export async function POST(request: NextRequest) {
       message: "Offer created successfully",
       data: {
         offer_id: offer!.id,
-        product_id: productData!.id,
         marketplace_id: marketplaceData!.id,
+        confidence_score: confidenceResult.score,
+        confidence_label: confidenceResult.label,
       },
     });
   } catch (error) {
     console.error("[Admin] Manual offer exception:", error);
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: "Internal server error: " + (error as Error).message },
       { status: 500 }
     );
   }
 }
-*/
