@@ -28,7 +28,7 @@ HEADERS = {
 }
 
 
-def fetch_queue(limit=10, status="queued"):
+def fetch_queue(limit=10, status="pending"):
     """Fetch targets from refresh queue"""
     url = f"{API_BASE}/api/refresh/queue"
     params = {"limit": limit, "status": status}
@@ -57,8 +57,8 @@ def crawl_target(target):
     This should use tools/price-collector/base_collector.py
     """
     print(f"🔍 Would crawl: {target['url']}")
-    print(f"   Marketplace: {target['marketplace']}")
-    print(f"   Product: {target.get('product_name', 'Unknown')}")
+    print(f"   Domain: {target.get('domain', 'Unknown')}")
+    print(f"   Source: {target.get('source', 'Unknown')}")
     print(f"   Priority: {target['priority_score']}")
     
     # TODO: Implement actual crawling
@@ -66,10 +66,14 @@ def crawl_target(target):
     # offer_data = extract_price_data(target['url'])
     
     # For now, return mock data
+    # Extract marketplace name from domain (e.g., "www.tokopedia.com" -> "tokopedia")
+    domain = target.get('domain', '')
+    marketplace = domain.replace('www.', '').split('.')[0] if domain else 'unknown'
+    
     return {
-        "marketplace": target["marketplace"],
+        "marketplace": marketplace,
         "product_url": target["url"],
-        "title": target.get("product_name", "Product Title"),
+        "title": f"Product from {marketplace}",
         "price": 999000,
         "source": "browser_collector",
     }
@@ -104,7 +108,7 @@ def main():
     print("-" * 60)
     
     # Fetch targets from queue
-    targets = fetch_queue(limit=10, status="queued")
+    targets = fetch_queue(limit=10, status="pending")
     
     if not targets:
         print("ℹ️  No targets in queue")
