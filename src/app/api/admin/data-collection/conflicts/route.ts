@@ -24,19 +24,8 @@ export async function GET() {
         confidence_b,
         conflict_status,
         created_at,
-        offer_a:offers!price_conflicts_offer_a_id_fkey(
-          id,
-          title,
-          url,
-          marketplace:marketplaces(name)
-        ),
-        offer_b:offers!price_conflicts_offer_b_id_fkey(
-          id,
-          title,
-          url,
-          marketplace:marketplaces(name)
-        ),
-        product:products(name, slug)
+        product_id,
+        marketplace_id
       `)
       .eq('conflict_status', 'open')
       .order('created_at', { ascending: false })
@@ -50,6 +39,8 @@ export async function GET() {
     }
 
     // Transform to match component expectations
+    // Since we can't join to offers without FK constraints,
+    // return simplified data structure
     const transformed = data?.map((conflict: any) => ({
       id: conflict.id,
       offer_id: conflict.offer_a_id,
@@ -59,13 +50,13 @@ export async function GET() {
       detected_at: conflict.created_at,
       resolved: conflict.conflict_status !== 'open',
       offer: {
-        title: conflict.offer_a?.title || 'Unknown',
+        title: 'Offer ' + conflict.offer_a_id.substring(0, 8),
         price: parseFloat(conflict.price_a || '0'),
-        marketplace: conflict.offer_a?.marketplace || { name: 'Unknown' },
+        marketplace: { name: 'Unknown' },
       },
       conflicting_offer: {
         price: parseFloat(conflict.price_b || '0'),
-        marketplace: conflict.offer_b?.marketplace || { name: 'Unknown' },
+        marketplace: { name: 'Unknown' },
       },
     }));
 
