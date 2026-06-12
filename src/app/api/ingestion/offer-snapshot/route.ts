@@ -130,7 +130,9 @@ async function findOrCreateMarketplace(supabase: ReturnType<typeof createAdminCl
     .from("marketplaces")
     .insert({
       name: normalized,
-      url: `https://${normalized}.com`,
+      display_name: normalized.charAt(0).toUpperCase() + normalized.slice(1),
+      base_url: `https://${normalized}.com`,
+      color: "#6B7280", // Default gray color
       is_active: true,
     } as any)
     .select("id, name")
