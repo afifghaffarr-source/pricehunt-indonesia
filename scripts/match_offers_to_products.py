@@ -25,11 +25,9 @@ PRODUCTS = [
     {"id": "00000000-0000-0000-0000-000000000008", "name": "Nintendo Switch OLED Model", "slug": "nintendo-switch-oled"},
     {"id": "7b321903-9118-478a-bec0-025e60f6a6ed", "name": "Samsung AC Split 1 PK Inverter", "slug": "samsung-ac-1pk-inverter"},
     {"id": "00000000-0000-0000-0000-000000000001", "name": "Samsung Galaxy S24 Ultra 256GB", "slug": "samsung-galaxy-s24-ultra"},
-    {"id": "cd5bcf79-c1e9-43bc-9247-257c39200a69", "name": "Samsung Galaxy S24 Ultra 512GB", "slug": "samsung-galaxy-s24-ultra-512gb"},
     {"id": "480ae3cd-9a35-49a2-938d-11b4a0af39be", "name": "Samsung Galaxy S24 Ultra 512GB", "slug": "samsung-s24-ultra-512gb"},
+    {"id": "cd5bcf79-c1e9-43bc-9247-257c39200a69", "name": "Samsung Galaxy S24 Ultra 512GB", "slug": "samsung-galaxy-s24-ultra-512gb"},
     {"id": "250240cb-9af5-4011-9ed1-fe096a1508a3", "name": "Sony WH-1000XM5 Headphone", "slug": "sony-wh1000xm5"},
-    {"id": "00000000-0000-0000-0000-000000000003", "name": "Sony WH-1000XM5 Headphone Wireless", "slug": "sony-wh-1000xm5"},
-    {"id": "4358d585-b90f-414f-8684-15d329bdbef8", "name": "Sony WH-1000XM5 Wireless Headphones", "slug": "sony-wh-1000xm5-wireless-headphones"},
     {"id": "1f15efb0-61de-4e1d-9ae8-8406a6f86f64", "name": "Xiaomi 14 Pro 256GB", "slug": "xiaomi-14-pro-256gb"},
     {"id": "00000000-0000-0000-0000-000000000005", "name": "Xiaomi Smart Band 8", "slug": "xiaomi-smart-band-8"},
 ]
