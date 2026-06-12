@@ -41,7 +41,7 @@ async function handleAPICall(payload) {
       title: payload.title,
       price: payload.price,
       image_url: payload.image_url || undefined,
-      source: 'chrome-extension',
+      source: 'extension_snapshot',
       captured_at: new Date().toISOString(),
     }),
   });

@@ -24,7 +24,7 @@ export default function ExtensionPage() {
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4 border-primary/20">
-          🚀 Beta v2.0.1
+          🚀 Beta v2.0.2
         </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
@@ -47,14 +47,14 @@ export default function ExtensionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v2.0.1-beta.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v2.0.2-beta.tar.gz" download>
             <Button size="lg" className="w-full text-lg">
               <Download className="mr-2 h-5 w-5" />
               Download Extension (14 KB)
             </Button>
           </Link>
           <p className="text-center text-sm text-muted-foreground">
-            SHA256: <code className="text-xs">183f5920...a9d6d2</code>
+            SHA256: <code className="text-xs">1d5f620d...efb926</code>
           </p>
         </CardContent>
       </Card>
@@ -98,20 +98,32 @@ export default function ExtensionPage() {
           <CardDescription>Update terbaru extension</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="border-l-2 border-blue-500 pl-4">
+          <div className="border-l-2 border-red-500 pl-4">
             <div className="mb-1 flex items-center gap-2">
-              <Badge variant="default" className="bg-blue-500">v2.0.1</Badge>
-              <span className="text-xs text-muted-foreground">2026-06-12 (Latest)</span>
+              <Badge variant="default" className="bg-red-500">v2.0.2</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-13 (Latest)</span>
             </div>
-            <p className="text-sm font-medium text-foreground">🐛 Critical Bug Fix</p>
+            <p className="text-sm font-medium text-foreground">🐛 Critical Database Error Fix</p>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>• Fixed "API error: 500 - OFFER_UPSERT_FAILED"</li>
+              <li>• Changed source value: 'chrome-extension' → 'extension_snapshot'</li>
+              <li>• Database CHECK constraint now accepts the correct value</li>
+            </ul>
+            <p className="mt-2 text-xs text-red-600">
+              ⚠️ <strong>Wajib update!</strong> Versi 2.0.1 tidak bisa save data ke database.
+            </p>
+          </div>
+          <div className="border-l-2 border-muted pl-4">
+            <div className="mb-1 flex items-center gap-2">
+              <Badge variant="outline">v2.0.1</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-12</span>
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">🐛 Critical Bug Fix</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               <li>• Fixed "Failed to fetch" error saat klik button</li>
               <li>• Manifest V3 CORS issue resolved via message passing</li>
               <li>• API calls sekarang via background worker (lebih stabil)</li>
             </ul>
-            <p className="mt-2 text-xs text-amber-600">
-              ⚠️ <strong>Wajib update!</strong> Versi 2.0.0 tidak bisa collect produk.
-            </p>
           </div>
           <div className="border-l-2 border-muted pl-4">
             <div className="mb-1 flex items-center gap-2">
