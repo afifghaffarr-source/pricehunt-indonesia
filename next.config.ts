@@ -12,7 +12,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' https://placehold.co https://images.unsplash.com data: blob:",
+      "img-src 'self' https://placehold.co https://images.unsplash.com https://images.tokopedia.net https://cf.shopee.co.id https://s-cf-id.shopeesz.com https://s.bukalapak.com https://www.static-src.com https://img.lazcdn.com https://p16-oec-sg.tiktokcdn.com data: blob:",
       "font-src 'self' https://fonts.gstatic.com",
       "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com wss://*.supabase.co https://vercel.live",
       "frame-src 'none'",
@@ -25,6 +25,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "placehold.co" },
       { protocol: "https", hostname: "images.unsplash.com" },
+      // Marketplace image domains
+      { protocol: "https", hostname: "images.tokopedia.net" },
+      { protocol: "https", hostname: "cf.shopee.co.id" },
+      { protocol: "https", hostname: "s-cf-id.shopeesz.com" },
+      { protocol: "https", hostname: "s.bukalapak.com" },
+      { protocol: "https", hostname: "www.static-src.com" },
+      { protocol: "https", hostname: "img.lazcdn.com" },
+      { protocol: "https", hostname: "p16-oec-sg.tiktokcdn.com" },
     ],
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
