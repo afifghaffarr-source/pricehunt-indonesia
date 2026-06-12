@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "name": "BijakBeli Product Collector",
   "description": "Collect product data from Indonesian marketplaces (Tokopedia, Shopee, Bukalapak) to BijakBeli.app with one click!",
   "permissions": [

@@ -24,9 +24,9 @@ export default function ExtensionPage() {
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4">
-          <Sparkles className="mr-1 h-3 w-3" />
-          Beta v2.0.0
-        </Badge>
+          <Badge variant="secondary" className="mb-4 border-primary/20">
+            🚀 Beta v2.0.1
+          </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
         </h1>
@@ -48,14 +48,14 @@ export default function ExtensionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v2.0.0-beta.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v2.0.1-beta.tar.gz" download>
             <Button size="lg" className="w-full text-lg">
               <Download className="mr-2 h-5 w-5" />
               Download Extension (14 KB)
             </Button>
           </Link>
           <p className="text-center text-sm text-muted-foreground">
-            SHA256: <code className="text-xs">97ef056...c614ea</code>
+            SHA256: <code className="text-xs">183f5920...a9d6d2</code>
           </p>
         </CardContent>
       </Card>
@@ -88,6 +88,43 @@ export default function ExtensionPage() {
             <p className="text-xs">
               ⚠️ Secret ini akan diganti saat launch publik ke Chrome Web Store
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Changelog Card */}
+      <Card className="mx-auto mb-12 max-w-2xl border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
+        <CardHeader>
+          <CardTitle className="text-lg">📝 Changelog</CardTitle>
+          <CardDescription>Update terbaru extension</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="border-l-2 border-blue-500 pl-4">
+            <div className="mb-1 flex items-center gap-2">
+              <Badge variant="default" className="bg-blue-500">v2.0.1</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-12 (Latest)</span>
+            </div>
+            <p className="text-sm font-medium text-foreground">🐛 Critical Bug Fix</p>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>• Fixed "Failed to fetch" error saat klik button</li>
+              <li>• Manifest V3 CORS issue resolved via message passing</li>
+              <li>• API calls sekarang via background worker (lebih stabil)</li>
+            </ul>
+            <p className="mt-2 text-xs text-amber-600">
+              ⚠️ <strong>Wajib update!</strong> Versi 2.0.0 tidak bisa collect produk.
+            </p>
+          </div>
+          <div className="border-l-2 border-muted pl-4">
+            <div className="mb-1 flex items-center gap-2">
+              <Badge variant="outline">v2.0.0</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-12</span>
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">🚀 Initial Beta Release</p>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>• Support Tokopedia, Shopee, Bukalapak</li>
+              <li>• One-click data collection</li>
+              <li>• Auto-sync to BijakBeli database</li>
+            </ul>
           </div>
         </CardContent>
       </Card>

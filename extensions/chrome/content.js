@@ -230,44 +230,36 @@ async function extractBukalapakData() {
 async function sendToAPI(productData) {
   console.log('📤 Sending to BijakBeli API...', productData);
   
-  // Get API config from storage
-  const config = await chrome.storage.sync.get(['apiUrl', 'ingestionSecret']);
-  const apiUrl = config.apiUrl || 'https://www.bijakbeli.app';
-  const secret = config.ingestionSecret;
-  
-  if (!secret) {
-    throw new Error('INGESTION_SECRET not configured. Please set it in extension settings.');
-  }
-  // Send to API (matches /api/ingestion/offer-snapshot schema)
-  const response = await fetch(`${apiUrl}/api/ingestion/offer-snapshot`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${secret}`,
-    },
-    body: JSON.stringify({
-      marketplace: MARKETPLACE,
-      product_url: productData.url,
-      title: productData.name,
-      price: productData.price,
-      image_url: productData.image || undefined,
-      source: 'chrome-extension',
-      captured_at: new Date().toISOString(),
-    }),
+  // Use message passing to background worker (fixes CORS issue in Manifest V3)
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({
+      type: 'API_CALL',
+      payload: {
+        marketplace: MARKETPLACE,
+        product_url: productData.url,
+        title: productData.name,
+        price: productData.price,
+        image_url: productData.image || undefined,
+      }
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      
+      if (!response.success) {
+        reject(new Error(response.error));
+        return;
+      }
+      
+      console.log('✅ API response:', response.data);
+      
+      // Save to history
+      saveToHistory(productData, response.data).then(() => {
+        resolve(response.data);
+      }).catch(reject);
+    });
   });
-  
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`API error: ${response.status} - ${error}`);
-  }
-  
-  const result = await response.json();
-  console.log('✅ API response:', result);
-  
-  // Save to history
-  await saveToHistory(productData, result);
-  
-  return result;
 }
 
 // Save to local history
