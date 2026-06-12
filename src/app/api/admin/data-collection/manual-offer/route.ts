@@ -40,6 +40,9 @@ export async function POST(request: NextRequest) {
       .eq("name", marketplace.toLowerCase())
       .single();
 
+    // Cast to any to avoid TypeScript issues with generated types
+    let marketplaceRecord: any = marketplaceData;
+
     if (marketplaceError || !marketplaceData) {
       // Create marketplace if not exists
       const { data: created, error: createError } = await supabase
@@ -55,13 +58,20 @@ export async function POST(request: NextRequest) {
         .select()
         .single();
 
-      if (createError) {
+      if (createError || !created) {
         return NextResponse.json(
-          { success: false, message: "Failed to create marketplace: " + createError.message },
+          { success: false, message: "Failed to create marketplace: " + (createError?.message || "Unknown error") },
           { status: 500 }
         );
       }
-      marketplaceData = created;
+      marketplaceRecord = created;
+    }
+
+    if (!marketplaceRecord) {
+      return NextResponse.json(
+        { success: false, message: "Failed to resolve marketplace" },
+        { status: 500 }
+      );
     }
 
     // 2. Normalize prices
@@ -87,10 +97,10 @@ export async function POST(request: NextRequest) {
     });
 
     // 4. Create offer (product_id can be null - will be matched later)
-    const { data: offer, error: offerError } = await supabase
+    const { data: offerData, error: offerError } = await supabase
       .from("offers")
       .upsert({
-        marketplace_id: marketplaceData!.id,
+        marketplace_id: marketplaceRecord.id,
         title,
         url,
         current_price: normalizedPrice,
@@ -112,19 +122,21 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (offerError) {
+    if (offerError || !offerData) {
       console.error("[Admin] Create offer error:", offerError);
       return NextResponse.json(
-        { success: false, message: offerError.message },
+        { success: false, message: offerError?.message || "Failed to create offer" },
         { status: 500 }
       );
     }
+
+    const offer = offerData as any;
 
     // 5. Create price snapshot
     const { error: snapshotError } = await supabase
       .from("price_snapshots")
       .insert({
-        offer_id: offer!.id,
+        offer_id: offer.id,
         current_price: normalizedPrice,
         original_price: normalizedOriginalPrice,
         stock_status: stock_status || "in_stock",
@@ -142,8 +154,8 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Offer created successfully",
       data: {
-        offer_id: offer!.id,
-        marketplace_id: marketplaceData!.id,
+        offer_id: offer.id,
+        marketplace_id: marketplaceRecord.id,
         confidence_score: confidenceResult.score,
         confidence_label: confidenceResult.label,
       },
