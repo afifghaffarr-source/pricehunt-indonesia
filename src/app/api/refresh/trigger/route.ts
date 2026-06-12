@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { calculateNextCrawlTime } from "@/lib/refresh-priority";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * POST /api/refresh/trigger
@@ -11,35 +10,57 @@ import { calculateNextCrawlTime } from "@/lib/refresh-priority";
  * - force: boolean - Bypass priority checks
  * 
  * Enqueues targets for immediate crawling by browser collector
+ * 
+ * Auth: Requires INGESTION_SECRET header for security
  */
 export async function POST(request: NextRequest) {
   try {
-    // NOTE: This endpoint requires migration 110 to be applied first
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Service not available",
-        message: "This endpoint requires migration 110. Apply migration via Supabase dashboard first.",
-      },
-      { status: 503 }
-    );
+    // Verify authorization
+    const authHeader = request.headers.get("Authorization");
+    const expectedSecret = process.env.INGESTION_SECRET;
 
-    /* IMPLEMENTATION READY - Uncomment after migration 110 applied
-    
+    if (!expectedSecret) {
+      console.error("INGESTION_SECRET not configured");
+      return NextResponse.json(
+        { success: false, error: "Service not configured" },
+        { status: 500, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - Bearer token required" },
+        { status: 401, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
+    const providedSecret = authHeader.substring(7);
+    if (providedSecret !== expectedSecret) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - Invalid token" },
+        { status: 401, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
     const body = await request.json();
     const { target_ids, force = false } = body;
 
     if (!Array.isArray(target_ids) || target_ids.length === 0) {
       return NextResponse.json(
         { success: false, error: "target_ids array required" },
-        { status: 400 }
+        { status: 400, headers: { "Cache-Control": "no-store" } }
       );
     }
 
-    const supabase = await createClient();
+    if (target_ids.length > 100) {
+      return NextResponse.json(
+        { success: false, error: "Maximum 100 targets per request" },
+        { status: 400, headers: { "Cache-Control": "no-store" } }
+      );
+    }
 
-    // NOTE: Requires migration 110 for crawl_targets table
-    // @ts-expect-error - Table will exist after migration 110
+    const supabase = createAdminClient();
+
     const { data: targets, error: fetchError } = await supabase
       .from("crawl_targets")
       .select("*")
@@ -49,26 +70,25 @@ export async function POST(request: NextRequest) {
       console.error("Error fetching targets:", fetchError);
       return NextResponse.json(
         { success: false, error: "Failed to fetch targets" },
-        { status: 500 }
+        { status: 500, headers: { "Cache-Control": "no-store" } }
       );
     }
 
     if (!targets || targets.length === 0) {
       return NextResponse.json(
         { success: false, error: "No targets found" },
-        { status: 404 }
+        { status: 404, headers: { "Cache-Control": "no-store" } }
       );
     }
 
     // Update next_crawl_at to now (immediate priority)
-    const updates = targets.map((target: any) => ({
+    const updates: any = targets.map((target: any) => ({
       id: target.id,
       next_crawl_at: new Date().toISOString(),
-      status: "pending",
+      crawl_status: "queued",
       updated_at: new Date().toISOString(),
     }));
 
-    // @ts-expect-error - Upsert will work after migration 110
     const { error: updateError } = await supabase
       .from("crawl_targets")
       .upsert(updates);
@@ -77,29 +97,25 @@ export async function POST(request: NextRequest) {
       console.error("Error updating targets:", updateError);
       return NextResponse.json(
         { success: false, error: "Failed to enqueue targets" },
-        { status: 500 }
+        { status: 500, headers: { "Cache-Control": "no-store" } }
       );
     }
 
-    // TODO: Trigger actual crawler (Python browser collector or cron job)
-    // This would typically:
-    // 1. Send webhook to crawler service
-    // 2. Or add to Redis queue
-    // 3. Or trigger background job
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        enqueued_count: targets.length,
-        targets: targets.map((t: any) => ({
-          id: t.id,
-          url: t.url,
-          next_crawl_at: new Date().toISOString(),
-        })),
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          enqueued_count: targets.length,
+          targets: targets.map((t: any) => ({
+            id: t.id,
+            url: t.url,
+            next_crawl_at: new Date().toISOString(),
+          })),
+        },
+        message: `${targets.length} target(s) enqueued for refresh`,
       },
-      message: `${targets.length} target(s) enqueued for refresh`,
-    });
-    */
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     console.error("Error triggering refresh:", error);
     return NextResponse.json(
@@ -108,7 +124,7 @@ export async function POST(request: NextRequest) {
         error: "Internal server error",
         message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }
 }
@@ -124,16 +140,17 @@ export async function GET(request: NextRequest) {
   if (!targetId) {
     return NextResponse.json(
       { success: false, error: "target_id query parameter required" },
-      { status: 400 }
+      { status: 400, headers: { "Cache-Control": "no-store" } }
     );
   }
 
   // Forward to POST handler
+  const url = new URL(request.url);
   return POST(
-    new NextRequest(request.url, {
+    new NextRequest(url, {
       method: "POST",
       body: JSON.stringify({ target_ids: [targetId], force: false }),
-      headers: { "Content-Type": "application/json" },
+      headers: request.headers,
     })
   );
 }
