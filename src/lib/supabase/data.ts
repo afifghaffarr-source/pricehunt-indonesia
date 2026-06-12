@@ -86,7 +86,7 @@ export async function getProductsFromDB(limit = 50, offset = 0): Promise<Product
       *,
       prices(
         *,
-        marketplaces(name)
+        marketplaces(name, display_name, color)
       )
     `)
     .order("deal_score", { ascending: false })
@@ -118,7 +118,7 @@ export async function getProductBySlugFromDB(slug: string): Promise<Product | nu
       *,
       prices(
         *,
-        marketplaces(name)
+        marketplaces(name, display_name, color)
       ),
       price_history(
         *,
@@ -160,7 +160,7 @@ export async function searchProductsFromDB(
       *,
       prices(
         *,
-        marketplaces(name)
+        marketplaces(name, display_name, color)
       )
     `);
 
