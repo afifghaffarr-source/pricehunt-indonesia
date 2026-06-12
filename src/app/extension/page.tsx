@@ -23,10 +23,9 @@ export default function ExtensionPage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Hero Section */}
       <div className="mb-12 text-center">
-        <Badge variant="secondary" className="mb-4">
-          <Badge variant="secondary" className="mb-4 border-primary/20">
-            🚀 Beta v2.0.1
-          </Badge>
+        <Badge variant="secondary" className="mb-4 border-primary/20">
+          🚀 Beta v2.0.1
+        </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
         </h1>
