@@ -61,6 +61,27 @@ interface OfferSnapshotResponse {
 }
 
 /**
+ * CORS headers for Chrome Extension support
+ */
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+}
+
+/**
+ * OPTIONS handler for CORS preflight
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: getCorsHeaders(),
+  });
+}
+
+/**
  * Authenticate request - either INGESTION_SECRET or user session
  */
 async function authenticateRequest(request: NextRequest): Promise<{ success: boolean; error?: string }> {
@@ -166,7 +187,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
           message: auth.error || "Unauthorized",
           code: "UNAUTHORIZED"
         },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: getCorsHeaders(),
+        }
       );
     }
     
@@ -182,7 +206,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
           code: "VALIDATION_ERROR",
           warnings: validationResult.error.issues.map(i => `${i.path.join(".")}: ${i.message}`),
         },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: getCorsHeaders(),
+        }
       );
     }
     
@@ -353,6 +380,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
       confidence_label: confidenceResult.label,
       validation_status: "pending",
       warnings: warnings.length > 0 ? warnings : undefined,
+    }, {
+      headers: getCorsHeaders(),
     });
     
   } catch (error) {
@@ -364,7 +393,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
         message: "Internal server error",
         code: "INTERNAL_ERROR",
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: getCorsHeaders(),
+      }
     );
   }
 }
