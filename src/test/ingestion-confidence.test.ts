@@ -26,7 +26,7 @@ describe("calculateConfidenceScore - Base Scores", () => {
     });
 
     expect(result.score).toBeGreaterThanOrEqual(90);
-    expect(result.label).toBe("sangat_dipercaya");
+    expect(result.label).toBe("sangat dipercaya");
   });
 
   it("assigns high score to manual_admin", () => {
@@ -371,7 +371,7 @@ describe("calculateConfidenceScore - Labels", () => {
     });
 
     expect(result.score).toBeGreaterThanOrEqual(85);
-    expect(result.label).toBe("sangat_dipercaya");
+    expect(result.label).toBe("sangat dipercaya");
     expect(result.labelText).toBe("Sangat Dipercaya");
   });
 
@@ -388,7 +388,7 @@ describe("calculateConfidenceScore - Labels", () => {
     }
   });
 
-  it("returns 'perlu_dicek_ulang' for low scores", () => {
+  it("returns 'perlu dicek ulang' for low scores", () => {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     
     const result = calculateConfidenceScore({
@@ -399,7 +399,7 @@ describe("calculateConfidenceScore - Labels", () => {
     });
 
     expect(result.score).toBeLessThan(70);
-    expect(["cukup_dipercaya", "perlu_dicek_ulang", "data_belum_pasti"]).toContain(result.label);
+    expect(["cukup dipercaya", "perlu dicek ulang", "data belum pasti"]).toContain(result.label);
   });
 });
 

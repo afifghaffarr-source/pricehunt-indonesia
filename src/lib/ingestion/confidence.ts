@@ -25,11 +25,11 @@ export type DataSourceType =
   | "manual_admin";
 
 export type ConfidenceLabel =
-  | "sangat_dipercaya"
+  | "sangat dipercaya"
   | "dipercaya"
-  | "cukup_dipercaya"
-  | "perlu_dicek_ulang"
-  | "data_belum_pasti";
+  | "cukup dipercaya"
+  | "perlu dicek ulang"
+  | "data belum pasti";
 
 export interface ConfidenceInput {
   sourceType: DataSourceType;
@@ -200,7 +200,7 @@ export function calculateConfidenceScore(input: ConfidenceInput): ConfidenceResu
 function getConfidenceLabel(score: number): { label: ConfidenceLabel; labelText: string } {
   if (score >= 85) {
     return {
-      label: "sangat_dipercaya",
+      label: "sangat dipercaya",
       labelText: "Sangat Dipercaya",
     };
   }
@@ -214,20 +214,20 @@ function getConfidenceLabel(score: number): { label: ConfidenceLabel; labelText:
   
   if (score >= 55) {
     return {
-      label: "cukup_dipercaya",
+      label: "cukup dipercaya",
       labelText: "Cukup Dipercaya",
     };
   }
   
   if (score >= 40) {
     return {
-      label: "perlu_dicek_ulang",
+      label: "perlu dicek ulang",
       labelText: "Perlu Dicek Ulang",
     };
   }
   
   return {
-    label: "data_belum_pasti",
+    label: "data belum pasti",
     labelText: "Data Belum Pasti",
   };
 }
