@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         validation_status,
         confidence_score,
         confidence_label,
+        source,
         image_url,
         category_hint,
         stock_status,

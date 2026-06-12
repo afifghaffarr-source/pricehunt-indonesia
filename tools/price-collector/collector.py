@@ -167,7 +167,8 @@ def manual(marketplace: str):
 @click.command()
 @click.argument("url")
 @click.option("--marketplace", default=None, help="Override marketplace detection")
-def url(url: str, marketplace: str):
+@click.option("--auto-confirm", is_flag=True, help="Skip confirmation prompt")
+def url(url: str, marketplace: str, auto_confirm: bool):
     """
     URL mode: Extract data from a specific product URL
     """
@@ -209,7 +210,7 @@ def url(url: str, marketplace: str):
             return
         
         # Confirm send
-        if collector.confirm_send():
+        if auto_confirm or collector.confirm_send():
             # Remove internal fields
             send_data = {k: v for k, v in normalized.items() if not k.startswith("_")}
             send_to_api(send_data, client)

@@ -1,0 +1,67 @@
+📊 BijakBeli Price Update Report
+Date: 2026-06-12 10:19 UTC
+Job: Automated price collection (6-hour cron)
+
+═══════════════════════════════════════════════════════════
+
+🔍 INVESTIGATION FINDINGS:
+
+Database Status:
+- Products: 19 products found
+- Crawl Targets: 0 (crawl_targets table is empty)
+- Active Offers: 8 offers with URLs
+
+Offer Analysis:
+All 8 offers are seed data:
+1. https://tokopedia.com/test-1781161905957
+   → Test URL (returns 301, not a real product)
+   
+2. https://www.tokopedia.com/apple/iphone-15-pro-max-256gb
+   → Placeholder URL (ERR_HTTP2_PROTOCOL_ERROR - anti-bot)
+   
+3. https://shopee.co.id/sony-official/wh-1000xm5
+   → Placeholder URL (returns "something is missing")
+   
+4-8. Similar placeholder URLs from seed data
+
+Last Update: 2026-06-12 09:51:52 (28 minutes ago)
+Source: manual_admin (all entries)
+
+═══════════════════════════════════════════════════════════
+
+❌ COLLECTION RESULTS:
+
+Products updated: 0
+Prices changed: 0
+Errors: 8
+
+Error Breakdown:
+- Tokopedia URLs: ERR_HTTP2_PROTOCOL_ERROR (anti-bot protection)
+- Shopee URLs: No price found (placeholder pages)
+- Test URLs: Not real product pages
+
+═══════════════════════════════════════════════════════════
+
+🔧 ROOT CAUSE:
+
+The database currently contains only seed/placeholder data.
+Real marketplace URLs need to be added via:
+1. Manual admin entry through the web UI
+2. API ingestion endpoint (/api/ingestion/offer-snapshot)
+3. Browser collector with actual product pages
+
+The automated price update system (crawl_targets + collector.py)
+is designed but not yet populated with real URLs.
+
+═══════════════════════════════════════════════════════════
+
+💡 NEXT STEPS:
+
+To enable automated price updates:
+1. Add real product URLs to crawl_targets table
+2. Or: Manually collect initial data via browser collector
+3. Then: Scheduled updates will maintain those URLs
+
+Current system status: Infrastructure ready, awaiting real data.
+
+═══════════════════════════════════════════════════════════

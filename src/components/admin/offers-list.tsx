@@ -32,6 +32,7 @@ type Offer = {
   confidence_score: number;
   confidence_label: string;
   validation_status: string;
+  source: string;
   last_checked_at: string;
   is_active: boolean;
   url: string | null;
@@ -140,6 +141,7 @@ export function OffersList() {
                 <TableHead>Product</TableHead>
                 <TableHead>Marketplace</TableHead>
                 <TableHead>Price</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Confidence</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Checked</TableHead>
@@ -155,6 +157,13 @@ export function OffersList() {
                   </TableCell>
                   <TableCell className="capitalize">{offer.marketplace.name}</TableCell>
                   <TableCell>Rp {offer.current_price.toLocaleString("id-ID")}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {offer.source === 'browser_collector' ? 'Browser' : 
+                       offer.source === 'manual_admin' ? 'Manual' : 
+                       offer.source === 'api_scraper' ? 'API' : offer.source}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     {getConfidenceBadge(offer.confidence_score, offer.confidence_label)}
                   </TableCell>

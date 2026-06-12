@@ -24,7 +24,13 @@ export async function GET(request: NextRequest) {
         processed_at,
         requested_by,
         offer_id,
-        product_id
+        product_id,
+        offer:offers(
+          id,
+          title,
+          url,
+          marketplace:marketplaces(name)
+        )
       `)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -43,8 +49,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to match component expectations
-    // Since we can't join to offers without FK constraints,
-    // return simplified data structure
     const transformed = data?.map((recheck: any) => ({
       id: recheck.id,
       offer_id: recheck.offer_id,
@@ -53,8 +57,12 @@ export async function GET(request: NextRequest) {
       status: recheck.request_status,
       priority_score: recheck.priority_score || 50,
       requested_at: recheck.created_at,
-      offer: {
-        title: 'Offer ' + (recheck.offer_id || 'Unknown').substring(0, 8),
+      offer: recheck.offer ? {
+        title: recheck.offer.title,
+        marketplace: recheck.offer.marketplace || { name: 'Unknown' },
+        url: recheck.offer.url,
+      } : {
+        title: 'Offer not found',
         marketplace: { name: 'Unknown' },
         url: null,
       },

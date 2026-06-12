@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BijakBeli Product Collector</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 400px;
+      min-height: 500px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      padding: 20px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .logo {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+    
+    h1 {
+      font-size: 20px;
+      color: #166534;
+      margin-bottom: 4px;
+    }
+    
+    .tagline {
+      font-size: 12px;
+      color: #16a34a;
+      font-style: italic;
+    }
+    
+    .status {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .status-item:last-child {
+      border-bottom: none;
+    }
+    
+    .status-label {
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .status-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #166534;
+    }
+    
+    .config {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    
+    .config h2 {
+      font-size: 14px;
+      color: #166534;
+      margin-bottom: 12px;
+    }
+    
+    .form-group {
+      margin-bottom: 12px;
+    }
+    
+    label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+    
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      margin-top: 8px;
+    }
+    
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    
+    .history {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .history h2 {
+      font-size: 14px;
+      color: #166534;
+      margin-bottom: 12px;
+    }
+    
+    .history-item {
+      padding: 8px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 12px;
+    }
+    
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    
+    .history-time {
+      color: #999;
+      font-size: 11px;
+    }
+    
+    .history-product {
+      color: #333;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      padding: 20px;
+    }
+    
+    .success-msg {
+      background: #dcfce7;
+      color: #166534;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+    }
+    
+    .success-msg.show {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">📦</div>
+    <h1>BijakBeli Collector</h1>
+    <p class="tagline">Beli yang Tepat, di Waktu yang Tepat</p>
+  </div>
+  
+  <div class="status">
+    <div class="status-item">
+      <span class="status-label">Products Collected</span>
+      <span class="status-value" id="count">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Status</span>
+      <span class="status-value" id="status">Ready</span>
+    </div>
+  </div>
+  
+  <div class="config">
+    <h2>⚙️ Configuration</h2>
+    <form id="configForm">
+      <div class="form-group">
+        <label for="apiUrl">API URL</label>
+        <input 
+          type="text" 
+          id="apiUrl" 
+          placeholder="https://www.bijakbeli.app"
+          value="https://www.bijakbeli.app"
+        >
+      </div>
+      <div class="form-group">
+        <label for="ingestionSecret">Ingestion Secret</label>
+        <input 
+          type="password" 
+          id="ingestionSecret" 
+          placeholder="Enter your secret key"
+        >
+      </div>
+      <button type="submit" class="btn btn-primary">💾 Save Configuration</button>
+      <div class="success-msg" id="successMsg">✅ Configuration saved!</div>
+    </form>
+    <button class="btn btn-secondary" id="clearHistory">🗑️ Clear History</button>
+  </div>
+  
+  <div class="history">
+    <h2>📊 Recent Collections</h2>
+    <div id="historyList" class="empty-state">
+      No products collected yet. Visit a Tokopedia product page to start!
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
