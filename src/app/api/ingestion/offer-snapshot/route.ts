@@ -109,11 +109,11 @@ async function authenticateRequest(request: NextRequest): Promise<{ success: boo
 async function findOrCreateMarketplace(supabase: ReturnType<typeof createAdminClient>, marketplaceName: string) {
   const normalized = normalizeMarketplace(marketplaceName);
   
-  // Try to find existing marketplace
+  // Try to find existing marketplace (exact match since name is unique)
   const { data: existing, error: findError } = await supabase
     .from("marketplaces")
     .select("id, name")
-    .ilike("name", normalized)
+    .eq("name", normalized)
     .maybeSingle();
   
   if (existing && !findError) {
