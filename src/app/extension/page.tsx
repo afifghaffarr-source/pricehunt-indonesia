@@ -60,6 +60,38 @@ export default function ExtensionPage() {
         </CardContent>
       </Card>
 
+      {/* Beta Secret Card */}
+      <Card className="mx-auto mb-12 max-w-2xl border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
+            <Shield className="h-6 w-6 text-amber-600" />
+          </div>
+          <CardTitle className="text-xl">Beta Testing Secret</CardTitle>
+          <CardDescription>
+            Ingestion secret untuk beta testers - simpan baik-baik!
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-muted p-4">
+            <p className="mb-2 text-sm font-medium">Ingestion Secret:</p>
+            <code className="block break-all rounded bg-background p-3 text-xs font-mono">
+              8f38f6acaafb1d3f5dc0e2f60f07e7e731ca67c4ed15b9dee7ff8094ec9eebc0
+            </code>
+          </div>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              📋 <strong>Cara pakai:</strong> Copy secret di atas, paste di popup extension saat konfigurasi (Step 3)
+            </p>
+            <p>
+              🔒 <strong>Keamanan:</strong> Secret ini hanya untuk beta testers. Jangan share di public!
+            </p>
+            <p className="text-xs">
+              ⚠️ Secret ini akan diganti saat launch publik ke Chrome Web Store
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Features Grid */}
       <div className="mb-12">
         <h2 className="mb-6 text-center text-2xl font-bold">
