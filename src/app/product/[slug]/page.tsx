@@ -326,10 +326,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <EnhancedPriceTable
             prices={product.prices.map(p => {
               // Find matching offer with real trust metadata
-              const offer = offers.find(o => 
-                o.marketplace === p.marketplace && 
-                Math.abs(o.current_price - p.price) < 1000 // Allow small price diff
-              );
+              // Match by marketplace only (prices may differ between legacy and offers table)
+              const matchingOffers = offers.filter(o => o.marketplace === p.marketplace);
+              
+              // If multiple offers for same marketplace, pick best one:
+              // 1. Highest confidence score
+              // 2. Most recent last_checked_at
+              const offer = matchingOffers.length > 0
+                ? matchingOffers.sort((a, b) => {
+                    if (a.confidence_score !== b.confidence_score) {
+                      return b.confidence_score - a.confidence_score; // Higher confidence first
+                    }
+                    return new Date(b.last_checked_at).getTime() - new Date(a.last_checked_at).getTime(); // More recent first
+                  })[0]
+                : undefined;
               
               if (offer) {
                 // Map database validation_status to component expected values
