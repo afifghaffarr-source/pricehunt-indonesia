@@ -71,7 +71,7 @@ Bandingkan harga dari **6 marketplace** (Tokopedia, Shopee, Bukalapak, Lazada, B
 - [Supabase](https://supabase.com) account
 - [OpenAI](https://platform.openai.com) API key (optional)
 - [Resend](https://resend.com) API key (optional)
-- [VexoAPI](https://vexoapi.azzamcodex.site) VIP key (optional)
+- [VexoAPI](https://vexoapi.dev/docs) VIP key (optional)
 
 
 ## 🚀 Quick Start
@@ -107,7 +107,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # VexoAPI (Optional - untuk product discovery)
-VEXO_API_BASE_URL=https://vexoapi.azzamcodex.site
+VEXO_API_BASE_URL=https://vexoapi.dev
 VEXO_API_KEY=your_vexo_vip_key
 VEXO_API_TIMEOUT_MS=10000
 VEXO_CACHE_TTL_SECONDS=3600
@@ -381,7 +381,7 @@ python collector.py keyword "iphone 15" --marketplace tokopedia --limit 10
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| VEXO_API_BASE_URL | VexoAPI base URL | https://vexoapi.azzamcodex.site |
+| VEXO_API_BASE_URL | VexoAPI base URL | https://vexoapi.dev |
 | VEXO_API_KEY | VexoAPI VIP key untuk product discovery | - |
 | VEXO_API_TIMEOUT_MS | VexoAPI request timeout | 10000 |
 | VEXO_CACHE_TTL_SECONDS | VexoAPI cache TTL | 3600 |
@@ -634,7 +634,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 - [Supabase](https://supabase.com) - Backend & Auth
 - [Tailwind CSS](https://tailwindcss.com) - Styling
 - [shadcn/ui](https://ui.shadcn.com) - UI components
-- [VexoAPI](https://vexoapi.azzamcodex.site) - Product discovery
+- [VexoAPI](https://vexoapi.dev/docs) - Product discovery
 - [OpenAI](https://openai.com) - AI recommendations
 - [Resend](https://resend.com) - Email service
 

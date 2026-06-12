@@ -134,7 +134,7 @@ OPENAI_API_KEY=sk-xxx
 RESEND_API_KEY=re_xxx
 
 # VexoAPI (Optional - product discovery)
-VEXO_API_BASE_URL=https://vexoapi.azzamcodex.site
+VEXO_API_BASE_URL=https://vexoapi.dev
 VEXO_API_KEY=your_vip_key
 VEXO_API_TIMEOUT_MS=10000
 VEXO_CACHE_TTL_SECONDS=3600
