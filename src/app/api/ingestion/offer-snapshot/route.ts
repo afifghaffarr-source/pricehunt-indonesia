@@ -336,7 +336,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
     // 8. Insert price snapshot
     const snapshotData = {
       offer_id: offerId,
-      price: normalizedPrice,
+      current_price: normalizedPrice,
       original_price: normalizedOriginalPrice,
       discount_percent: discountPercent,
       stock_status: normalizedStockStatus,
