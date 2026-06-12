@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
-    const statusFilter = searchParams.get("status") || "queued";
+    const statusFilter = searchParams.get("status") || "pending";
 
     const supabase = createAdminClient();
 
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
         marketplaces (name),
         products (name)
       `)
-      .lte("next_crawl_at", new Date().toISOString())
+      .or(`next_crawl_at.is.null,next_crawl_at.lte.${new Date().toISOString()}`)
       .order("priority_score", { ascending: false })
       .order("next_crawl_at", { ascending: true })
       .limit(limit);
