@@ -82,7 +82,7 @@ async function checkPriceAlerts() {
   const triggeredAlerts: TriggeredAlert[] = [];
 
   for (const alert of alerts) {
-    const product = alert.products as any;
+    const product = (alert as any).products;
     
     if (!product || !product.lowest_price) {
       continue;
