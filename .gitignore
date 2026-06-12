@@ -42,3 +42,21 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 logs/
+
+# Python virtual environments
+venv/
+.venv/
+env/
+.env/
+collectors/venv/
+
+# Backup and temp files
+*.backup
+*.backup-*
+*.temp
+*.tmp
+*.old
+*~
+
+# Cache directories
+.codegraph/cache/

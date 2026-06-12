@@ -159,8 +159,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       {/* Compact Hero - Focus on essentials */}
       <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start">
-        {/* Product Image - Compact */}
-        <div className="relative h-48 w-48 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-56 sm:w-56">
+        {/* Product Image - Compact with hover zoom */}
+        <div className="group relative h-48 w-48 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-muted to-muted/50 shadow-lg transition-all duration-300 hover:shadow-2xl sm:h-56 sm:w-56">
           <VexoImageFallback
             productName={product.name}
             fallbackSrc={product.imageUrl}
@@ -168,24 +168,26 @@ export default async function ProductDetailPage({ params }: PageProps) {
             fill
             priority
             sizes="(max-width: 640px) 192px, 224px"
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
           />
           {discount > 5 && (
-            <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-1 text-xs font-semibold text-white shadow-lg">
-              <TrendingDown className="h-3.5 w-3.5" />
+            <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow-lg backdrop-blur-sm transition-transform hover:scale-105">
+              <TrendingDown className="h-3.5 w-3.5 animate-pulse" />
               Hemat {discount}%
             </div>
           )}
+          {/* Gradient overlay on hover */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         </div>
 
-        {/* Product Info - Compact */}
+        {/* Product Info - Compact with glassmorphism */}
         <div className="flex-1">
           <h1 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">
             {product.name}
           </h1>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs transition-colors hover:bg-primary/10">
               {product.category}
             </Badge>
             {product.prices
@@ -196,25 +198,28 @@ export default async function ProductDetailPage({ params }: PageProps) {
               ))}
           </div>
 
-          <div className="mt-3 flex items-baseline gap-3">
-            <span className="text-3xl font-bold text-primary">
-              {formatRupiah(product.lowestPrice)}
-            </span>
-            {discount > 5 && (
-              <span className="text-lg text-muted-foreground line-through">
-                {formatRupiah(product.highestPrice)}
+          {/* Price with premium gradient background */}
+          <div className="mt-4 rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 p-4 backdrop-blur-sm">
+            <div className="flex items-baseline gap-3">
+              <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-3xl font-bold text-transparent">
+                {formatRupiah(product.lowestPrice)}
               </span>
-            )}
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <DealScoreBadge score={product.dealScore} />
-            {cheapestMarketplace && (
-              <Badge variant="outline" className="gap-1 text-xs">
-                <Store className="h-3 w-3" />
-                Termurah di {getMarketplaceName(cheapestMarketplace.marketplace)}
-              </Badge>
-            )}
+              {discount > 5 && (
+                <span className="text-lg text-muted-foreground/70 line-through">
+                  {formatRupiah(product.highestPrice)}
+                </span>
+              )}
+            </div>
+            
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <DealScoreBadge score={product.dealScore} />
+              {cheapestMarketplace && (
+                <Badge variant="outline" className="gap-1 text-xs transition-all hover:bg-primary/5 hover:scale-105">
+                  <Store className="h-3 w-3" />
+                  Termurah di {getMarketplaceName(cheapestMarketplace.marketplace)}
+                </Badge>
+              )}
+            </div>
           </div>
 
           <div className="mt-3 flex items-center gap-2">

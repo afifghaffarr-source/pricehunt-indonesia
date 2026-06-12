@@ -37,9 +37,16 @@ export default async function HomePage() {
   return (
     <div>
       <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50 via-background to-background dark:from-emerald-950/20">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        {/* Animated gradient orbs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-20 -top-20 h-96 w-96 animate-blob rounded-full bg-emerald-300/30 opacity-70 blur-3xl mix-blend-multiply dark:bg-emerald-500/20" />
+          <div className="animation-delay-2000 absolute -right-20 -top-20 h-96 w-96 animate-blob rounded-full bg-green-300/30 opacity-70 blur-3xl mix-blend-multiply dark:bg-green-500/20" />
+          <div className="animation-delay-4000 absolute -bottom-20 left-1/2 h-96 w-96 animate-blob rounded-full bg-emerald-300/30 opacity-70 blur-3xl mix-blend-multiply dark:bg-emerald-500/20" />
+        </div>
+        
+        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="secondary" className="mb-6 text-sm">
+            <Badge variant="secondary" className="mb-6 text-sm animate-bounce">
               Asisten belanja pintar untuk pembeli Indonesia
             </Badge>
             <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
@@ -47,7 +54,7 @@ export default async function HomePage() {
               <br />
               deteksi diskon palsu,
               <br />
-              <span className="bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 bg-clip-text text-transparent animate-gradient">
                 beli di waktu yang tepat
               </span>
             </h1>
@@ -143,10 +150,10 @@ export default async function HomePage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               {/* Buy or Wait Recommendation */}
-              <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+              <Card className="group border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 transition-all duration-300 hover:shadow-xl hover:scale-105 dark:from-green-950/20 dark:to-emerald-950/20">
                 <CardContent className="p-4">
                   <div className="mb-2 flex items-center gap-2">
-                    <div className="rounded-full bg-green-600 p-1">
+                    <div className="rounded-full bg-green-600 p-1 transition-transform group-hover:scale-110">
                       <TrendingDown className="h-4 w-4 text-white" />
                     </div>
                     <span className="text-sm font-semibold text-green-700 dark:text-green-400">
