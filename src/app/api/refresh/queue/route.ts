@@ -53,14 +53,14 @@ export async function GET(request: Request) {
       .select(`
         id,
         url,
+        domain,
         marketplace_id,
         product_id,
         priority_score,
         last_crawled_at,
         next_crawl_at,
         crawl_status,
-        marketplaces (name),
-        products (name)
+        source
       `)
       .or(`next_crawl_at.is.null,next_crawl_at.lte.${new Date().toISOString()}`)
       .order("priority_score", { ascending: false })
@@ -89,12 +89,14 @@ export async function GET(request: Request) {
           targets: (targets || []).map((t: any) => ({
             id: t.id,
             url: t.url,
-            marketplace: t.marketplaces?.name,
-            product_name: t.products?.name,
+            domain: t.domain,
+            marketplace_id: t.marketplace_id,
+            product_id: t.product_id,
             priority_score: t.priority_score,
             last_crawled_at: t.last_crawled_at,
             next_crawl_at: t.next_crawl_at,
             status: t.crawl_status,
+            source: t.source,
           })),
         },
       },
