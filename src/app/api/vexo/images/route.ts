@@ -14,11 +14,9 @@ function json(data: unknown, init?: ResponseInit) {
 }
 
 export async function GET(request: NextRequest) {
+  // Allow public access for product image fallbacks
   const user = await getAuthenticatedUser();
-  if (!user) {
-    return json({ error: "Silakan login untuk memakai pencarian gambar." }, { status: 401 });
-  }
-
+  
   const { searchParams } = request.nextUrl;
   const q = (searchParams.get("q") || "").trim().slice(0, MAX_QUERY_LENGTH);
   const engine = (searchParams.get("engine") || "google") as "google" | "bing";
@@ -28,8 +26,10 @@ export async function GET(request: NextRequest) {
     return json({ error: "Parameter 'q' diperlukan" }, { status: 400 });
   }
 
+  // Rate limit by user ID if logged in, otherwise by IP
+  const identifier = user?.id || getRequestIdentifier("anonymous", request);
   const rateLimit = await checkPersistentRateLimit({
-    identifier: getRequestIdentifier(user.id, request),
+    identifier,
     endpoint: "vexo-images",
     limit: RATE_LIMIT_MAX,
     windowMs: RATE_LIMIT_WINDOW_MS,
