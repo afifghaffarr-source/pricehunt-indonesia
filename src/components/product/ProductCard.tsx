@@ -17,20 +17,20 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/product/${product.slug}`}>
-      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-primary/50">
+      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/50">
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-muted to-muted/50">
           <Image
             src={product.imageUrl}
             alt={product.name}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           />
           {/* Gradient overlay on hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           
           {discount > 5 && (
-            <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-2 py-0.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-110">
+            <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-2 py-0.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-[1.02]">
               <TrendingDown className="h-3 w-3 animate-pulse" />
               {discount}%
             </div>

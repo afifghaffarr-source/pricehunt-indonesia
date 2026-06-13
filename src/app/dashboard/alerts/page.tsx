@@ -137,7 +137,7 @@ export default async function AlertsPage() {
                               <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground">Status:</span>
                                 <span className="text-sm font-medium text-green-600">
-                                  ✓ Target tercapai!
+                                  Target tercapai!
                                 </span>
                               </div>
                             )}

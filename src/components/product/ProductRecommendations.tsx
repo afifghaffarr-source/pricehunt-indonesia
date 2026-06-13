@@ -77,7 +77,7 @@ function RecommendationCard({
             src={product.image_url || "https://placehold.co/400x400/e2e8f0/64748b?text=Product"}
             alt={product.name}
             fill
-            className="object-cover transition-transform group-hover:scale-105"
+            className="object-cover transition-transform group-hover:scale-[1.01]"
             sizes="(max-width: 640px) 50vw, 25vw"
           />
         </div>

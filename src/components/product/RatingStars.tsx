@@ -42,7 +42,7 @@ export function RatingStars({
             type="button"
             onClick={() => handleClick(value)}
             disabled={!interactive}
-            className={`${interactive ? "cursor-pointer hover:scale-110 transition-transform" : "cursor-default"}`}
+            className={`${interactive ? "cursor-pointer hover:scale-[1.02] transition-transform" : "cursor-default"}`}
           >
             <Star
               className={`${sizeClasses[size]} ${

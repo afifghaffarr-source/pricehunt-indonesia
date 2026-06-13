@@ -137,7 +137,7 @@ export default async function HomePage() {
           </div>
 
           {/* Example Intelligence Dashboard */}
-          <div className="mt-12 rounded-2xl border-2 bg-background p-6 shadow-xl sm:p-8">
+          <div className="mt-12 rounded-2xl border-2 bg-background p-6 shadow-md sm:p-8">
             <div className="mb-6 flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold">iPhone 15 Pro Max 256GB</h3>
@@ -150,10 +150,10 @@ export default async function HomePage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               {/* Buy or Wait Recommendation */}
-              <Card className="group border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 transition-all duration-300 hover:shadow-xl hover:scale-105 dark:from-green-950/20 dark:to-emerald-950/20">
+              <Card className="group border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 transition-all duration-300 hover:shadow-md hover:scale-[1.01] dark:from-green-950/20 dark:to-emerald-950/20">
                 <CardContent className="p-4">
                   <div className="mb-2 flex items-center gap-2">
-                    <div className="rounded-full bg-green-600 p-1 transition-transform group-hover:scale-110">
+                    <div className="rounded-full bg-green-600 p-1 transition-transform group-hover:scale-[1.02]">
                       <TrendingDown className="h-4 w-4 text-white" />
                     </div>
                     <span className="text-sm font-semibold text-green-700 dark:text-green-400">
@@ -213,7 +213,7 @@ export default async function HomePage() {
             </div>
 
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              ✨ Analisis ini update otomatis setiap produk yang Anda cari
+              Analisis ini update otomatis setiap produk yang Anda cari
             </p>
           </div>
         </div>
@@ -450,7 +450,7 @@ export default async function HomePage() {
               </div>
             </div>
             <div className="relative">
-              <div className="rounded-2xl border-2 bg-gradient-to-br from-white to-gray-50 p-8 shadow-2xl dark:from-gray-900 dark:to-gray-800">
+              <div className="rounded-2xl border-2 bg-gradient-to-br from-white to-gray-50 p-8 shadow-lg dark:from-gray-900 dark:to-gray-800">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
                     <Download className="h-5 w-5 text-white" />

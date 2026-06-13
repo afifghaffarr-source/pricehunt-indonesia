@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -8,9 +8,10 @@ import { SkipToContent } from "@/components/common/SkipToContent";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
-const inter = Inter({
-  variable: "--font-inter",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.bijakbeli.app";
@@ -18,7 +19,7 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.bijakbeli.app";
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: "BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat",
+    default: "BijakBeli.app - Beli yang Tepat, di Waktu yang Tepat",
     template: "%s | BijakBeli.app",
   },
   description:
@@ -40,14 +41,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     siteName: "BijakBeli.app",
-    title: "BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat",
+    title: "BijakBeli.app - Beli yang Tepat, di Waktu yang Tepat",
     description:
       "Beli yang Tepat, di Waktu yang Tepat. Bandingkan harga dari 6 marketplace Indonesia, deteksi diskon palsu, rekomendasi kapan beli!",
     url: baseUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat",
+    title: "BijakBeli.app - Beli yang Tepat, di Waktu yang Tepat",
     description:
       "Beli yang Tepat, di Waktu yang Tepat. Deteksi diskon palsu, rekomendasi kapan beli, hemat cerdas!",
   },
@@ -66,7 +67,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${jakarta.variable} antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -75,7 +76,7 @@ export default function RootLayout({
         <link rel="icon" href="/icons/icon-192.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-dvh flex flex-col">
         <SkipToContent />
         <PWARegister />
         <Header />

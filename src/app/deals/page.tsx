@@ -151,7 +151,7 @@ export default async function DealsPage() {
                         src={product.image_url}
                         alt={product.name}
                         fill
-                        className="object-cover transition-transform hover:scale-105"
+                        className="object-cover transition-transform hover:scale-[1.01]"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">

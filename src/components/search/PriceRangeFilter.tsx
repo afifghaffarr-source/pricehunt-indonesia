@@ -23,7 +23,7 @@ export function PriceRangeFilter({
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Rentang Harga</span>
         <span className="font-medium">
-          {formatRupiah(value[0])} — {formatRupiah(value[1])}
+          {formatRupiah(value[0])} - {formatRupiah(value[1])}
         </span>
       </div>
       <Slider

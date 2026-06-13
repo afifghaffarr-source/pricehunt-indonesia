@@ -24,7 +24,7 @@ export default function ExtensionPage() {
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4 border-primary/20">
-          🚀 Beta v2.0.2
+          Initial Beta v2.0.2
         </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
@@ -79,13 +79,13 @@ export default function ExtensionPage() {
           </div>
           <div className="space-y-2 text-sm text-muted-foreground">
             <p>
-              📋 <strong>Cara pakai:</strong> Copy secret di atas, paste di popup extension saat konfigurasi (Step 3)
+              <strong>Cara pakai:</strong> Copy secret di atas, paste di popup extension saat konfigurasi (Step 3)
             </p>
             <p>
-              🔒 <strong>Keamanan:</strong> Secret ini hanya untuk beta testers. Jangan share di public!
+              <strong>Keamanan:</strong> Secret ini hanya untuk beta testers. Jangan share di public!
             </p>
             <p className="text-xs">
-              ⚠️ Secret ini akan diganti saat launch publik ke Chrome Web Store
+              Secret ini akan diganti saat launch publik ke Chrome Web Store
             </p>
           </div>
         </CardContent>
@@ -94,7 +94,7 @@ export default function ExtensionPage() {
       {/* Changelog Card */}
       <Card className="mx-auto mb-12 max-w-2xl border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
         <CardHeader>
-          <CardTitle className="text-lg">📝 Changelog</CardTitle>
+          <CardTitle className="text-lg">Changelog</CardTitle>
           <CardDescription>Update terbaru extension</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -103,14 +103,14 @@ export default function ExtensionPage() {
               <Badge variant="default" className="bg-red-500">v2.0.2</Badge>
               <span className="text-xs text-muted-foreground">2026-06-13 (Latest)</span>
             </div>
-            <p className="text-sm font-medium text-foreground">🐛 Critical Database Error Fix</p>
+            <p className="text-sm font-medium text-foreground">Critical Database Error Fix</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               <li>• Fixed "API error: 500 - OFFER_UPSERT_FAILED"</li>
               <li>• Changed source value: 'chrome-extension' → 'extension_snapshot'</li>
               <li>• Database CHECK constraint now accepts the correct value</li>
             </ul>
             <p className="mt-2 text-xs text-red-600">
-              ⚠️ <strong>Wajib update!</strong> Versi 2.0.1 tidak bisa save data ke database.
+              <strong>Wajib update!</strong> Versi 2.0.1 tidak bisa save data ke database.
             </p>
           </div>
           <div className="border-l-2 border-muted pl-4">
@@ -118,7 +118,7 @@ export default function ExtensionPage() {
               <Badge variant="outline">v2.0.1</Badge>
               <span className="text-xs text-muted-foreground">2026-06-12</span>
             </div>
-            <p className="text-sm font-medium text-muted-foreground">🐛 Critical Bug Fix</p>
+            <p className="text-sm font-medium text-muted-foreground">Critical Bug Fix</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               <li>• Fixed "Failed to fetch" error saat klik button</li>
               <li>• Manifest V3 CORS issue resolved via message passing</li>
@@ -130,7 +130,7 @@ export default function ExtensionPage() {
               <Badge variant="outline">v2.0.0</Badge>
               <span className="text-xs text-muted-foreground">2026-06-12</span>
             </div>
-            <p className="text-sm font-medium text-muted-foreground">🚀 Initial Beta Release</p>
+            <p className="text-sm font-medium text-muted-foreground">Initial Beta Release</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               <li>• Support Tokopedia, Shopee, Bukalapak</li>
               <li>• One-click data collection</li>
@@ -283,13 +283,13 @@ export default function ExtensionPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Klik icon extension 📦 di toolbar Chrome
+                Klik icon extension di toolbar Chrome
               </p>
               <p className="text-sm text-muted-foreground">
                 Masukkan <strong>Ingestion Secret</strong> yang diberikan admin
               </p>
               <p className="text-sm text-muted-foreground">
-                Status akan berubah jadi <strong>✅ Ready</strong>
+                Status akan berubah jadi <strong>Ready</strong>
               </p>
             </CardContent>
           </Card>
@@ -325,7 +325,7 @@ export default function ExtensionPage() {
               <div>
                 <p className="font-medium">Klik tombol floating</p>
                 <p className="text-sm text-muted-foreground">
-                  Tombol <strong>📦 Add to BijakBeli</strong> muncul di pojok kanan bawah
+                  Tombol <strong>Add to BijakBeli</strong> muncul di pojok kanan bawah
                 </p>
               </div>
             </div>
@@ -337,7 +337,7 @@ export default function ExtensionPage() {
               <div>
                 <p className="font-medium">Selesai!</p>
                 <p className="text-sm text-muted-foreground">
-                  Tombol berubah jadi <strong>✅ Saved!</strong> dan notifikasi muncul. Data sudah masuk database!
+                  Tombol berubah jadi <strong>Saved!</strong> dan notifikasi muncul. Data sudah masuk database!
                 </p>
               </div>
             </div>
@@ -435,7 +435,7 @@ export default function ExtensionPage() {
             </Button>
           </Link>
           <p className="text-sm text-muted-foreground">
-            Target: 50+ produk dalam fase beta. Mari kita capai bersama! 🚀
+            Target: 50+ produk dalam fase beta. Mari kita capai bersama!
           </p>
         </CardContent>
       </Card>
