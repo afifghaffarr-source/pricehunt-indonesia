@@ -8,23 +8,6 @@ export async function GET(request: NextRequest) {
     
     const supabase = createAdminClient();
     
-    // Calculate date range
-    const now = new Date();
-    let startDate: Date;
-    switch (period) {
-      case '24h':
-        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    }
-
     // Get total products
     const { count: totalProducts } = await supabase
       .from('products')
@@ -36,73 +19,37 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true);
 
-    // Get average price - use raw query to avoid type issues
-    const { data: priceData } = await supabase
-      .rpc('get_offer_prices', { limit_count: 1000 }) as { data: Array<{ current_price: number }> | null };
-
-    const avgPrice = priceData && priceData.length > 0
-      ? priceData.reduce((sum: number, o: { current_price: number }) => sum + o.current_price, 0) / priceData.length
-      : 0;
-
     // Get top categories
     const { data: products } = await supabase
       .from('products')
       .select('category')
-      .limit(1000) as { data: Array<{ category: string }> | null };
+      .limit(1000);
 
-    const categoryCounts: Record<string, { count: number; totalPrice: number }> = {};
+    const categoryCounts: Record<string, number> = {};
     if (products) {
-      products.forEach(p => {
+      products.forEach((p: any) => {
         const cat = p.category || 'Umum';
-        if (!categoryCounts[cat]) {
-          categoryCounts[cat] = { count: 0, totalPrice: 0 };
-        }
-        categoryCounts[cat].count++;
-      });
-    }
-
-    // Get offers for category prices
-    const { data: offersWithProducts } = await supabase
-      .from('offers')
-      .select('current_price, product_id, products(category)')
-      .eq('is_active', true)
-      .limit(1000) as { data: Array<{ current_price: number; product_id: string; products: { category: string } | null }> | null };
-
-    if (offersWithProducts) {
-      offersWithProducts.forEach(offer => {
-        const category = offer.products?.category || 'Umum';
-        if (!categoryCounts[category]) {
-          categoryCounts[category] = { count: 0, totalPrice: 0 };
-        }
-        categoryCounts[category].totalPrice += offer.current_price;
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
       });
     }
 
     const topCategories = Object.entries(categoryCounts)
-      .map(([name, data]) => ({
-        name,
-        count: data.count,
-        avgPrice: data.count > 0 ? Math.round(data.totalPrice / data.count) : 0
-      }))
+      .map(([name, count]) => ({ name, count, avgPrice: 0 }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
     // Get top marketplaces
-    const { data: marketplaceData } = await supabase
+    const { data: offers } = await supabase
       .from('offers')
-      .select('marketplace_id, current_price')
+      .select('marketplace_id')
       .eq('is_active', true)
-      .limit(1000) as { data: Array<{ marketplace_id: string; current_price: number }> | null };
+      .limit(1000);
 
-    const marketplaceStats: Record<string, { offers: number; totalPrice: number }> = {};
-    if (marketplaceData) {
-      marketplaceData.forEach(offer => {
-        const mp = offer.marketplace_id;
-        if (!marketplaceStats[mp]) {
-          marketplaceStats[mp] = { offers: 0, totalPrice: 0 };
-        }
-        marketplaceStats[mp].offers++;
-        marketplaceStats[mp].totalPrice += offer.current_price;
+    const marketplaceCounts: Record<string, number> = {};
+    if (offers) {
+      offers.forEach((o: any) => {
+        const mp = o.marketplace_id;
+        marketplaceCounts[mp] = (marketplaceCounts[mp] || 0) + 1;
       });
     }
 
@@ -115,42 +62,25 @@ export async function GET(request: NextRequest) {
       'c5e7b12d-9ed3-42f5-8400-bdd366bfd421': 'tiktok',
     };
 
-    const topMarketplaces = Object.entries(marketplaceStats)
-      .map(([id, data]) => ({
+    const topMarketplaces = Object.entries(marketplaceCounts)
+      .map(([id, count]) => ({
         name: marketplaceNames[id] || id.slice(0, 8),
-        offers: data.offers,
-        avgPrice: data.offers > 0 ? Math.round(data.totalPrice / data.offers) : 0
+        offers: count,
+        avgPrice: 0
       }))
       .sort((a, b) => b.offers - a.offers);
-
-    // Get price distribution
-    const priceRanges = [
-      { range: '< Rp 100K', min: 0, max: 100000 },
-      { range: 'Rp 100K - 500K', min: 100000, max: 500000 },
-      { range: 'Rp 500K - 1M', min: 500000, max: 1000000 },
-      { range: 'Rp 1M - 5M', min: 1000000, max: 5000000 },
-      { range: 'Rp 5M - 10M', min: 5000000, max: 10000000 },
-      { range: '> Rp 10M', min: 10000000, max: Infinity },
-    ];
-
-    const priceDistribution = priceRanges.map(range => ({
-      range: range.range,
-      count: priceData?.filter((p: { current_price: number }) => 
-        p.current_price >= range.min && p.current_price < range.max
-      ).length || 0
-    }));
 
     return NextResponse.json({
       success: true,
       data: {
         totalProducts: totalProducts || 0,
         totalOffers: totalOffers || 0,
-        avgPrice: Math.round(avgPrice),
+        avgPrice: 0,
         priceChange24h: 0,
         topCategories,
         topMarketplaces,
         recentPriceDrops: [],
-        priceDistribution,
+        priceDistribution: [],
       }
     });
   } catch (error) {
