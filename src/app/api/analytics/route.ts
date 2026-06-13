@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       .limit(1000);
 
     const avgPrice = priceData && priceData.length > 0
-      ? priceData.reduce((sum, o) => sum + o.current_price, 0) / priceData.length
+      ? priceData.reduce((sum: number, o: any) => sum + o.current_price, 0) / priceData.length
       : 0;
 
     // Get price change (compare with previous period)
