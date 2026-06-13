@@ -142,7 +142,15 @@ CRON_SECRET=your-cron-secret
 
 # Email notifications (price alerts)
 RESEND_API_KEY=re_your-resend-key
+
+# Web Push Notifications (price alert instan)
+# Generate VAPID key pair: npx web-push generate-vapid-keys
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-vapid-public-key
+VAPID_PRIVATE_KEY=your-vapid-private-key
+VAPID_SUBJECT=mailto:admin@yourdomain.com
 ```
+
+> **Public vs Secret convention.** `NEXT_PUBLIC_*` otomatis ter-expose ke browser — gunakan hanya untuk URL/anon key. Semua `*_KEY`, `*_SECRET`, dan `*_TOKEN` tidak boleh ber-prefix `NEXT_PUBLIC_`. Helper `src/lib/app-url.ts::getAppUrl()` adalah satu-satunya tempat baca `NEXT_PUBLIC_APP_URL` (fallback ke `NEXT_PUBLIC_SITE_URL` lalu `VERCEL_URL`).
 
 **VexoAPI Setup:**
 1. Get VIP LIFETIME key from [VexoAPI Dashboard](https://vexoapi.dev)
@@ -187,20 +195,42 @@ bijakbeli-app/
 
 ---
 
-## 🧪 **Testing**
+## 🧪 **Testing & Quality Gates**
 
 ```bash
-# Run all tests
-bun test
+# Lint (CI blocking)
+npm run lint
 
-# Watch mode
-bun test:watch
+# TypeScript typecheck (CI blocking)
+npm run typecheck
+
+# Unit tests (CI blocking)
+npm test            # vitest run (one-shot)
+npm run test:watch  # watch mode
 
 # Coverage
-bun test:coverage
+npm run test -- --coverage
 ```
 
-**Test Stats:** 231 tests passing, 85%+ coverage
+**Test Stats:** 231 tests passing, 85%+ coverage. CI runs lint → typecheck → test → build dan **gagal memblokir** jika salah satu step gagal (lihat `.github/workflows/ci.yml`).
+
+## ⏰ **Cron Jobs**
+
+Jadwal dideklarasikan di `vercel.json` dan dilindungi `CRON_SECRET` (Vercel mengirim header `Authorization: Bearer <CRON_SECRET>` otomatis, diverifikasi oleh `verifyCronSecret(request)` di awal handler).
+
+| Endpoint | Schedule (UTC) | Tujuan |
+|----------|----------------|--------|
+| `/api/cron/alerts` | `0 * * * *` (setiap jam) | Kirim email alert untuk price_alerts yang triggered |
+| `/api/cron/prices` | `0 */6 * * *` (setiap 6 jam) | Simulasi harga (no-op di production, harga real via ingestion API) |
+| `/api/cron/digest` | `0 9 * * 1` (Senin 09:00) | Weekly email digest ke user opt-in |
+
+> **Production check:** pastikan `ENABLE_PRICE_SIMULATION=false` agar `/api/cron/prices` tidak menimpa harga real dengan angka random.
+
+**Test manual dari terminal:**
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://your-domain.com/api/cron/alerts
+```
 
 ---
 
