@@ -99,14 +99,14 @@ export function SearchPageContent() {
         // Transform API response to Product type
         const result: Product[] = (data.results || []).map((p: any) => {
           const prices = (p.prices || []).map((pr: any) => ({
-            marketplace: pr.marketplaces?.name || "tokopedia",
+            marketplace: pr.marketplace || pr.marketplaces?.name || "tokopedia",
             price: pr.price,
             url: pr.url,
             seller: pr.seller || "",
-            sellerRating: pr.seller_rating || 0,
-            inStock: pr.in_stock,
-            shippingCost: pr.shipping_cost || 0,
-            lastUpdated: pr.last_updated || "",
+            sellerRating: pr.sellerRating || pr.seller_rating || 0,
+            inStock: pr.inStock ?? pr.in_stock ?? true,
+            shippingCost: pr.shippingCost || pr.shipping_cost || 0,
+            lastUpdated: pr.lastUpdated || pr.last_updated || "",
           }));
 
           return {
@@ -115,14 +115,14 @@ export function SearchPageContent() {
             name: p.name,
             category: p.category,
             description: p.description || "",
-            imageUrl: p.image_url || "https://placehold.co/400x400/e2e8f0/64748b?text=Product",
+            imageUrl: p.imageUrl || p.image_url || "https://placehold.co/400x400/e2e8f0/64748b?text=Product",
             prices,
-            priceHistory: [],
-            lowestPrice: p.lowest_price || 0,
-            highestPrice: p.highest_price || 0,
-            averagePrice: p.average_price || 0,
-            dealScore: p.deal_score || 0,
-            aiVerdict: p.ai_verdict || "",
+            priceHistory: p.priceHistory || p.price_history || [],
+            lowestPrice: p.lowestPrice || p.lowest_price || 0,
+            highestPrice: p.highestPrice || p.highest_price || 0,
+            averagePrice: p.averagePrice || p.average_price || 0,
+            dealScore: p.dealScore || p.deal_score || 0,
+            aiVerdict: p.aiVerdict || p.ai_verdict || "",
             specs: p.specs || {},
           };
         });
