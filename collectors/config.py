@@ -11,10 +11,10 @@ from typing import Literal
 class Config(BaseSettings):
     """Application configuration loaded from environment variables."""
     
-    # PriceHunt API
+    # BijakBeli API
     pricehunt_api_url: str = Field(
-        default="https://pricehunt-indonesia.vercel.app",
-        description="Base URL for PriceHunt API"
+        default="https://www.bijakbeli.app",
+        description="Base URL for BijakBeli API"
     )
     ingestion_secret: str = Field(
         ...,

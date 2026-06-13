@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Queue-based Collector for BijakBeli.app
-Fetches targets from /api/refresh/queue instead of direct DB access
+Processes crawl_targets from /api/refresh/queue with real scraping
 """
 
 import os
@@ -12,10 +12,16 @@ import requests
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Add parent dir to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
+
+from marketplaces import TokopediaCollector, ShopeeCollector
+from api_client import IngestionClient
+
 # Load environment
 load_dotenv()
 
-API_BASE = os.getenv("NEXT_PUBLIC_APP_URL", "https://bijakbeli.app")
+API_BASE = os.getenv("NEXT_PUBLIC_APP_URL", "https://www.bijakbeli.app")
 INGESTION_SECRET = os.getenv("INGESTION_SECRET")
 
 if not INGESTION_SECRET:
@@ -28,7 +34,7 @@ HEADERS = {
 }
 
 
-def fetch_queue(limit=10, status="pending"):
+def fetch_queue(limit=10, status="queued"):
     """Fetch targets from refresh queue"""
     url = f"{API_BASE}/api/refresh/queue"
     params = {"limit": limit, "status": status}
@@ -51,40 +57,81 @@ def fetch_queue(limit=10, status="pending"):
         return []
 
 
+def get_collector(domain: str):
+    """Get appropriate collector for domain"""
+    if "tokopedia" in domain:
+        return TokopediaCollector()
+    elif "shopee" in domain:
+        return ShopeeCollector()
+    else:
+        print(f"⚠️  No specific collector for {domain}, using generic parser")
+        return None
+
+
 def crawl_target(target):
     """
-    Placeholder: Implement actual crawling logic here
-    This should use tools/price-collector/base_collector.py
+    Crawl a target URL using appropriate marketplace collector
     """
-    print(f"🔍 Would crawl: {target['url']}")
-    print(f"   Domain: {target.get('domain', 'Unknown')}")
-    print(f"   Source: {target.get('source', 'Unknown')}")
+    url = target["url"]
+    domain = target.get("domain", "")
+    
+    print(f"🔍 Crawling: {url}")
+    print(f"   Domain: {domain}")
     print(f"   Priority: {target['priority_score']}")
     
-    # TODO: Implement actual crawling
-    # from base_collector import extract_price_data
-    # offer_data = extract_price_data(target['url'])
+    collector = get_collector(domain)
     
-    # For now, return mock data
-    # Extract marketplace name from domain (e.g., "www.tokopedia.com" -> "tokopedia")
-    domain = target.get('domain', '')
-    marketplace = domain.replace('www.', '').split('.')[0] if domain else 'unknown'
+    if not collector:
+        print(f"⚠️  Skipping {domain} (no collector available)")
+        return None
     
-    return {
-        "marketplace": marketplace,
-        "product_url": target["url"],
-        "title": f"Product from {marketplace}",
-        "price": 999000,
-        "source": "browser_collector",
-    }
+    try:
+        # Launch browser (visible for transparency, avoids some anti-bot)
+        collector.launch_browser(headless=False)
+        
+        # Add delay to appear more human-like
+        time.sleep(2)
+        
+        # Extract product data
+        raw_data = collector.extract_product_data(url)
+        
+        # Normalize data
+        normalized = collector.normalize_extracted_data(raw_data)
+        
+        # Close browser
+        collector.close_browser()
+        
+        # Add metadata
+        normalized["source"] = "browser_collector"
+        normalized["crawl_target_id"] = target["id"]
+        
+        return normalized
+    
+    except Exception as e:
+        print(f"❌ Crawl error: {e}")
+        if collector and collector.browser:
+            collector.close_browser()
+        return None
 
 
 def submit_offer(offer_data):
     """Submit offer to ingestion API"""
     url = f"{API_BASE}/api/ingestion/offer-snapshot"
     
+    # Debug: print data being sent
+    print(f"\n🐛 DEBUG: Sending to API:")
+    print(f"   URL: {url}")
+    print(f"   Data keys: {list(offer_data.keys())}")
+    print(f"   Sample data: {json.dumps(offer_data, indent=2, default=str)[:500]}...")
+    
     try:
         response = requests.post(url, headers=HEADERS, json=offer_data, timeout=30)
+        
+        # Debug: print response
+        print(f"   Response status: {response.status_code}")
+        if response.status_code != 200:
+            print(f"   Response body: {response.text[:500]}")
+        
         response.raise_for_status()
         result = response.json()
         
