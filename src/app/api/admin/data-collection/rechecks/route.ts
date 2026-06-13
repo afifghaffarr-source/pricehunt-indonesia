@@ -1,21 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-
 /**
  * GET /api/admin/data-collection/rechecks
- * List recheck requests
+ *
+ * Lists recheck requests. **Admin only.**
  */
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    
-    const request_status = searchParams.get('request_status');
-    const limit = parseInt(searchParams.get('limit') || '50');
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { createClient } from "@/lib/supabase/server";
 
-    let query = supabase
-      .from('recheck_requests')
-      .select(`
+export async function GET(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
+
+  const { searchParams } = new URL(request.url);
+  const requestStatus = searchParams.get("request_status");
+  const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "50", 10) || 50, 1), 200);
+
+  const supabase = await createClient();
+  let query = supabase
+    .from("recheck_requests")
+    .select(
+      `
         id,
         reason,
         request_status,
@@ -31,51 +35,41 @@ export async function GET(request: NextRequest) {
           url,
           marketplace:marketplaces(name)
         )
-      `)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      `
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
-    if (request_status) {
-      query = query.eq('request_status', request_status);
-    }
+  if (requestStatus) {
+    query = query.eq("request_status", requestStatus);
+  }
 
-    const { data, error } = await query;
+  const { data, error } = await query;
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 }
-      );
-    }
+  if (error) {
+    console.error("recheck list error", error);
+    return NextResponse.json({ success: false, error: "Failed to fetch rechecks" }, { status: 500 });
+  }
 
-    // Transform to match component expectations
-    const transformed = data?.map((recheck: any) => ({
+  const transformed = (data ?? []).map((recheck: Record<string, unknown>) => {
+    const offer = recheck.offer as Record<string, unknown> | null;
+    return {
       id: recheck.id,
       offer_id: recheck.offer_id,
       user_id: recheck.requested_by,
       reason: recheck.reason,
       status: recheck.request_status,
-      priority_score: recheck.priority_score || 50,
+      priority_score: (recheck.priority_score as number | null) ?? 50,
       requested_at: recheck.created_at,
-      offer: recheck.offer ? {
-        title: recheck.offer.title,
-        marketplace: recheck.offer.marketplace || { name: 'Unknown' },
-        url: recheck.offer.url,
-      } : {
-        title: 'Offer not found',
-        marketplace: { name: 'Unknown' },
-        url: null,
-      },
-    }));
+      offer: offer
+        ? {
+            title: offer.title,
+            marketplace: (offer.marketplace as { name: string } | null) ?? { name: "Unknown" },
+            url: offer.url,
+          }
+        : { title: "Offer not found", marketplace: { name: "Unknown" }, url: null },
+    };
+  });
 
-    return NextResponse.json({
-      success: true,
-      data: transformed,
-    });
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json({ success: true, data: transformed });
 }

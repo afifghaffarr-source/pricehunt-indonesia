@@ -1,22 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-
 /**
  * GET /api/admin/data-collection/offers
- * List offers with enhanced metadata from migration 110
+ *
+ * Lists offers with enhanced metadata. **Admin only.**
+ *
+ * Security:
+ * - Admin guard runs FIRST.
+ * - No raw DB error details are returned to the client.
  */
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    
-    const validation_status = searchParams.get('validation_status');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const offset = parseInt(searchParams.get('offset') || '0');
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { createClient } from "@/lib/supabase/server";
 
-    let query = supabase
-      .from('offers')
-      .select(`
+const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+export async function GET(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
+
+  const { searchParams } = new URL(request.url);
+  const validationStatus = searchParams.get("validation_status");
+  const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "20", 10) || 20, 1), 100);
+  const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0);
+
+  const supabase = await createClient();
+  let query = supabase
+    .from("offers")
+    .select(
+      `
         id,
         title,
         current_price,
@@ -34,36 +44,33 @@ export async function GET(request: NextRequest) {
         updated_at,
         marketplace:marketplaces(name),
         product:products(name, slug)
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      `,
+      { count: "estimated" }
+    )
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
-    if (validation_status) {
-      query = query.eq('validation_status', validation_status);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data,
-      pagination: {
-        limit,
-        offset,
-        count: data?.length || 0,
-      },
-    });
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+  if (validationStatus) {
+    query = query.eq("validation_status", validationStatus);
   }
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error("offers list error", error);
+    return NextResponse.json({ success: false, error: "Failed to fetch offers" }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    success: true,
+    data,
+    pagination: {
+      limit,
+      offset,
+      count: count ?? data?.length ?? 0,
+    },
+  });
 }
+
+// UUID sanity check helper (kept for future ad-hoc usage; not used here yet).
+export const _isUuid = (s: string): boolean => UUID_RE.test(s);

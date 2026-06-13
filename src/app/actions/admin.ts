@@ -5,22 +5,16 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
+import { isUserAdmin } from "@/lib/admin-auth";
 
 async function requireAdmin() {
   const user = await getUser();
   if (!user) redirect("/auth/login");
 
-  const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("preferences")
-    .eq("id", user.id)
-    .single();
-
-  const prefs = (profile?.preferences as Record<string, unknown>) || {};
-  if (!prefs.is_admin) {
-    redirect("/dashboard");
-  }
+  // Secure admin check — reads from admin_users (RLS-protected).
+  // Does NOT trust `user_profiles.preferences.is_admin`.
+  const isAdmin = await isUserAdmin(user.id);
+  if (!isAdmin) redirect("/dashboard?error=forbidden");
 
   return { user, adminClient: createAdminClient() };
 }

@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
+import { isUserAdmin } from "@/lib/admin-auth";
 
 export type AdminState = { error?: string; success?: boolean } | undefined;
 
@@ -12,18 +12,12 @@ async function requireAdmin() {
   const user = await getUser();
   if (!user) redirect("/auth/login");
 
-  // ✅ First verify admin status with regular client
-  const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("preferences")
-    .eq("id", user.id)
-    .single();
+  // Secure admin check — reads from admin_users (RLS-protected).
+  // Does NOT trust `user_profiles.preferences.is_admin`.
+  const isAdmin = await isUserAdmin(user.id);
+  if (!isAdmin) redirect("/dashboard?error=forbidden");
 
-  const prefs = (profile?.preferences as Record<string, unknown>) || {};
-  if (!prefs.is_admin) redirect("/dashboard");
-
-  // ✅ After admin verification, return admin client for write operations
+  // Only after admin check passes do we instantiate the service-role client.
   return { user, adminClient: createAdminClient() };
 }
 
@@ -42,7 +36,6 @@ export async function createProduct(state: AdminState, formData: FormData): Prom
 
   const slug = slugRaw || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-  /* eslint-disable @typescript-eslint/ban-ts-comment */
   const productData = {
     name,
     slug,
@@ -50,10 +43,10 @@ export async function createProduct(state: AdminState, formData: FormData): Prom
     description: description || "",
     image_url: imageUrl || "https://placehold.co/400x400/e2e8f0/64748b?text=Product",
   };
-  
-  // @ts-ignore - Admin client type inference limitation
-  const { error } = await adminClient.from("products").insert(productData);
-  /* eslint-enable @typescript-eslint/ban-ts-comment */
+
+  // Cast payload to `any` to bypass the Supabase generated types that may not
+  // include the latest column shape; admin client is server-only trusted.
+  const { error } = await adminClient.from("products").insert(productData as never);
 
   if (error) return { error: `Gagal: ${error.message}` };
 
@@ -64,10 +57,7 @@ export async function createProduct(state: AdminState, formData: FormData): Prom
 
 export async function deleteProduct(productId: string) {
   const { adminClient } = await requireAdmin();
-  /* eslint-disable @typescript-eslint/ban-ts-comment */
-  // @ts-ignore - Admin client type inference limitation
   await adminClient.from("products").delete().eq("id", productId);
-  /* eslint-enable @typescript-eslint/ban-ts-comment */
   revalidatePath("/admin");
 }
 
@@ -84,7 +74,6 @@ export async function upsertPrice(state: AdminState, formData: FormData): Promis
     return { error: "Semua field wajib diisi." };
   }
 
-  /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
   const priceData = {
     product_id: productId,
     marketplace_id: marketplaceId,
@@ -94,17 +83,16 @@ export async function upsertPrice(state: AdminState, formData: FormData): Promis
     in_stock: true,
     shipping_cost: 0,
     last_updated: new Date().toISOString(),
-  } as any;
-  
-  // @ts-ignore - Admin client type inference limitation
+  };
+
+  // Cast payload to `any` for upsert.
   const { error } = await adminClient.from("prices").upsert(
-    priceData,
+    priceData as never,
     { onConflict: "product_id,marketplace_id" }
   );
 
   if (error) return { error: `Gagal: ${error.message}` };
 
-  // @ts-ignore - Admin client type inference limitation
   const { data: allPrices } = await adminClient
     .from("prices")
     .select("price")
@@ -112,26 +100,22 @@ export async function upsertPrice(state: AdminState, formData: FormData): Promis
     .eq("in_stock", true);
 
   if (allPrices && allPrices.length > 0) {
-    // @ts-ignore - Admin client type inference limitation
-    const vals = allPrices.map((p) => p.price);
+    const vals = (allPrices as Array<{ price: number }>).map((p) => p.price);
     const lowest = Math.min(...vals);
     const highest = Math.max(...vals);
     const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
     const score = Math.round(100 - ((avg - lowest) / avg) * 100);
 
-    // @ts-ignore - Admin client type inference limitation
     await adminClient
       .from("products")
-      // @ts-ignore
       .update({
         lowest_price: lowest,
         highest_price: highest,
         average_price: avg,
         deal_score: score,
-      })
+      } as never)
       .eq("id", productId);
   }
-  /* eslint-enable @typescript-eslint/ban-ts-comment */
 
   revalidatePath("/admin");
   revalidatePath(`/product/[slug]`);

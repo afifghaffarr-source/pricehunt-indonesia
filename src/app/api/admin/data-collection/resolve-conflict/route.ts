@@ -1,47 +1,62 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-
 /**
  * POST /api/admin/data-collection/resolve-conflict
- * Resolve a price conflict by choosing the correct price
+ *
+ * Resolves a price conflict. **Admin only.**
+ *
+ * Note: schema `price_conflicts` uses `status`, not `conflict_status`.
+ * This route now updates the correct column.
  */
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "@/lib/validation";
+
+const resolveSchema = z.object({
+  conflict_id: z.string({ minLength: 1, maxLength: 64 }),
+  resolution_note: z.optionalString({ maxLength: 2000 }),
+  keep_offer_id: z.optionalUuid(),
+});
+
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
+
+  let body: unknown;
   try {
-    const supabase = await createClient();
-    const body = await request.json();
-    const { conflict_id, resolution_note } = body;
-
-    if (!conflict_id) {
-      return NextResponse.json(
-        { success: false, error: "conflict_id is required" },
-        { status: 400 }
-      );
-    }
-
-    const { error } = await supabase
-      .from('price_conflicts')
-      .update({
-        conflict_status: 'resolved',
-        resolution_note,
-        resolved_at: new Date().toISOString(),
-      })
-      .eq('id', conflict_id);
-
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Conflict resolved successfully',
-    });
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 });
   }
+
+  const parsed = resolveSchema.safeParse(body);
+  if (!parsed.ok) {
+    return NextResponse.json({ success: false, error: parsed.message }, { status: 400 });
+  }
+  const input = parsed.value as {
+    conflict_id: string;
+    resolution_note: string | null;
+    keep_offer_id: string | null;
+  };
+
+  const supabase = await createClient();
+  const update: Record<string, unknown> = {
+    status: "resolved",
+    resolution_note: input.resolution_note,
+    resolved_at: new Date().toISOString(),
+  };
+  if (input.keep_offer_id) {
+    update.keep_offer_id = input.keep_offer_id;
+  }
+
+  const { error } = await supabase
+    .from("price_conflicts")
+    .update(update as never)
+    .eq("id", input.conflict_id);
+
+  if (error) {
+    console.error("resolve conflict error", error);
+    return NextResponse.json({ success: false, error: "Failed to resolve conflict" }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, message: "Conflict resolved successfully" });
 }

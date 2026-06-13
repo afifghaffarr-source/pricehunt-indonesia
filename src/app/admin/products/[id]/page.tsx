@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/supabase/auth";
+import { requireAdminForPage } from "@/app/admin/_lib/guard";
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,17 +14,12 @@ interface PageProps {
 
 export default async function AdminProductEditPage({ params }: PageProps) {
   const { id } = await params;
-  const user = await requireAuth();
+
+  // Server-side guard: redirects guests and non-admins BEFORE fetching data.
+  // Backed by admin_users (RLS-protected) via isUserAdmin().
+  await requireAdminForPage();
 
   const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("preferences")
-    .eq("id", user.id)
-    .single();
-
-  const prefs = (profile?.preferences as Record<string, unknown>) || {};
-  if (!prefs.is_admin) redirect("/dashboard");
 
   const { data: product } = await supabase
     .from("products")

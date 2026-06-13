@@ -1,331 +1,91 @@
-import { requireAuth } from "@/lib/supabase/auth";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { Package, Database, TrendingUp, Globe } from "lucide-react";
 import Link from "next/link";
-import { formatRupiah } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { requireAdminForPage } from "./_lib/guard";
+import { createClient } from "@/lib/supabase/server";
 import { CreateProductForm } from "./CreateProductForm";
-import { AnalyticsDashboard } from "./AnalyticsDashboard";
-import { getJobStatistics, getRecentJobLogs } from "@/lib/job-logger";
 
-type JobStatistic = {
-  job_name: string;
-  total_runs: number;
-  successful_runs: number;
-  failed_runs: number;
-  success_rate: number;
-  avg_duration_ms: number | null;
-  last_run_at: string | null;
-};
-
-type JobLog = {
-  id: string;
-  job_name: string;
-  status: "running" | "success" | "failed" | "partial";
-  processed_count: number | null;
-  success_count: number | null;
-  failed_count: number | null;
-  error_summary: string | null;
-  created_at: string;
-};
+export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const user = await requireAuth();
+  // Server-side guard: redirects guests and non-admins before rendering.
+  // Backed by admin_users (RLS-protected) via isUserAdmin().
+  await requireAdminForPage();
 
   const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("preferences")
-    .eq("id", user.id)
-    .single();
 
-  const prefs = (profile?.preferences as Record<string, unknown>) || {};
-  if (!prefs.is_admin) {
-    redirect("/dashboard");
-  }
+  // Fetch categories for the create-product form.
+  const { data: categoryRows } = await supabase
+    .from("products")
+    .select("category");
 
+  const categories = Array.from(
+    new Set((categoryRows ?? []).map((r) => r.category).filter(Boolean) as string[])
+  ).sort();
+
+  // Fetch products list (newest first).
   const { data: products } = await supabase
     .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const { data: marketplaces } = await supabase
-    .from("marketplaces")
-    .select("*")
-    .order("display_name");
-
-  const totalProducts = products?.length || 0;
-  const totalPrices = products?.reduce((sum, p) => sum + ((p.lowest_price || 0) > 0 ? 1 : 0), 0) || 0;
-  const avgDealScore = products?.length
-    ? Math.round(products.reduce((sum, p) => sum + (p.deal_score || 0), 0) / products.length)
-    : 0;
-
-  const categoryMap = new Map<string, number>();
-  (products || []).forEach((p) => {
-    categoryMap.set(p.category, (categoryMap.get(p.category) || 0) + 1);
-  });
-  const categoryData = Array.from(categoryMap.entries()).map(([name, count]) => ({ name, count }));
-
-  const chartProducts = (products || []).map((p) => ({
-    name: p.name.length > 20 ? p.name.slice(0, 20) + "..." : p.name,
-    deal_score: p.deal_score || 0,
-    lowest_price: p.lowest_price || 0,
-  }));
-
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const { data: priceHistoryData } = await supabase
-    .from("price_history")
-    .select("price, recorded_at")
-    .gte("recorded_at", thirtyDaysAgo.toISOString().split("T")[0])
-    .order("recorded_at", { ascending: true });
-
-  const priceByDate = new Map<string, number[]>();
-  (priceHistoryData || []).forEach((h) => {
-    const d = h.recorded_at as string;
-    if (!priceByDate.has(d)) priceByDate.set(d, []);
-    priceByDate.get(d)!.push(h.price as number);
-  });
-  const priceTrends = Array.from(priceByDate.entries()).map(([date, prices]) => ({
-    date: new Date(date).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-    avg_price: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
-  }));
-
-  const popularSearches = [
-    { term: "Samsung Galaxy", count: 142 },
-    { term: "iPhone 15", count: 128 },
-    { term: "Laptop Gaming", count: 96 },
-    { term: "Headphone", count: 84 },
-    { term: "Smartwatch", count: 71 },
-    { term: "Nintendo Switch", count: 58 },
-  ];
-
-  const [jobStatsRaw, recentPricesRaw, recentAlertsRaw, recentDigestRaw] = await Promise.all([
-    getJobStatistics(undefined, 7),
-    getRecentJobLogs("cron_prices", 3),
-    getRecentJobLogs("cron_alerts", 3),
-    getRecentJobLogs("cron_digest", 3),
-  ]);
-  const jobStats = jobStatsRaw as JobStatistic[];
-  const recentPrices = recentPricesRaw as JobLog[];
-  const recentAlerts = recentAlertsRaw as JobLog[];
-  const recentDigest = recentDigestRaw as JobLog[];
+    .select("id, name, slug, category, image_url, lowest_price, deal_score, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Kelola produk, harga, dan marketplace.</p>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Kelola produk, harga, dan data collection.</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/admin/data-collection" className={buttonVariants({ variant: "default" })}>
+            Data Collection
+          </Link>
+          <Link href="/admin/registry" className={buttonVariants({ variant: "outline" })}>
+            API Registry
+          </Link>
         </div>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Produk</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalProducts}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Produk Aktif</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalPrices}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Avg Deal Score</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{avgDealScore}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Marketplace</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{marketplaces?.length || 0}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Tambah Produk</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CreateProductForm categories={categories.length > 0 ? categories : ["Smartphone", "Laptop", "Elektronik", "Fashion"]} />
+        </CardContent>
+      </Card>
 
-      <div className="mb-8">
-        <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Analytics</h2><Link href="/admin/registry" className={buttonVariants({ variant: "outline", size: "sm" }) + " gap-2"}><Globe className="h-4 w-4" />API Registry</Link></div>
-        <AnalyticsDashboard
-          products={chartProducts}
-          categories={categoryData}
-          priceTrends={priceTrends}
-          searchTerms={popularSearches}
-        />
-      </div>
-
-      <div className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold">Observability Job</h2>
-        <div className="mb-6 grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Statistik 7 Hari Terakhir</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {jobStats.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Belum ada statistik job.</p>
-              ) : (
-                jobStats.map((job) => (
-                  <div key={job.job_name} className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <p className="font-medium">{job.job_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {job.total_runs} run &middot; {job.successful_runs} sukses &middot; {job.failed_runs} gagal
-                      </p>
-                    </div>
-                    <Badge variant={job.success_rate >= 90 ? "default" : job.success_rate >= 70 ? "secondary" : "destructive"}>
-                      {Number(job.success_rate || 0).toFixed(0)}%
-                    </Badge>
+      <Card>
+        <CardHeader>
+          <CardTitle>Daftar Produk</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(products ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">Belum ada produk.</p>
+          ) : (
+            <ul className="divide-y">
+              {(products ?? []).map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.category ?? "Tanpa kategori"}
+                      {p.lowest_price ? ` · Mulai Rp ${Number(p.lowest_price).toLocaleString("id-ID")}` : ""}
+                    </p>
                   </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Cron Prices</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {recentPrices.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Belum ada log.</p>
-                ) : (
-                  recentPrices.slice(0, 2).map((job) => (
-                    <div key={job.id} className="rounded-md border p-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Badge variant={job.status === "success" ? "default" : job.status === "partial" ? "secondary" : "destructive"} className="text-[10px]">
-                          {job.status}
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(job.created_at).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
-                        {job.processed_count || 0} diproses, {job.success_count || 0} sukses
-                      </p>
-                      {job.error_summary && <p className="mt-1 text-[10px] text-destructive line-clamp-1">{job.error_summary}</p>}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Cron Alerts</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {recentAlerts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Belum ada log.</p>
-                ) : (
-                  recentAlerts.slice(0, 2).map((job) => (
-                    <div key={job.id} className="rounded-md border p-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Badge variant={job.status === "success" ? "default" : job.status === "partial" ? "secondary" : "destructive"} className="text-[10px]">
-                          {job.status}
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(job.created_at).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
-                        {job.processed_count || 0} diproses, {job.success_count || 0} triggered
-                      </p>
-                      {job.error_summary && <p className="mt-1 text-[10px] text-destructive line-clamp-1">{job.error_summary}</p>}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Cron Digest</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {recentDigest.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Belum ada log.</p>
-                ) : (
-                  recentDigest.slice(0, 2).map((job) => (
-                    <div key={job.id} className="rounded-md border p-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Badge variant={job.status === "success" ? "default" : job.status === "partial" ? "secondary" : "destructive"} className="text-[10px]">
-                          {job.status}
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(job.created_at).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
-                        {job.processed_count || 0} user, {job.success_count || 0} dikirim
-                      </p>
-                      {job.error_summary && <p className="mt-1 text-[10px] text-destructive line-clamp-1">{job.error_summary}</p>}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold">Tambah Produk Baru</h2>
-        <CreateProductForm categories={["Smartphone", "Laptop", "Audio", "Wearable", "Home Appliance", "Peripherals", "Gaming"]} />
-      </div>
-
-      <h2 className="mb-4 text-lg font-semibold">Semua Produk</h2>
-      <div className="space-y-3">
-        {(products || []).map((product) => (
-          <Card key={product.id}>
-            <CardContent className="flex items-center justify-between p-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">{product.name}</p>
-                  <Badge variant="secondary">{product.category}</Badge>
-                  <Badge variant="outline">Score: {product.deal_score}</Badge>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {product.lowest_price ? formatRupiah(product.lowest_price) : "Belum ada harga"} &middot; {product.slug}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  href={`/product/${product.slug}`}
-                  className={buttonVariants({ variant: "outline", size: "sm" })}
-                >
-                  Lihat
-                </Link>
-                <Link
-                  href={`/admin/products/${product.id}`}
-                  className={buttonVariants({ variant: "default", size: "sm" })}
-                >
-                  Edit
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  <Link
+                    href={`/admin/products/${p.id}`}
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                  >
+                    Edit
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

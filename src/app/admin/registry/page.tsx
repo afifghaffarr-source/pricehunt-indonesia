@@ -1,11 +1,9 @@
-import { requireAuth } from "@/lib/supabase/auth";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { requireAdminForPage } from "@/app/admin/_lib/guard";
 import { getApiSources, getRegistryStats } from "@/lib/api-registry/data";
 import { STATUS_LABELS, PRIORITY_LABELS, CATEGORY_LABELS } from "@/lib/api-registry/types";
 import type { ApiSourceStatus, ApiSourceCategorySlug } from "@/lib/api-registry/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Globe, Key, CheckCircle, Clock, AlertTriangle, ExternalLink } from "lucide-react";
 
 const STATUS_COLORS: Record<ApiSourceStatus, string> = {
@@ -25,11 +23,9 @@ const PRIORITY_COLORS: Record<number, string> = {
 };
 
 export default async function AdminRegistryPage() {
-  const user = await requireAuth();
-  const supabase = await createClient();
-  const { data: profile } = await supabase.from("user_profiles").select("preferences").eq("id", user.id).single();
-  const prefs = (profile?.preferences as Record<string, unknown>) || {};
-  if (!prefs.is_admin) redirect("/dashboard");
+  // Server-side guard: redirects guests and non-admins BEFORE data fetch.
+  // Backed by admin_users (RLS-protected) via isUserAdmin().
+  await requireAdminForPage();
 
   const [sources, stats] = await Promise.all([getApiSources(), getRegistryStats()]);
 

@@ -1,170 +1,111 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { normalizePrice } from "@/lib/ingestion/normalizer";
-import { calculateConfidenceScore } from "@/lib/ingestion/confidence";
-
 /**
  * POST /api/admin/data-collection/manual-offer
- * Submit manual offer input from admin
+ *
+ * Inserts a manually-collected offer. **Admin only.**
+ *
+ * Security:
+ * - Admin guard runs FIRST. Service-role client is only constructed
+ *   after the caller is verified as admin.
+ * - No raw DB error details are returned to the client.
+ * - Body is whitelisted.
  */
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { z } from "@/lib/validation";
+
+const manualOfferSchema = z.object({
+  product_id: z.optionalUuid(),
+  offer_id: z.optionalUuid(),
+  marketplace: z.string({ minLength: 1, maxLength: 80 }),
+  title: z.string({ minLength: 1, maxLength: 200 }),
+  url: z.url(),
+  price: z.number({ min: 1, integer: true }),
+  currency: z.optionalString({ minLength: 1, maxLength: 8 }),
+  source: z.optionalString({ minLength: 1, maxLength: 40 }),
+});
+
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
+
+  let body: unknown;
   try {
-    const body = await request.json();
-    const {
-      marketplace,
-      title,
-      url,
-      price,
-      original_price,
-      seller_name,
-      stock_status,
-      condition,
-      image_url,
-      category_hint,
-    } = body;
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
-    // Validate required fields
-    if (!marketplace || !title || !url || !price) {
-      return NextResponse.json(
-        { success: false, message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    const supabase = createAdminClient();
-
-    // 1. Find marketplace
-    let { data: marketplaceData, error: marketplaceError } = await supabase
-      .from("marketplaces")
-      .select("id")
-      .eq("name", marketplace.toLowerCase())
-      .single();
-
-    // Cast to any to avoid TypeScript issues with generated types
-    let marketplaceRecord: any = marketplaceData;
-
-    if (marketplaceError || !marketplaceData) {
-      // Create marketplace if not exists
-      const { data: created, error: createError } = await supabase
-        .from("marketplaces")
-        .insert({
-          name: marketplace.toLowerCase(),
-          base_url: `${marketplace.toLowerCase()}.com`,
-          display_name: marketplace,
-          logo_url: null,
-          color: "#000000",
-          is_active: true,
-        } as any)
-        .select()
-        .single();
-
-      if (createError || !created) {
-        return NextResponse.json(
-          { success: false, message: "Failed to create marketplace: " + (createError?.message || "Unknown error") },
-          { status: 500 }
-        );
-      }
-      marketplaceRecord = created;
-    }
-
-    if (!marketplaceRecord) {
-      return NextResponse.json(
-        { success: false, message: "Failed to resolve marketplace" },
-        { status: 500 }
-      );
-    }
-
-    // 2. Normalize prices
-    const normalizedPrice = normalizePrice(price);
-    const normalizedOriginalPrice = original_price
-      ? normalizePrice(original_price)
-      : null;
-
-    if (!normalizedPrice) {
-      return NextResponse.json(
-        { success: false, message: "Invalid price format" },
-        { status: 400 }
-      );
-    }
-
-    // 3. Calculate confidence score
-    const confidenceResult = calculateConfidenceScore({
-      sourceType: "manual_admin",
-      capturedAt: new Date(),
-      hasPrice: true,
-      hasSeller: !!seller_name,
-      hasStock: !!stock_status,
-    });
-
-    // 4. Create offer (product_id can be null - will be matched later)
-    const { data: offerData, error: offerError } = await supabase
-      .from("offers")
-      .upsert({
-        marketplace_id: marketplaceRecord.id,
-        title,
-        url,
-        current_price: normalizedPrice,
-        original_price: normalizedOriginalPrice,
-        seller_name: seller_name || null,
-        stock_status: stock_status || "in_stock",
-        condition: condition || "unknown",
-        image_url: image_url || null,
-        category_hint: category_hint || null,
-        confidence_score: confidenceResult.score,
-        confidence_label: confidenceResult.label,
-        validation_status: "pending",
-        is_active: true,
-        last_checked_at: new Date().toISOString(),
-        source: "manual_admin",
-      } as any, {
-        onConflict: "url",
-      })
-      .select()
-      .single();
-
-    if (offerError || !offerData) {
-      console.error("[Admin] Create offer error:", offerError);
-      return NextResponse.json(
-        { success: false, message: offerError?.message || "Failed to create offer" },
-        { status: 500 }
-      );
-    }
-
-    const offer = offerData as any;
-
-    // 5. Create price snapshot
-    const { error: snapshotError } = await supabase
-      .from("price_snapshots")
-      .insert({
-        offer_id: offer.id,
-        current_price: normalizedPrice,
-        original_price: normalizedOriginalPrice,
-        stock_status: stock_status || "in_stock",
-        source: "manual_admin",
-        confidence_score: confidenceResult.score,
-        captured_at: new Date().toISOString(),
-      } as any);
-
-    if (snapshotError) {
-      console.error("[Admin] Create snapshot error:", snapshotError);
-      // Don't fail the request, snapshot is optional
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Offer created successfully",
-      data: {
-        offer_id: offer.id,
-        marketplace_id: marketplaceRecord.id,
-        confidence_score: confidenceResult.score,
-        confidence_label: confidenceResult.label,
-      },
-    });
-  } catch (error) {
-    console.error("[Admin] Manual offer exception:", error);
+  const parsed = manualOfferSchema.safeParse(body);
+  if (!parsed.ok) {
     return NextResponse.json(
-      { success: false, message: "Internal server error: " + (error as Error).message },
-      { status: 500 }
+      { error: "Invalid payload", details: parsed.message },
+      { status: 400 }
     );
   }
+
+  const input = parsed.value as {
+    product_id: string | null;
+    offer_id: string | null;
+    marketplace: string;
+    title: string;
+    url: string;
+    price: number;
+    currency: string | null;
+    source: string | null;
+  };
+  const adminClient = createAdminClient();
+  const now = new Date().toISOString();
+
+  // Use the offer_id if provided, otherwise create a new offer row.
+  if (input.offer_id) {
+    const { error } = await adminClient
+      .from("offers")
+      .update({
+        price: input.price,
+        currency: input.currency ?? "IDR",
+        url: input.url,
+        title: input.title,
+        marketplace: input.marketplace,
+        last_checked_at: now,
+        source: input.source ?? "manual",
+      } as never)
+      .eq("id", input.offer_id);
+
+    if (error) {
+      console.error("manual-offer update error", error);
+      return NextResponse.json({ error: "Failed to update offer" }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, offer_id: input.offer_id });
+  }
+
+  if (!input.product_id) {
+    return NextResponse.json(
+      { error: "product_id is required when offer_id is missing" },
+      { status: 400 }
+    );
+  }
+
+  const { data, error } = await adminClient
+    .from("offers")
+    .insert({
+      product_id: input.product_id,
+      marketplace: input.marketplace,
+      title: input.title,
+      url: input.url,
+      price: input.price,
+      currency: input.currency ?? "IDR",
+      in_stock: true,
+      source: input.source ?? "manual",
+      last_checked_at: now,
+    } as never)
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error("manual-offer insert error", error);
+    return NextResponse.json({ error: "Failed to create offer" }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, offer_id: (data as { id?: string } | null)?.id });
 }
