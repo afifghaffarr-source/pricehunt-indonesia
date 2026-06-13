@@ -32,10 +32,19 @@ export function BestOfferCard({ offers, lowestPrice, className = "" }: BestOffer
     return (
       <Card className={`p-6 ${className}`}>
         <div className="text-center">
-          <Store className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            Produk sedang tidak tersedia di marketplace
+          <Store className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+          <p className="text-base font-medium text-foreground">
+            Belum ada penawaran tersedia
           </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Produk ini belum memiliki data harga dari marketplace. Cek kembali nanti atau cari produk serupa.
+          </p>
+          <Link 
+            href="/search" 
+            className={buttonVariants({ variant: "outline", size: "sm" }) + " mt-4"}
+          >
+            Cari Produk Lain
+          </Link>
         </div>
       </Card>
     );

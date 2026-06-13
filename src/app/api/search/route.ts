@@ -9,11 +9,16 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    const products = await searchProductsFromDB(query, category, limit, offset);
+    const products = await searchProductsFromDB(query, category, limit + offset, 0);
+    
+    // Filter out products without prices (no offers available)
+    const productsWithPrices = products
+      .filter(p => p.lowestPrice > 0)
+      .slice(offset, offset + limit);
 
     return NextResponse.json({
-      results: products,
-      total: products.length,
+      results: productsWithPrices,
+      total: productsWithPrices.length,
       limit,
       offset,
     });
