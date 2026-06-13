@@ -1,0 +1,103 @@
+-- Migration 123: Destructive Migration Notes
+-- Date: 2026-06-13
+--
+-- THIS MIGRATION IS A NO-OP. It exists only to document the destructive
+-- migrations in this codebase, their status, and the manual rollback
+-- procedure. The DBA must never rely on git history alone; the actual
+-- production database state is what matters.
+--
+-- See docs/MIGRATION_ROLLBACK.md for the full rollback procedure.
+--
+-- ============================================================================
+-- DESTRUCTIVE MIGRATIONS IN THE CHAIN
+-- ============================================================================
+--
+-- Migration 114_upgrade_offers_schema.sql (and 114_upgrade_offers_schema_v3.sql)
+--   - DROPs TABLE offers CASCADE
+--   - Recreates with the new "data trust" schema (current_price,
+--     stock_status, confidence_score, source, condition, etc.)
+--   - Pre-condition at write time: backup table `offers_backup_20260612`
+--     was created in the same migration.
+--   - Status at the time of writing: ALREADY APPLIED to production
+--     on 2026-06-12.
+--
+-- Migration 115_upgrade_price_snapshots.sql
+--   - DROPs TABLE price_snapshots CASCADE
+--   - Recreates with the new schema (offer_id FK, captured_at, source,
+--     confidence_score, etc.)
+--   - Pre-condition at write time: 0 rows expected in price_snapshots.
+--   - Status at the time of writing: ALREADY APPLIED to production
+--     on 2026-06-12.
+--
+-- ============================================================================
+-- WHY THESE ARE FLAGGED
+-- ============================================================================
+--
+-- 1. CASCADE means dependents are also dropped (RLS policies, triggers,
+--    foreign keys, views, etc.). The migration recreates RLS, but any
+--    downstream view, function, or trigger that referenced `offers` or
+--    `price_snapshots` from OUTSIDE this migration chain would be silently
+--    lost on a re-run.
+--
+-- 2. Rerunning these migrations on a database that has already been
+--    upgraded (e.g., 114 followed by 114_v3) will:
+--      - DROP the just-upgraded offers table
+--      - recreate it (with the same schema, no real damage)
+--      - but lose any rows added between the two migrations
+--
+-- 3. For a FRESH database, the migrations must run in order:
+--      001 -> 002 -> 003 -> ... -> 107 -> 108 -> 109 -> 110
+--      -> 112 -> 114 -> 114_v3 -> 115 -> 116 -> 117 -> 118 -> 119
+--      -> 120 -> 121 -> 122
+--    Any out-of-order apply will leave the schema in an inconsistent
+--    state.
+--
+-- ============================================================================
+-- ADDITIVE ALTERNATIVE FOR FRESH DATABASES
+-- ============================================================================
+--
+-- Migration 124_offers_additive_migration.sql is provided as an
+-- ADDITIVE alternative for fresh databases. Instead of DROP/CREATE
+-- for `offers` and `price_snapshots`, it ALTERs the tables in place
+-- to add the new columns. New fresh databases can opt to skip 114
+-- and 115 and apply 124 instead.
+--
+-- For EXISTING production databases that have already had 114/115
+-- applied, 124 is a safe no-op (uses ADD COLUMN IF NOT EXISTS).
+--
+-- ============================================================================
+-- ROLLBACK STRATEGY (MANUAL, NOT AUTOMATED)
+-- ============================================================================
+--
+-- 1. The pre-migration state of `offers` is preserved in
+--    `offers_backup_20260612` (created by 114). To roll back:
+--
+--      BEGIN;
+--      ALTER TABLE offers RENAME TO offers_post_114;
+--      ALTER TABLE offers_backup_20260612 RENAME TO offers;
+--      -- Re-attach any foreign keys / RLS that pointed to offers
+--      COMMIT;
+--
+-- 2. There is no automatic rollback for 115 because price_snapshots
+--    had 0 rows at the time of the migration. To roll back 115, you
+--    would need to know the pre-migration schema (see git history of
+--    migration 107 for the original column set).
+--
+-- 3. Always take a Supabase database snapshot BEFORE running any
+--    migration that contains DROP TABLE.
+--
+-- ============================================================================
+-- PRODUCTION HARDENING RECOMMENDATION
+-- ============================================================================
+--
+-- For new production databases:
+--   - Skip 114 and 114_v3
+--   - Skip 115
+--   - Apply 124 instead
+--   - Verify with the queries in migration 124 before going live
+--
+-- This is the path BijakBeli should use for any new environment going
+-- forward. The 114/115 chain remains in the repository for historical
+-- continuity with the 2026-06-12 production state.
+
+SELECT 'Migration 123: documentation only, no schema changes applied.' AS status;
