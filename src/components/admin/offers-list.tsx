@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, RefreshCw, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { RefreshCw, ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { csrfFetch } from "@/lib/admin-csrf";
 
 type Offer = {
   id: string;
@@ -45,11 +46,7 @@ export function OffersList() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [marketplaceFilter, setMarketplaceFilter] = useState("all");
 
-  useEffect(() => {
-    loadOffers();
-  }, [statusFilter, marketplaceFilter]);
-
-  const loadOffers = async () => {
+  const loadOffers = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -57,9 +54,9 @@ export function OffersList() {
       if (marketplaceFilter !== "all") params.set("marketplace", marketplaceFilter);
       if (search) params.set("search", search);
 
-      const response = await fetch(`/api/admin/data-collection/offers?${params}`);
+      const response = await csrfFetch(`/api/admin/data-collection/offers?${params.toString()}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setOffers(data.data || []);
       }
@@ -68,7 +65,11 @@ export function OffersList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, marketplaceFilter, search]);
+
+  useEffect(() => {
+    loadOffers();
+  }, [loadOffers]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
@@ -159,8 +160,8 @@ export function OffersList() {
                   <TableCell>Rp {offer.current_price.toLocaleString("id-ID")}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
-                      {offer.source === 'browser_collector' ? 'Browser' : 
-                       offer.source === 'manual_admin' ? 'Manual' : 
+                      {offer.source === 'browser_collector' ? 'Browser' :
+                       offer.source === 'manual_admin' ? 'Manual' :
                        offer.source === 'api_scraper' ? 'API' : offer.source}
                     </Badge>
                   </TableCell>
@@ -183,9 +184,9 @@ export function OffersList() {
                   </TableCell>
                   <TableCell>
                     {offer.url && (
-                      <a 
-                        href={offer.url} 
-                        target="_blank" 
+                      <a
+                        href={offer.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9"
                       >

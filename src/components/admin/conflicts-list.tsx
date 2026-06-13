@@ -15,6 +15,7 @@ import {
 import { AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { csrfFetch, clearCsrfToken } from "@/lib/admin-csrf";
 
 type Conflict = {
   id: string;
@@ -39,16 +40,12 @@ export function ConflictsList() {
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadConflicts();
-  }, []);
-
   const loadConflicts = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/admin/data-collection/conflicts");
+      const response = await csrfFetch("/api/admin/data-collection/conflicts");
       const data = await response.json();
-      
+
       if (data.success) {
         setConflicts(data.data || []);
       }
@@ -59,17 +56,31 @@ export function ConflictsList() {
     }
   };
 
+  useEffect(() => {
+    loadConflicts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const resolveConflict = async (conflictId: string, keepOfferId: string) => {
     try {
-      const response = await fetch("/api/admin/data-collection/resolve-conflict", {
+      const response = await csrfFetch("/api/admin/data-collection/resolve-conflict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conflict_id: conflictId, keep_offer_id: keepOfferId }),
+        body: JSON.stringify({
+          conflict_id: conflictId,
+          keep_offer_id: keepOfferId,
+        }),
       });
+
+      if (response.status === 401 || response.status === 403) {
+        clearCsrfToken();
+      }
 
       const data = await response.json();
       if (data.success) {
         loadConflicts(); // Reload list
+      } else {
+        console.error("Resolve conflict failed:", data?.error ?? "Unknown error");
       }
     } catch (error) {
       console.error("Failed to resolve conflict:", error);

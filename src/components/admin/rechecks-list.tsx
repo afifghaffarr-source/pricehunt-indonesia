@@ -15,6 +15,7 @@ import {
 import { RefreshCw, Check, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { csrfFetch, clearCsrfToken } from "@/lib/admin-csrf";
 
 type RecheckRequest = {
   id: string;
@@ -35,16 +36,12 @@ export function RechecksList() {
   const [rechecks, setRechecks] = useState<RecheckRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadRechecks();
-  }, []);
-
   const loadRechecks = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/admin/data-collection/rechecks");
+      const response = await csrfFetch("/api/admin/data-collection/rechecks");
       const data = await response.json();
-      
+
       if (data.success) {
         setRechecks(data.data || []);
       }
@@ -55,17 +52,28 @@ export function RechecksList() {
     }
   };
 
+  useEffect(() => {
+    loadRechecks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const updateStatus = async (recheckId: string, status: "completed" | "rejected") => {
     try {
-      const response = await fetch(`/api/admin/data-collection/rechecks/${recheckId}`, {
+      const response = await csrfFetch(`/api/admin/data-collection/rechecks/${recheckId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ request_status: status }),
       });
 
+      if (response.status === 401 || response.status === 403) {
+        clearCsrfToken();
+      }
+
       const data = await response.json();
       if (data.success) {
         loadRechecks();
+      } else {
+        console.error("Update recheck failed:", data?.error ?? "Unknown error");
       }
     } catch (error) {
       console.error("Failed to update recheck:", error);

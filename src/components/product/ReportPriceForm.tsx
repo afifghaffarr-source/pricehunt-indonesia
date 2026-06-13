@@ -21,7 +21,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, Flag } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Flag, CheckCircle } from "lucide-react";
+
+/**
+ * Report type values MUST match the API enum in
+ * src/app/api/price-report/route.ts. Keep this list in sync.
+ */
+const REPORT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "harga_berbeda", label: "Harga Tidak Sesuai" },
+  { value: "produk_salah", label: "Produk Salah" },
+  { value: "stok_habis", label: "Stok Habis" },
+  { value: "link_rusak", label: "Link Rusak / Tidak Bisa Dibuka" },
+  { value: "varian_berbeda", label: "Varian Berbeda" },
+  { value: "lainnya", label: "Lainnya" },
+];
 
 interface ReportPriceFormProps {
   offerId: string;
@@ -29,6 +43,11 @@ interface ReportPriceFormProps {
   currentPrice: number;
   marketplaceName: string;
 }
+
+type Result =
+  | { kind: "idle" }
+  | { kind: "success"; message: string }
+  | { kind: "error"; message: string };
 
 export function ReportPriceForm({
   offerId,
@@ -39,43 +58,71 @@ export function ReportPriceForm({
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reportType, setReportType] = useState<string>("");
-  const [description, setDescription] = useState("");
+  const [message, setMessage] = useState("");
   const [reportedPrice, setReportedPrice] = useState("");
+  const [result, setResult] = useState<Result>({ kind: "idle" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setResult({ kind: "idle" });
 
     try {
-      // TODO: Call report API after migration 110
+      // Payload matches the API contract: { offer_id, report_type, message, reported_price }
       const response = await fetch("/api/price-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           offer_id: offerId,
           report_type: reportType,
-          description,
+          message,
           reported_price: reportedPrice ? parseFloat(reportedPrice) : null,
         }),
       });
 
-      if (response.ok) {
-        setOpen(false);
+      const data = (await response.json().catch(() => ({}))) as {
+        success?: boolean;
+        message?: string;
+      };
+
+      if (response.ok && data.success) {
+        setResult({
+          kind: "success",
+          message:
+            data.message ??
+            "Laporan berhasil dikirim. Terima kasih atas kontribusinya!",
+        });
         setReportType("");
-        setDescription("");
+        setMessage("");
         setReportedPrice("");
-        // TODO: Show success toast
+        // Close dialog after a short pause so the user can see the success.
+        window.setTimeout(() => {
+          setOpen(false);
+          setResult({ kind: "idle" });
+        }, 1500);
+      } else {
+        setResult({
+          kind: "error",
+          message:
+            data.message ??
+            "Gagal mengirim laporan. Silakan coba lagi dalam beberapa saat.",
+        });
       }
     } catch (error) {
       console.error("Report submission failed:", error);
-      // TODO: Show error toast
+      setResult({
+        kind: "error",
+        message:
+          "Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setResult({ kind: "idle" }); }}>
       <DialogTrigger asChild>
         <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 text-muted-foreground">
           <Flag className="mr-2 h-3.5 w-3.5" />
@@ -120,15 +167,16 @@ export function ReportPriceForm({
                   <SelectValue placeholder="Pilih jenis laporan" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="price_incorrect">Harga Tidak Sesuai</SelectItem>
-                  <SelectItem value="out_of_stock">Produk Habis</SelectItem>
-                  <SelectItem value="fake_discount">Diskon Palsu</SelectItem>
-                  <SelectItem value="other">Lainnya</SelectItem>
+                  {REPORT_TYPE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {reportType === "price_incorrect" && (
+            {reportType === "harga_berbeda" && (
               <div className="space-y-2">
                 <Label htmlFor="reported-price">Harga yang Benar (Rp)</Label>
                 <Input
@@ -145,15 +193,28 @@ export function ReportPriceForm({
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="description">Deskripsi</Label>
+              <Label htmlFor="message">Pesan</Label>
               <Textarea
-                id="description"
+                id="message"
                 placeholder="Jelaskan detail masalah yang Anda temukan..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 rows={4}
               />
             </div>
+
+            {result.kind === "error" && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{result.message}</AlertDescription>
+              </Alert>
+            )}
+            {result.kind === "success" && (
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>{result.message}</AlertDescription>
+              </Alert>
+            )}
 
             <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-800 flex gap-2">
               <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />

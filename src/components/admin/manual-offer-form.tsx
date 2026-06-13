@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -15,22 +14,38 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import { csrfFetch, clearCsrfToken } from "@/lib/admin-csrf";
+
+type FormData = {
+  marketplace: string;
+  title: string;
+  url: string;
+  price: string;
+  original_price: string;
+  seller_name: string;
+  stock_status: string;
+  condition: string;
+  image_url: string;
+  category_hint: string;
+};
+
+const INITIAL: FormData = {
+  marketplace: "tokopedia",
+  title: "",
+  url: "",
+  price: "",
+  original_price: "",
+  seller_name: "",
+  stock_status: "in_stock",
+  condition: "new",
+  image_url: "",
+  category_hint: "",
+};
 
 export function ManualOfferForm() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [formData, setFormData] = useState({
-    marketplace: "tokopedia",
-    title: "",
-    url: "",
-    price: "",
-    original_price: "",
-    seller_name: "",
-    stock_status: "in_stock",
-    condition: "new",
-    image_url: "",
-    category_hint: "",
-  });
+  const [formData, setFormData] = useState<FormData>(INITIAL);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +53,7 @@ export function ManualOfferForm() {
     setResult(null);
 
     try {
-      const response = await fetch("/api/admin/data-collection/manual-offer", {
+      const response = await csrfFetch("/api/admin/data-collection/manual-offer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -55,23 +70,15 @@ export function ManualOfferForm() {
         }),
       });
 
+      if (response.status === 401 || response.status === 403) {
+        clearCsrfToken();
+      }
+
       const data = await response.json();
       setResult(data);
 
       if (data.success) {
-        // Reset form
-        setFormData({
-          marketplace: "tokopedia",
-          title: "",
-          url: "",
-          price: "",
-          original_price: "",
-          seller_name: "",
-          stock_status: "in_stock",
-          condition: "new",
-          image_url: "",
-          category_hint: "",
-        });
+        setFormData(INITIAL);
       }
     } catch (error) {
       setResult({
@@ -98,7 +105,7 @@ export function ManualOfferForm() {
               <Label htmlFor="marketplace">Marketplace *</Label>
               <Select
                 value={formData.marketplace}
-                onValueChange={(value) => setFormData({ ...formData, marketplace: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, marketplace: value })}
               >
                 <SelectTrigger id="marketplace">
                   <SelectValue />
@@ -116,7 +123,7 @@ export function ManualOfferForm() {
               <Label htmlFor="condition">Condition *</Label>
               <Select
                 value={formData.condition}
-                onValueChange={(value) => setFormData({ ...formData, condition: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, condition: value })}
               >
                 <SelectTrigger id="condition">
                   <SelectValue />
@@ -193,7 +200,7 @@ export function ManualOfferForm() {
               <Label htmlFor="stock_status">Stock Status</Label>
               <Select
                 value={formData.stock_status}
-                onValueChange={(value) => setFormData({ ...formData, stock_status: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, stock_status: value })}
               >
                 <SelectTrigger id="stock_status">
                   <SelectValue />
