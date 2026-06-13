@@ -47,7 +47,21 @@ export function VexoImageFallback({
     let cancelled = false;
 
     async function fetchImage() {
-      // 1) Try VexoAPI first
+      // 1) Try VexoAPI marketplace (returns product image from marketplace data)
+      try {
+        const mktRes = await fetch(`/api/vexo/marketplace?name=${encodeURIComponent(productName)}`);
+        const mktData = await mktRes.json();
+        if (cancelled) return;
+        if (mktData.success && mktData.product?.imageUrl) {
+          setSrc(mktData.product.imageUrl);
+          setImageError(false);
+          return;
+        }
+      } catch {
+        // continue to next fallback
+      }
+
+      // 2) Try VexoAPI image search
       try {
         const res = await fetch(`/api/vexo/images?q=${encodeURIComponent(productName)}&limit=1`);
         const data = await res.json();
@@ -58,20 +72,19 @@ export function VexoImageFallback({
           return;
         }
       } catch {
-        // continue to fallback
+        // continue to next fallback
       }
 
-      // 2) Fallback to Unsplash Source (free, no API key)
+      // 3) Fallback to picsum.photos (stable, always valid)
       if (cancelled) return;
-      const keywords = productName
+      const slug = productName
         .replace(/[^\w\s]/g, '')
         .split(/\s+/)
         .filter(w => w.length > 2 && !['the','and','for','with','gen','rgb','inch','new','m2','m3','m1','core','ultra'].includes(w.toLowerCase()))
         .slice(0, 3)
-        .join(',');
-      if (keywords) {
-        // Use Lorem Picsum as stable free placeholder (always returns valid image)
-        setSrc(`https://picsum.photos/seed/${encodeURIComponent(keywords)}/600/600`);
+        .join('-');
+      if (slug) {
+        setSrc(`https://picsum.photos/seed/${encodeURIComponent(slug)}/600/600`);
         setImageError(false);
       }
 
