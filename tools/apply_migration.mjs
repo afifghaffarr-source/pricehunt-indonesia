@@ -2,17 +2,37 @@
 /**
  * Apply Migration 110 to Supabase Database
  * Uses service role key to execute SQL directly
+ * 
+ * REQUIRED ENVIRONMENT VARIABLES:
+ *   SUPABASE_URL - Your Supabase project URL
+ *   SUPABASE_SERVICE_KEY - Your Supabase service role key
+ * 
+ * Usage:
+ *   SUPABASE_URL=https://xxx.supabase.co SUPABASE_SERVICE_KEY=xxx node tools/apply_migration.mjs
  */
 
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { config } from 'dotenv';
+
+// Load .env.local
+config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '.env.local') });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const SUPABASE_URL = 'https://oklaxwjoyttpwgxhphko.supabase.co';
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rbGF4d2pveXR0cHdneGhwaGtvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDgwMDE1MywiZXhwIjoyMDk2Mzc2MTUzfQ.r8WXjPpakSohNaNpwezvPWwU9HKoaCmJOAx-98yf4bE';
+// Read from environment variables (NEVER hardcode!)
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.error('❌ Missing required environment variables:');
+  console.error('   SUPABASE_URL=https://xxx.supabase.co');
+  console.error('   SUPABASE_SERVICE_KEY=your-service-role-key');
+  console.error('\nSet them in .env.local or pass as command args');
+  process.exit(1);
+}
 
 async function executeSql(sql) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
@@ -52,11 +72,18 @@ async function main() {
     console.error('❌ Migration failed:', error.message);
     console.log('\n📋 Trying alternative: Direct PostgreSQL execution...');
     
-    // Fallback: Try using psql with connection string
+    // Fallback: Try using psql with connection string from env
+    const DB_URL = process.env.DATABASE_URL;
+    if (!DB_URL) {
+      console.error('\n❌ DATABASE_URL not set for psql fallback');
+      console.log('⚠️  Please apply migration manually via Supabase Dashboard');
+      process.exit(1);
+    }
+    
     const { execSync } = await import('child_process');
     try {
       const result = execSync(
-        `psql "postgresql://postgres.oklaxwjoyttpwgxhphko:${SERVICE_KEY}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres" -f "${migrationPath}"`,
+        `psql "${DB_URL}" -f "${migrationPath}"`,
         { encoding: 'utf-8' }
       );
       console.log(result);

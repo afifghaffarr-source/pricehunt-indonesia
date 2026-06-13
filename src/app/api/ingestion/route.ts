@@ -13,6 +13,7 @@ const OfferSchema = z.object({
   seller_name: z.string().optional(),
   seller_id: z.string().optional(),
   seller_rating: z.number().min(0).max(5).optional(),
+  seller_review_count: z.number().int().min(0).optional(), // NEW: Migration 119
   seller_location: z.string().optional(),
   is_official_store: z.boolean().default(false),
   condition: z.enum(["new", "used", "refurbished", "unknown"]).default("new"),
@@ -23,8 +24,9 @@ const OfferSchema = z.object({
   stock_status: z.enum(["in_stock", "low_stock", "out_of_stock", "unknown"]).default("unknown"),
   location: z.string().optional(),
   shipping_estimate: z.number().int().min(0).optional(),
+  shipping_info: z.string().optional(), // NEW: Migration 119 (for has_free_shipping detection)
   rating: z.number().min(0).max(5).optional(),
-  review_count: z.number().int().min(0).optional(),
+  review_count: z.number().int().min(0).optional(), // Alias for seller_review_count (collectors may send either)
   sold_count: z.number().int().min(0).optional(),
   voucher_text: z.string().optional(),
   source: z.string().default("collector"),

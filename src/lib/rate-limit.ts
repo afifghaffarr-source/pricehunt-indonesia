@@ -7,9 +7,13 @@ type RateLimitInput = {
   windowMs: number;
 };
 
-type RateLimitRow = { id: string; count: number };
+type RateLimitResult = {
+  allowed: boolean;
+  remaining: number;
+  retryAfterMs?: number;
+};
 
-export async function checkPersistentRateLimit(input: RateLimitInput) {
+export async function checkPersistentRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
   const supabase = createAdminClient();
   const windowStart = new Date(Math.floor(Date.now() / input.windowMs) * input.windowMs).toISOString();
 
@@ -24,11 +28,17 @@ export async function checkPersistentRateLimit(input: RateLimitInput) {
 
     if (error) {
       console.error("Rate limit RPC failed:", error.message);
-      // Fail open on DB error (allow request but log)
-      return { allowed: true, remaining: input.limit - 1 };
+      // SECURITY: Fail CLOSED on DB error (deny request)
+      // This prevents DDoS when database is down
+      return { 
+        allowed: false, 
+        remaining: 0,
+        retryAfterMs: input.windowMs // Retry after full window
+      };
     }
 
     if (!data || data.length === 0) {
+      // No data returned = first request in window
       return { allowed: true, remaining: input.limit - 1 };
     }
 
@@ -36,15 +46,49 @@ export async function checkPersistentRateLimit(input: RateLimitInput) {
     return {
       allowed: result.allowed,
       remaining: result.remaining,
+      retryAfterMs: result.allowed ? undefined : input.windowMs
     };
   } catch (err) {
     console.error("Rate limit exception:", err);
-    // Fail open on unexpected error
-    return { allowed: true, remaining: input.limit - 1 };
+    // SECURITY: Fail CLOSED on unexpected error
+    return { 
+      allowed: false, 
+      remaining: 0,
+      retryAfterMs: input.windowMs
+    };
   }
 }
 
 export function getRequestIdentifier(userId: string | null, request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return userId ? `user:${userId}` : `ip:${forwardedFor || "unknown"}`;
+  const realIp = request.headers.get("x-real-ip");
+  const ip = forwardedFor || realIp || "unknown";
+  
+  return userId ? `user:${userId}` : `ip:${ip}`;
+}
+
+/**
+ * Helper to create rate limit response with proper headers
+ */
+export function createRateLimitResponse(
+  message: string, 
+  retryAfterMs: number = 60000
+) {
+  const retryAfterSeconds = Math.ceil(retryAfterMs / 1000);
+  
+  return new Response(
+    JSON.stringify({ 
+      error: message,
+      retryAfter: retryAfterSeconds
+    }),
+    { 
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': String(retryAfterSeconds),
+        'X-RateLimit-Limit': '0',
+        'X-RateLimit-Remaining': '0',
+      }
+    }
+  );
 }

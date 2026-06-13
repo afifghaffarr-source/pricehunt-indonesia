@@ -1,85 +1,144 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/middleware";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const rateLimit = new Map<string, { count: number; resetAt: number }>();
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  process.env.NEXT_PUBLIC_APP_URL || 'https://bijakbeli.app',
+  'http://localhost:3000', // Development
+  'http://localhost:3001', // Alternative dev port
+];
 
-const LIMITS: Record<string, { max: number; windowMs: number }> = {
-  "/api/ai-advisor": { max: 10, windowMs: 60_000 },
-  "/api/search": { max: 60, windowMs: 60_000 },
-  "/api/products": { max: 100, windowMs: 60_000 },
-};
+// Chrome extension pattern (for BijakBeli extension)
+const EXTENSION_ORIGIN_PATTERN = /^chrome-extension:\/\/[a-z]+$/;
 
-function checkRateLimit(path: string, ip: string): boolean {
-  const limit = LIMITS[path];
-  if (!limit) return true;
+// Paths that require CSRF protection
+const CSRF_PROTECTED_PATHS = [
+  '/api/ai-advisor',
+  '/api/vexo/ai',
+  '/api/ingestion',
+  '/api/ingestion/offer-snapshot',
+  '/api/recheck-request',
+  '/api/price-report',
+  '/api/reviews',
+  '/api/push/subscribe',
+];
 
-  const key = `${ip}:${path}`;
-  const now = Date.now();
-  const entry = rateLimit.get(key);
+// Paths that are public (no auth required)
+const PUBLIC_PATHS = [
+  '/api/health',
+  '/api/health/db',
+  '/api/products',
+  '/api/search',
+  '/api/vexo/images',
+  '/api/vexo/search',
+  '/api/deals',
+];
 
-  if (!entry || now > entry.resetAt) {
-    rateLimit.set(key, { count: 1, resetAt: now + limit.windowMs });
-    return true;
-  }
+// Rate limit headers to pass through
+const RATE_LIMIT_HEADERS = [
+  'x-ratelimit-limit',
+  'x-ratelimit-remaining',
+  'x-ratelimit-reset',
+  'retry-after',
+];
 
-  if (entry.count >= limit.max) return false;
-  entry.count++;
-  return true;
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  
+  // Check exact matches
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  
+  // Check extension pattern
+  if (EXTENSION_ORIGIN_PATTERN.test(origin)) return true;
+  
+  // Allow Vercel preview deployments
+  if (origin.endsWith('.vercel.app')) return true;
+  
+  return false;
 }
 
-export async function proxy(request: NextRequest) {
-  const response = NextResponse.next();
+function addCorsHeaders(response: NextResponse, origin: string | null) {
+  if (origin && isAllowedOrigin(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
+  }
+  
+  return response;
+}
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      get(name: string) {
-        return request.cookies.get(name);
-      },
-      set(name: string, value: string, options?) {
-        response.cookies.set({ name, value, ...options });
-      },
+function generateCSRFToken(): string {
+  // Generate a random CSRF token
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const origin = request.headers.get('origin');
+  const method = request.method;
+  
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    const response = new NextResponse(null, { status: 204 });
+    return addCorsHeaders(response, origin);
+  }
+  
+  // Only apply to API routes
+  if (!pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+  
+  // Create response
+  let response = NextResponse.next();
+  
+  // Add CORS headers
+  response = addCorsHeaders(response, origin);
+  
+  // CSRF Protection for state-changing methods
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+    // Check if this path requires CSRF protection
+    const requiresCSRF = CSRF_PROTECTED_PATHS.some(path => pathname.startsWith(path));
+    
+    if (requiresCSRF) {
+      const csrfToken = request.headers.get('x-csrf-token');
+      const sessionToken = request.cookies.get('csrf-token')?.value;
+      
+      // In production, validate CSRF token matches session
+      // For now, just ensure the header exists (extension sends it)
+      if (!csrfToken) {
+        // Allow requests from same-origin (referer check)
+        const referer = request.headers.get('referer');
+        const isSameOrigin = referer && new URL(referer).origin === (process.env.NEXT_PUBLIC_APP_URL || 'https://bijakbeli.app');
+        
+        if (!isSameOrigin) {
+          return NextResponse.json(
+            { error: 'CSRF token missing' },
+            { status: 403 }
+          );
+        }
+      }
     }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const path = request.nextUrl.pathname;
-
-  if (path.startsWith("/api/")) {
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "anonymous";
-    if (!checkRateLimit(path, ip)) {
-      return NextResponse.json(
-        { error: "Terlalu banyak request. Coba lagi nanti." },
-        { status: 429 }
-      );
-    }
-    return response;
   }
-
-  const protectedRoutes = ["/dashboard", "/admin", "/settings"];
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    path.startsWith(route)
-  );
-
-  if (isProtectedRoute && !user) {
-    const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("redirect", path);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if (user && path.startsWith("/auth")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
+  
+  // Add security headers
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Add request ID for tracing
+  const requestId = crypto.randomUUID();
+  response.headers.set('X-Request-ID', requestId);
+  
   return response;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    '/api/:path*',
   ],
 };

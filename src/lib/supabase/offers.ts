@@ -23,17 +23,33 @@ export interface Offer {
   product_id: string;
   marketplace_id: string;
   marketplace_product_id: string | null;
+  title: string;  // ACTUAL: required field
   seller_name: string | null;
+  seller_id: string | null;  // ACTUAL: exists in production
   seller_rating: number | null;
+  seller_review_count: number | null;
+  seller_location: string | null;  // ACTUAL: seller_location (not location)
   is_official_store: boolean;
   condition: OfferCondition;
   variant: string | null;
   url: string;
   current_price: number;
   original_price: number | null;
+  discount_percentage: number | null;  // ACTUAL: exists, auto-calculated
   stock_status: StockStatus;
-  location: string | null;
   shipping_estimate: number | null;
+  shipping_info: string | null;
+  sold_count: number | null;
+  voucher_text: string | null;
+  has_voucher: boolean;
+  has_free_shipping: boolean;
+  image_url: string | null;  // ACTUAL: exists in production
+  category_hint: string | null;  // ACTUAL: exists in production
+  source: string;  // ACTUAL: data source (browser_collector, manual_admin, etc)
+  confidence_score: number;  // ACTUAL: 0-100
+  confidence_label: string;  // ACTUAL: 'sangat dipercaya', 'dipercaya', 'perlu dicek ulang'
+  validation_status: 'pending' | 'verified' | 'flagged' | 'rejected';  // ACTUAL
+  is_active: boolean;  // ACTUAL: soft delete flag
   last_checked_at: string | null;
   created_at: string;
   updated_at: string;
@@ -267,17 +283,33 @@ export function priceToOffer(
     product_id: productId,
     marketplace_id: marketplaceId,
     marketplace_product_id: price.marketplace_product_id || null,
+    title: "", // Will be populated from product name
     seller_name: price.seller_name || null,
+    seller_id: null,
     seller_rating: price.seller_rating || null,
+    seller_review_count: null,
+    seller_location: null,
     is_official_store: price.is_official_store || false,
     condition: "new" as OfferCondition,
     variant: null,
     url: price.url || "",
     current_price: price.price || 0,
     original_price: price.original_price || null,
+    discount_percentage: null,
     stock_status: price.availability === "in_stock" ? "in_stock" : "unknown",
-    location: null,
     shipping_estimate: null,
+    shipping_info: null,
+    sold_count: null,
+    voucher_text: null,
+    has_voucher: false,
+    has_free_shipping: false,
+    image_url: null,
+    category_hint: null,
+    source: "manual_admin",
+    confidence_score: 50,
+    confidence_label: "perlu dicek ulang",
+    validation_status: "pending",
+    is_active: true,
     last_checked_at: price.last_checked || null,
   };
 }
