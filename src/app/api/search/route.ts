@@ -11,9 +11,9 @@ export async function GET(request: NextRequest) {
 
     const products = await searchProductsFromDB(query, category, limit + offset, 0);
     
-    // Filter out products without prices (no offers available)
+    // Filter out products without prices or offers
     const productsWithPrices = products
-      .filter(p => p.lowestPrice > 0)
+      .filter(p => p.lowestPrice > 0 && p.prices.length > 0)
       .slice(offset, offset + limit);
 
     return NextResponse.json({

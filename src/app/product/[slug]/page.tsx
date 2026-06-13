@@ -62,6 +62,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  // If product has no prices at all, show not found
+  // (product exists in DB but has no offers - stale data)
+  if (product.lowestPrice === 0 && product.prices.length === 0) {
+    notFound();
+  }
+
   const user = await getUser();
 
   let isWishlisted = false;
