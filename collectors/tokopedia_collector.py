@@ -24,12 +24,17 @@ class TokopediaCollector(BaseCollector):
     def __init__(self):
         super().__init__("tokopedia")
         self.base_url = "https://www.tokopedia.com"
+        self.playwright = None
+        self.browser = None
+        self.context = None
     
-    async def scrape_product(self, product_url: str) -> Optional[Dict[str, Any]]:
-        """Extract product data from Tokopedia 2026 page"""
-        
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
+    async def _ensure_browser(self):
+        """Initialize browser if not already running"""
+        if self.browser is None:
+            from playwright.async_api import async_playwright
+            
+            self.playwright = await async_playwright().start()
+            self.browser = await self.playwright.chromium.launch(
                 headless=False,  # Visible browser via XVFB
                 args=[
                     '--disable-blink-features=AutomationControlled',
@@ -38,49 +43,66 @@ class TokopediaCollector(BaseCollector):
                 ]
             )
             
-            context = await browser.new_context(
+            self.context = await self.browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 viewport={'width': 1920, 'height': 1080},
                 locale='id-ID',
                 timezone_id='Asia/Jakarta',
             )
             
-            page = await context.new_page()
+            logger.info("Browser initialized successfully")
+    
+    async def close(self):
+        """Close browser and cleanup resources"""
+        if self.context:
+            await self.context.close()
+        if self.browser:
+            await self.browser.close()
+        if self.playwright:
+            await self.playwright.stop()
+        logger.info("Browser closed")
+    
+    async def scrape_product(self, product_url: str) -> Optional[Dict[str, Any]]:
+        """Extract product data from Tokopedia 2026 page"""
+        
+        await self._ensure_browser()
+        
+        page = await self.context.new_page()
+        
+        # Anti-detection
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => false,
+            });
+        """)
+        
+        try:
+            logger.info(f"Navigating to {product_url}")
+            await page.goto(product_url, wait_until="domcontentloaded", timeout=30000)
+            await page.wait_for_timeout(random.randint(2000, 4000))
             
-            # Anti-detection
-            await page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', {
-                    get: () => false,
-                });
-            """)
+            # Strategy 1: Extract from embedded JSON (most reliable)
+            product_data = await self._extract_from_json(page)
             
-            try:
-                logger.info(f"Navigating to {product_url}")
-                await page.goto(product_url, wait_until="domcontentloaded", timeout=30000)
-                await page.wait_for_timeout(random.randint(2000, 4000))
-                
-                # Strategy 1: Extract from embedded JSON (most reliable)
-                product_data = await self._extract_from_json(page)
-                
-                # Strategy 2: Fallback to DOM selectors if JSON fails
-                if not product_data:
-                    logger.warning("JSON extraction failed, falling back to DOM selectors")
-                    product_data = await self._extract_from_dom(page)
-                
-                if product_data:
-                    product_data['url'] = product_url
-                    product_data['marketplace'] = 'tokopedia'
-                    logger.info(f"Successfully extracted: {product_data.get('name', 'Unknown')}")
-                    return product_data
-                else:
-                    logger.error("Failed to extract product data")
-                    return None
-                    
-            except Exception as e:
-                logger.error(f"Scraping error: {e}")
+            # Strategy 2: Fallback to DOM selectors if JSON fails
+            if not product_data:
+                logger.warning("JSON extraction failed, falling back to DOM selectors")
+                product_data = await self._extract_from_dom(page)
+            
+            if product_data:
+                product_data['url'] = product_url
+                product_data['marketplace'] = 'tokopedia'
+                logger.info(f"Successfully extracted: {product_data.get('name', 'Unknown')}")
+                return product_data
+            else:
+                logger.error("Failed to extract product data")
                 return None
-            finally:
-                await browser.close()
+                
+        except Exception as e:
+            logger.error(f"Scraping error: {e}")
+            return None
+        finally:
+            await page.close()
     
     async def _extract_from_json(self, page: Page) -> Optional[Dict[str, Any]]:
         """Extract product data from embedded JSON in script tags"""
