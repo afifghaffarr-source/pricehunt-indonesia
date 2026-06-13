@@ -47,19 +47,34 @@ export function VexoImageFallback({
     let cancelled = false;
 
     async function fetchImage() {
+      // 1) Try VexoAPI first
       try {
         const res = await fetch(`/api/vexo/images?q=${encodeURIComponent(productName)}&limit=1`);
         const data = await res.json();
-
         if (cancelled) return;
-
         if (data.results?.length > 0 && data.results[0].imageUrl) {
           setSrc(data.results[0].imageUrl);
           setImageError(false);
+          return;
         }
       } catch {
-        // fallback stays
+        // continue to fallback
       }
+
+      // 2) Fallback to Unsplash Source (free, no API key)
+      if (cancelled) return;
+      const keywords = productName
+        .replace(/[^\w\s]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !['the','and','for','with','gen','rgb','inch','new','m2','m3','m1','core','ultra'].includes(w.toLowerCase()))
+        .slice(0, 3)
+        .join(',');
+      if (keywords) {
+        // Use Lorem Picsum as stable free placeholder (always returns valid image)
+        setSrc(`https://picsum.photos/seed/${encodeURIComponent(keywords)}/600/600`);
+        setImageError(false);
+      }
+
       setTriedVexo(true);
     }
 
