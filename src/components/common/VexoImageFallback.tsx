@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { Package } from "lucide-react";
 
 interface VexoImageFallbackProps {
   productName: string;
-  fallbackSrc: string;
+  fallbackSrc?: string;
   alt: string;
   fill?: boolean;
   width?: number;
@@ -26,12 +27,14 @@ export function VexoImageFallback({
   sizes,
   priority,
 }: VexoImageFallbackProps) {
-  const [src, setSrc] = useState(fallbackSrc);
+  const [src, setSrc] = useState(fallbackSrc || "");
   const [triedVexo, setTriedVexo] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  // Enhanced detection: placeholder URLs or sample/test URLs
+  // Enhanced detection: placeholder URLs, sample/test URLs, or empty
   const isPlaceholderOrInvalid = 
+    !fallbackSrc ||
+    fallbackSrc === "" ||
     fallbackSrc.includes("placehold.co") || 
     fallbackSrc.includes("/sample/") ||
     fallbackSrc.includes("/test/") ||
@@ -52,7 +55,7 @@ export function VexoImageFallback({
 
         if (data.results?.length > 0 && data.results[0].imageUrl) {
           setSrc(data.results[0].imageUrl);
-          setImageError(false); // Reset error state
+          setImageError(false);
         }
       } catch {
         // fallback stays
@@ -65,14 +68,22 @@ export function VexoImageFallback({
   }, [productName, isPlaceholderOrInvalid, triedVexo]);
 
   const handleError = () => {
-    // Mark error and trigger VexoAPI fetch if not tried yet
     if (!imageError) {
       setImageError(true);
       if (!triedVexo) {
-        setTriedVexo(false); // Reset to trigger useEffect
+        setTriedVexo(false);
       }
     }
   };
+
+  // No image available - show placeholder
+  if (!src || src === "" || (imageError && triedVexo)) {
+    return (
+      <div className={`flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 ${className || ""}`}>
+        <Package className="h-16 w-16 text-muted-foreground/30" />
+      </div>
+    );
+  }
 
   if (fill) {
     return (

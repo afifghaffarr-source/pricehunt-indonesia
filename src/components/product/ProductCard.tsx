@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DealScoreBadge } from "./DealScoreBadge";
 import { formatRupiah, getDiscountPercent } from "@/lib/utils";
 import type { Product } from "@/lib/types";
-import { TrendingDown } from "lucide-react";
+import { TrendingDown, Package } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
@@ -19,13 +19,19 @@ export function ProductCard({ product }: ProductCardProps) {
     <Link href={`/product/${product.slug}`}>
       <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/50">
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-muted to-muted/50">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          />
+          {product.imageUrl ? (
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+              <Package className="h-16 w-16 text-muted-foreground/30" />
+            </div>
+          )}
           {/* Gradient overlay on hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           
