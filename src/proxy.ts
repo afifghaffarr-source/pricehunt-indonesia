@@ -104,6 +104,18 @@ export function proxy(request: NextRequest) {
     const requiresCSRF = CSRF_PROTECTED_PATHS.some(path => pathname.startsWith(path));
     
     if (requiresCSRF) {
+      // Allow requests with valid INGESTION_SECRET (for Python collector)
+      const authHeader = request.headers.get('authorization');
+      const expectedSecret = process.env.INGESTION_SECRET;
+      
+      if (authHeader && expectedSecret) {
+        const token = authHeader.replace('Bearer ', '');
+        if (token === expectedSecret) {
+          // Valid INGESTION_SECRET - bypass CSRF check
+          return response;
+        }
+      }
+      
       const csrfToken = request.headers.get('x-csrf-token');
       const sessionToken = request.cookies.get('csrf-token')?.value;
       
