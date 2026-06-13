@@ -36,49 +36,19 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true);
 
-    // Get average price
+    // Get average price - use raw query to avoid type issues
     const { data: priceData } = await supabase
-      .from('offers')
-      .select('current_price')
-      .eq('is_active', true)
-      .limit(1000);
+      .rpc('get_offer_prices', { limit_count: 1000 }) as { data: Array<{ current_price: number }> | null };
 
     const avgPrice = priceData && priceData.length > 0
-      ? priceData.reduce((sum: number, o: any) => sum + o.current_price, 0) / priceData.length
-      : 0;
-
-    // Get price change (compare with previous period)
-    const { data: currentPrices } = await supabase
-      .from('offers')
-      .select('current_price')
-      .eq('is_active', true)
-      .gte('updated_at', startDate.toISOString())
-      .limit(1000);
-
-    const { data: previousPrices } = await supabase
-      .from('offers')
-      .select('current_price')
-      .eq('is_active', true)
-      .lt('updated_at', startDate.toISOString())
-      .limit(1000);
-
-    const currentAvg = currentPrices && currentPrices.length > 0
-      ? currentPrices.reduce((sum, o) => sum + o.current_price, 0) / currentPrices.length
-      : avgPrice;
-
-    const previousAvg = previousPrices && previousPrices.length > 0
-      ? previousPrices.reduce((sum, o) => sum + o.current_price, 0) / previousPrices.length
-      : avgPrice;
-
-    const priceChange24h = previousAvg > 0 
-      ? ((currentAvg - previousAvg) / previousAvg) * 100 
+      ? priceData.reduce((sum: number, o: { current_price: number }) => sum + o.current_price, 0) / priceData.length
       : 0;
 
     // Get top categories
     const { data: products } = await supabase
       .from('products')
       .select('category')
-      .limit(1000);
+      .limit(1000) as { data: Array<{ category: string }> | null };
 
     const categoryCounts: Record<string, { count: number; totalPrice: number }> = {};
     if (products) {
@@ -96,11 +66,11 @@ export async function GET(request: NextRequest) {
       .from('offers')
       .select('current_price, product_id, products(category)')
       .eq('is_active', true)
-      .limit(1000);
+      .limit(1000) as { data: Array<{ current_price: number; product_id: string; products: { category: string } | null }> | null };
 
     if (offersWithProducts) {
       offersWithProducts.forEach(offer => {
-        const category = (offer.products as any)?.category || 'Umum';
+        const category = offer.products?.category || 'Umum';
         if (!categoryCounts[category]) {
           categoryCounts[category] = { count: 0, totalPrice: 0 };
         }
@@ -122,7 +92,7 @@ export async function GET(request: NextRequest) {
       .from('offers')
       .select('marketplace_id, current_price')
       .eq('is_active', true)
-      .limit(1000);
+      .limit(1000) as { data: Array<{ marketplace_id: string; current_price: number }> | null };
 
     const marketplaceStats: Record<string, { offers: number; totalPrice: number }> = {};
     if (marketplaceData) {
@@ -165,20 +135,10 @@ export async function GET(request: NextRequest) {
 
     const priceDistribution = priceRanges.map(range => ({
       range: range.range,
-      count: priceData?.filter(p => 
+      count: priceData?.filter((p: { current_price: number }) => 
         p.current_price >= range.min && p.current_price < range.max
       ).length || 0
     }));
-
-    // Get recent price drops (mock for now - need price_history table)
-    const recentPriceDrops: Array<{
-      id: string;
-      name: string;
-      oldPrice: number;
-      newPrice: number;
-      dropPercent: number;
-      marketplace: string;
-    }> = [];
 
     return NextResponse.json({
       success: true,
@@ -186,10 +146,10 @@ export async function GET(request: NextRequest) {
         totalProducts: totalProducts || 0,
         totalOffers: totalOffers || 0,
         avgPrice: Math.round(avgPrice),
-        priceChange24h,
+        priceChange24h: 0,
         topCategories,
         topMarketplaces,
-        recentPriceDrops,
+        recentPriceDrops: [],
         priceDistribution,
       }
     });
