@@ -8,9 +8,14 @@ import sys
 import os
 from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Load .env.local from project root
+env_path = Path(__file__).parent.parent / '.env.local'
+load_dotenv(env_path)
 
 # Set DISPLAY for XVFB
 os.environ['DISPLAY'] = ':99'
@@ -22,6 +27,8 @@ import requests
 # Config
 SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL', 'https://siwmmzzhfzfndfmbbyvj.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+INGESTION_SECRET = os.getenv('INGESTION_SECRET', '')
+API_URL = os.getenv('NEXT_PUBLIC_API_URL', 'https://www.bijakbeli.app')
 BATCH_SIZE = 20  # Process 20 URLs per cron run
 DELAY_BETWEEN = 3  # Seconds between requests
 
@@ -134,10 +141,10 @@ async def main():
             
             # Ingest to API
             ingest_response = requests.post(
-                f"{cfg.pricehunt_api_url}/api/ingestion/offer-snapshot",
+                f"{API_URL}/api/ingestion/offer-snapshot",
                 headers={
                     "Content-Type": "application/json",
-                    "X-Ingestion-Secret": cfg.ingestion_secret
+                    "Authorization": f"Bearer {INGESTION_SECRET}"
                 },
                 json=offer_data,
                 timeout=30
@@ -215,7 +222,14 @@ async def main():
         if i < len(targets):
             await asyncio.sleep(DELAY_BETWEEN)
     
-    await collector.close()
+    # Close collector (if method exists)
+    if hasattr(collector, 'close') and callable(collector.close):
+        try:
+            close_result = collector.close()
+            if asyncio.iscoroutine(close_result):
+                await close_result
+        except:
+            pass
     
     # Summary
     print(f"\n{'='*60}")

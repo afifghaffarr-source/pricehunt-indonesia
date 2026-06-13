@@ -3,13 +3,20 @@ Configuration loader for PriceHunt collectors.
 Uses pydantic-settings to load and validate environment variables.
 """
 
-from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator, AliasChoices
 from typing import Literal
 
 
 class Config(BaseSettings):
     """Application configuration loaded from environment variables."""
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra='ignore'
+    )
     
     # BijakBeli API
     pricehunt_api_url: str = Field(
@@ -23,8 +30,16 @@ class Config(BaseSettings):
     )
     
     # Supabase
-    supabase_url: str = Field(..., description="Supabase project URL")
-    supabase_key: str = Field(..., description="Supabase anon/public key")
+    supabase_url: str = Field(
+        ...,
+        validation_alias=AliasChoices('supabase_url', 'NEXT_PUBLIC_SUPABASE_URL'),
+        description="Supabase project URL"
+    )
+    supabase_key: str = Field(
+        ...,
+        validation_alias=AliasChoices('supabase_key', 'SUPABASE_SERVICE_ROLE_KEY'),
+        description="Supabase service role key"
+    )
     
     # Collector Settings
     collector_name: str = Field(
@@ -101,11 +116,6 @@ class Config(BaseSettings):
             if v < info.data["request_delay_min"]:
                 raise ValueError("request_delay_max must be >= request_delay_min")
         return v
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
 
 
 # Global config instance
