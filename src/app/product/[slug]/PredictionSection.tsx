@@ -29,10 +29,14 @@ export function PredictionSection({ productId }: PredictionSectionProps) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
     fetch("/api/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ productId }),
+      signal: controller.signal,
     })
       .then((res) => res.json())
       .then((data) => {
@@ -42,8 +46,21 @@ export function PredictionSection({ productId }: PredictionSectionProps) {
           setError(true);
         }
       })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.warn("Prediction fetch failed:", err);
+        }
+        setError(true);
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        setLoading(false);
+      });
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [productId]);
 
   if (loading) {

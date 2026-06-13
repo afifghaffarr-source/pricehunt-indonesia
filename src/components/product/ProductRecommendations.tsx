@@ -21,6 +21,7 @@ export async function ProductRecommendations({
     .select("id, slug, name, image_url, lowest_price, deal_score, category")
     .eq("category", category)
     .neq("id", currentProductId)
+    .gt("lowest_price", 0)  // Filter out products without prices
     .order("deal_score", { ascending: false })
     .limit(4);
 
@@ -29,6 +30,7 @@ export async function ProductRecommendations({
       .from("products")
       .select("id, slug, name, image_url, lowest_price, deal_score, category")
       .neq("id", currentProductId)
+      .gt("lowest_price", 0)  // Filter out products without prices
       .order("deal_score", { ascending: false })
       .limit(4);
 

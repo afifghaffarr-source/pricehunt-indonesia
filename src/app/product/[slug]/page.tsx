@@ -463,6 +463,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         />
 
         {/* 15. PRODUCT DETAILS - Expandable specs & sharing */}
+        {Object.keys(product.specs).length > 0 && (
         <div className="rounded-xl border bg-muted/30 p-6">
           <h3 className="mb-4 text-lg font-bold">Detail Produk</h3>
           
@@ -488,6 +489,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             />
           </div>
         </div>
+        )}
       </div>
 
       {/* Mobile Sticky Action Bar - Quick access to key actions */}

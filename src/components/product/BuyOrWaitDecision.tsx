@@ -58,6 +58,9 @@ export function BuyOrWaitDecision({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
     async function fetchRecommendation() {
       try {
         const response = await fetch("/api/recommendation/buy-or-wait", {
@@ -79,6 +82,7 @@ export function BuyOrWaitDecision({
             campaignName,
             priceVolatility,
           }),
+          signal: controller.signal,
         });
 
         if (response.ok) {
@@ -86,13 +90,21 @@ export function BuyOrWaitDecision({
           setRecommendation(data);
         }
       } catch (error) {
-        console.error("Failed to fetch recommendation:", error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error("Failed to fetch recommendation:", error);
+        }
       } finally {
+        clearTimeout(timeout);
         setIsLoading(false);
       }
     }
 
     fetchRecommendation();
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [
     currentPrice,
     originalPrice,

@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const currentDate = new Date();
 
-    // Build query
+    // Build query - include prices to calculate lowest_price if needed
     let query = supabase
       .from('products')
       .select(`
@@ -130,8 +130,7 @@ export async function GET(request: NextRequest) {
           recorded_at
         )
       `)
-      .not('lowest_price', 'is', null)
-      .order('lowest_price', { ascending: true });
+      .order('created_at', { ascending: false });
 
     // Apply category filter if provided
     if (category) {
@@ -154,14 +153,27 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate deal scores with real historical data
-    const productsWithScores = products.map((product: any) => {
-      // Get best offer (lowest price with highest seller rating)
-      const bestOffer = product.prices
-        .filter((p: any) => p.in_stock)
-        .sort((a: any, b: any) => {
-          if (a.price !== b.price) return a.price - b.price;
-          return (b.seller_rating || 0) - (a.seller_rating || 0);
-        })[0];
+    const productsWithScores = products
+      .filter((product: any) => {
+        // Only include products that have at least one in-stock price
+        const inStockPrices = (product.prices || []).filter((p: any) => p.in_stock && p.price > 0);
+        return inStockPrices.length > 0;
+      })
+      .map((product: any) => {
+        // Get in-stock prices
+        const inStockPrices = (product.prices || [])
+          .filter((p: any) => p.in_stock && p.price > 0)
+          .sort((a: any, b: any) => a.price - b.price);
+        
+        // Calculate lowest price from actual prices if stored value is null/0
+        const calculatedLowestPrice = inStockPrices.length > 0 
+          ? inStockPrices[0].price 
+          : 0;
+        
+        const lowestPrice = product.lowest_price || calculatedLowestPrice;
+        
+        // Get best offer (lowest price with highest seller rating)
+        const bestOffer = inStockPrices[0];
 
       // Calculate historical statistics
       const stats = calculateHistoricalStats(
@@ -171,7 +183,7 @@ export async function GET(request: NextRequest) {
 
       // Build deal score input
       const dealScoreInput: DealScoreInput = {
-        currentPrice: product.lowest_price || 0,
+        currentPrice: lowestPrice,
         median30Day: stats.median30Day || undefined,
         median90Day: stats.median90Day || undefined,
         lowestHistoricalPrice: stats.lowestHistoricalPrice || undefined,
@@ -192,8 +204,8 @@ export async function GET(request: NextRequest) {
         slug: product.slug,
         image_url: product.image_url,
         category: product.category,
-        lowest_price: product.lowest_price,
-        marketplace_count: product.prices?.length || 0,
+        lowest_price: lowestPrice,
+        marketplace_count: inStockPrices.length,
         best_marketplace: bestOffer?.marketplaces?.display_name || null,
         deal_score: dealScore.score,
         deal_label: dealScore.label,

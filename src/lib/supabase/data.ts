@@ -13,6 +13,44 @@ function escapeILIKEPattern(value: string): string {
 }
 
 function transformProduct(row: Record<string, unknown>): Product {
+  // Calculate prices from joined data if available
+  const pricesData = (row.prices as Record<string, unknown>[]) || [];
+  const inStockPrices = pricesData
+    .filter((p) => p.in_stock === true && typeof p.price === 'number' && p.price > 0)
+    .map((p) => p.price as number);
+  
+  // Use stored values or calculate from prices
+  const lowestPrice = (row.lowest_price as number) || (inStockPrices.length > 0 ? Math.min(...inStockPrices) : 0);
+  const highestPrice = (row.highest_price as number) || (inStockPrices.length > 0 ? Math.max(...inStockPrices) : 0);
+  const averagePrice = (row.average_price as number) || (inStockPrices.length > 0 ? Math.round(inStockPrices.reduce((a, b) => a + b, 0) / inStockPrices.length) : 0);
+  
+  // Calculate deal score if not stored
+  let dealScore = (row.deal_score as number) || 0;
+  if (dealScore === 0 && inStockPrices.length > 0) {
+    // Simple deal score based on price variance and availability
+    const priceRange = highestPrice - lowestPrice;
+    const hasVariation = priceRange > 0;
+    const marketplaceCount = inStockPrices.length;
+    
+    // Base score from marketplace availability (0-40)
+    let score = Math.min(marketplaceCount * 8, 40);
+    
+    // Bonus for price variation (0-30) - more variation = better deals possible
+    if (hasVariation && lowestPrice > 0) {
+      const variationPercent = (priceRange / lowestPrice) * 100;
+      score += Math.min(Math.round(variationPercent), 30);
+    }
+    
+    // Bonus for competitive pricing (0-30)
+    if (marketplaceCount >= 3) {
+      score += 20; // Multiple sellers = competitive
+    } else if (marketplaceCount >= 2) {
+      score += 10;
+    }
+    
+    dealScore = Math.min(score, 100);
+  }
+
   return {
     id: row.id as string,
     slug: row.slug as string,
@@ -22,10 +60,10 @@ function transformProduct(row: Record<string, unknown>): Product {
     imageUrl: (row.image_url as string) || "https://placehold.co/400x400/e2e8f0/64748b?text=Product",
     prices: [],
     priceHistory: [],
-    lowestPrice: (row.lowest_price as number) || 0,
-    highestPrice: (row.highest_price as number) || 0,
-    averagePrice: (row.average_price as number) || 0,
-    dealScore: (row.deal_score as number) || 0,
+    lowestPrice,
+    highestPrice,
+    averagePrice,
+    dealScore,
     aiVerdict: (row.ai_verdict as string) || "",
     specs: (row.specs as Record<string, string>) || {},
   };

@@ -20,6 +20,8 @@ export function VexoProductSummary({ productName, category, specs }: VexoProduct
     fetchedRef.current = true;
 
     let cancelled = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
     async function fetchSummary() {
       const specsText = Object.entries(specs)
@@ -34,20 +36,32 @@ export function VexoProductSummary({ productName, category, specs }: VexoProduct
             intent: "product-summary",
             context: `${productName} (${category}). Spesifikasi: ${specsText}`,
           }),
+          signal: controller.signal,
         });
         const data = await res.json();
 
         if (!cancelled && data.result) {
           setSummary(data.result);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        // Timeout or error - don't show loading forever
+        if (!cancelled) {
+          console.warn("Product summary fetch failed:", err);
+        }
+      } finally {
+        if (!cancelled) {
+          clearTimeout(timeout);
+          setLoading(false);
+        }
       }
-      if (!cancelled) setLoading(false);
     }
 
     fetchSummary();
-    return () => { cancelled = true; };
+    return () => { 
+      cancelled = true;
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [productName, category, specs]);
 
   if (loading) {
