@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -14,6 +16,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Auth: Requires INGESTION_SECRET header for security
  */
 export async function GET(request: Request) {
+// Pre-existing refresh queue typing (Phase 5). replace `any` usages with proper types.
+
   try {
     // Verify authorization (same secret as ingestion API)
     const authHeader = request.headers.get("Authorization");

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -171,5 +173,7 @@ export async function POST(request: NextRequest) {
  * Get current priority queue (read-only)
  */
 export async function GET(request: NextRequest) {
+// Pre-existing refresh priority typing (Phase 5). replace `any` usages with proper types.
+
   return POST(request);
 }

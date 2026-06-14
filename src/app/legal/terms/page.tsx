@@ -143,9 +143,9 @@ export default function TermsOfServicePage() {
         <section className="mt-8">
           <h2 className="text-2xl font-semibold mb-4">9. Disclaimer dan Batasan Tanggung Jawab</h2>
           
-          <h3 className="text-xl font-semibold mt-4 mb-2">9.1 "AS IS" Basis</h3>
+          <h3 className="text-xl font-semibold mt-4 mb-2">9.1 &quot;AS IS&quot; Basis</h3>
           <p>
-            Layanan disediakan <strong>"sebagaimana adanya"</strong> tanpa jaminan apapun, 
+            Layanan disediakan <strong>&quot;sebagaimana adanya&quot;</strong> tanpa jaminan apapun, 
             baik tersurat maupun tersirat.
           </p>
 

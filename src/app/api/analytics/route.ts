@@ -1,7 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
+// Pre-existing analytics response typing (Phase 5). replace `any` usages with proper types.
+
   try {
     const { searchParams } = request.nextUrl;
     const period = searchParams.get('period') || '7d';

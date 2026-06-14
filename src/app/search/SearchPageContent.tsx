@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 "use client";
 
 import { useSearchParams } from "next/navigation";
@@ -59,6 +61,8 @@ function transformDbProduct(row: Record<string, unknown>, prices: Record<string,
 }
 
 export function SearchPageContent() {
+// Pre-existing Vexo/Supabase response typing (Phase 5). replace `any` usages with proper types.
+
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || "";

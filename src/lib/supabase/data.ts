@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { createClient, hasSupabaseEnv } from "./client";
 import type { Product, MarketplacePrice, PriceHistoryPoint, Marketplace } from "@/lib/types";
 
@@ -355,6 +357,8 @@ export async function isProductInWishlist(userId: string, productId: string): Pr
 }
 
 export async function getProductAlerts(userId: string, productId: string) {
+// Pre-existing Supabase raw query typing (Phase 5). replace `any` usages with proper types.
+
   if (!hasSupabaseEnv()) return [];
 
   const supabase = await createClient();

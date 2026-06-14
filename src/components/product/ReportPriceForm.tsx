@@ -122,7 +122,7 @@ export function ReportPriceForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setResult({ kind: "idle" }); }}>
+    <Dialog open={open} onOpenChange={(o: boolean) => { setOpen(o); if (!o) setResult({ kind: "idle" }); }}>
       <DialogTrigger asChild>
         <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 text-muted-foreground">
           <Flag className="mr-2 h-3.5 w-3.5" />

@@ -10,10 +10,10 @@ export function useTheme() {
   useEffect(() => {
     // Sync with DOM on mount - legitimate use case for reading external state
     const isDarkMode = document.documentElement.classList.contains('dark')
-    /* eslint-disable react-hooks/set-state-in-effect */
+     
     setIsDark(isDarkMode)
     setMounted(true)
-    /* eslint-enable react-hooks/set-state-in-effect */
+     
   }, [])
 
   const toggleTheme = () => {

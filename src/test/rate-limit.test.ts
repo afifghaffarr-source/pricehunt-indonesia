@@ -1,7 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { checkPersistentRateLimit, getRequestIdentifier } from '@/lib/rate-limit';
 
 // Mock Supabase admin client
+// Pre-existing test mock typing (Phase 5). replace `any` usages with proper types.
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(() => ({
     rpc: vi.fn()

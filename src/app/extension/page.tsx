@@ -105,8 +105,8 @@ export default function ExtensionPage() {
             </div>
             <p className="text-sm font-medium text-foreground">Critical Database Error Fix</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>• Fixed "API error: 500 - OFFER_UPSERT_FAILED"</li>
-              <li>• Changed source value: 'chrome-extension' → 'extension_snapshot'</li>
+              <li>&bull; Fixed &quot;API error: 500 - OFFER_UPSERT_FAILED&quot;</li>
+              <li>&bull; Changed source value: &apos;chrome-extension&apos; → &apos;extension_snapshot&apos;</li>
               <li>• Database CHECK constraint now accepts the correct value</li>
             </ul>
             <p className="mt-2 text-xs text-red-600">
@@ -120,7 +120,7 @@ export default function ExtensionPage() {
             </div>
             <p className="text-sm font-medium text-muted-foreground">Critical Bug Fix</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>• Fixed "Failed to fetch" error saat klik button</li>
+              <li>&bull; Fixed &quot;Failed to fetch&quot; error saat klik button</li>
               <li>• Manifest V3 CORS issue resolved via message passing</li>
               <li>• API calls sekarang via background worker (lebih stabil)</li>
             </ul>
@@ -269,7 +269,7 @@ export default function ExtensionPage() {
                 Enable <strong>Developer mode</strong> (toggle kanan atas)
               </p>
               <p className="text-sm text-muted-foreground">
-                Klik <strong>"Load unpacked"</strong> → pilih folder <code className="rounded bg-muted px-1 py-0.5">chrome/</code>
+                Klik <strong>&quot;Load unpacked&quot;</strong> → pilih folder <code className="rounded bg-muted px-1 py-0.5">chrome/</code>
               </p>
             </CardContent>
           </Card>

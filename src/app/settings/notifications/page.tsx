@@ -69,7 +69,7 @@ export default function NotificationSettingsPage() {
 
   useEffect(() => {
     // Data fetching on mount is a legitimate use case for setState in effects
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+     
     loadPreferences();
   }, [loadPreferences]);
 

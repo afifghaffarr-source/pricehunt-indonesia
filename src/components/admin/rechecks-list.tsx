@@ -54,7 +54,7 @@ export function RechecksList() {
 
   useEffect(() => {
     loadRechecks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const updateStatus = async (recheckId: string, status: "completed" | "rejected") => {

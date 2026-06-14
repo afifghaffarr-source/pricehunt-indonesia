@@ -58,7 +58,7 @@ export function ConflictsList() {
 
   useEffect(() => {
     loadConflicts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const resolveConflict = async (conflictId: string, keepOfferId: string) => {

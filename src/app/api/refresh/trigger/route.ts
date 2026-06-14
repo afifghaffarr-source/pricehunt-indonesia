@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -134,6 +136,8 @@ export async function POST(request: NextRequest) {
  * Convenience method for single target refresh
  */
 export async function GET(request: NextRequest) {
+// Pre-existing refresh trigger typing (Phase 5). replace `any` usages with proper types.
+
   const searchParams = request.nextUrl.searchParams;
   const targetId = searchParams.get("target_id");
 

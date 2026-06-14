@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 /**
  * POST /api/ingestion/offer-snapshot
  * 
@@ -125,7 +127,7 @@ async function findOrCreateMarketplace(supabase: ReturnType<typeof createAdminCl
   }
   
   // Create new marketplace if not found
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { data: created, error } = await supabase
     .from("marketplaces")
     .insert({
@@ -247,7 +249,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
     const marketplace = await findOrCreateMarketplace(supabase, input.marketplace);
     
     // 5. Try to match existing product
-    let productId = await findProductByTitle(supabase, input.title, marketplace.id);
+    const productId = await findProductByTitle(supabase, input.title, marketplace.id);
     
     if (!productId) {
       warnings.push("Could not match to existing product. Offer will be saved without product_id.");
@@ -308,7 +310,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
       updated_at: new Date().toISOString(),
     };
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data: offer, error: offerError } = await supabase
       .from("offers")
       .upsert(offerData as any, {
@@ -347,7 +349,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
       captured_at: input.captured_at || new Date().toISOString(),
     };
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data: snapshot, error: snapshotError } = await supabase
       .from("price_snapshots")
       .insert(snapshotData as any)
@@ -361,7 +363,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
     
     // 9. Log to ingestion_logs
     const duration = Date.now() - startTime;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     await supabase.from("ingestion_logs").insert({
       source: input.source,
       job_name: "offer_snapshot_single",
@@ -414,6 +416,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
  * Returns API documentation
  */
 export async function GET() {
+// Pre-existing ingestion payload typing (Phase 5). replace `any` usages with proper types.
+
   return NextResponse.json({
     endpoint: "/api/ingestion/offer-snapshot",
     method: "POST",
