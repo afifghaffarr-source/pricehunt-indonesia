@@ -9,7 +9,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/auth";
 import { z } from "@/lib/validation";
+import { logAdminAction } from "@/lib/admin-audit";
 
 const resolveSchema = z.object({
   conflict_id: z.string({ minLength: 1, maxLength: 64 }),
@@ -57,6 +59,22 @@ export async function POST(request: NextRequest) {
     console.error("resolve conflict error", error);
     return NextResponse.json({ success: false, error: "Failed to resolve conflict" }, { status: 500 });
   }
+
+  // Best-effort audit log. NEVER throws to caller. requireAdmin has
+  // already verified the caller is admin, so the user is non-null.
+  const actor = await getUser();
+  await logAdminAction({
+    actorId: actor?.id ?? null,
+    actorEmail: actor?.email ?? null,
+    action: "resolve_conflict",
+    targetType: "price_conflict",
+    targetId: input.conflict_id,
+    metadata: {
+      has_keep_offer: !!input.keep_offer_id,
+      has_note: !!input.resolution_note,
+    },
+    request,
+  });
 
   return NextResponse.json({ success: true, message: "Conflict resolved successfully" });
 }

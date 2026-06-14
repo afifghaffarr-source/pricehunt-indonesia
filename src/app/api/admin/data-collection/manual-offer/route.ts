@@ -12,7 +12,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getUser } from "@/lib/supabase/auth";
 import { z } from "@/lib/validation";
+import { logAdminAction } from "@/lib/admin-audit";
 
 const manualOfferSchema = z.object({
   product_id: z.optionalUuid(),
@@ -76,6 +78,24 @@ export async function POST(request: NextRequest) {
       console.error("manual-offer update error", error);
       return NextResponse.json({ error: "Failed to update offer" }, { status: 500 });
     }
+
+    // requireAdmin has already verified the caller.
+    const actor = await getUser();
+    await logAdminAction({
+      actorId: actor?.id ?? null,
+      actorEmail: actor?.email ?? null,
+      action: "manual_offer_update",
+      targetType: "offer",
+      targetId: input.offer_id,
+      metadata: {
+        marketplace: input.marketplace,
+        product_id: input.product_id,
+        price: input.price,
+        currency: input.currency ?? "IDR",
+      },
+      request,
+    });
+
     return NextResponse.json({ ok: true, offer_id: input.offer_id });
   }
 
@@ -107,5 +127,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create offer" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, offer_id: (data as { id?: string } | null)?.id });
+  const newOfferId = (data as { id?: string } | null)?.id ?? null;
+
+  // requireAdmin has already verified the caller.
+  const actor = await getUser();
+  await logAdminAction({
+    actorId: actor?.id ?? null,
+    actorEmail: actor?.email ?? null,
+    action: "manual_offer_create",
+    targetType: "offer",
+    targetId: newOfferId,
+    metadata: {
+      marketplace: input.marketplace,
+      product_id: input.product_id,
+      price: input.price,
+      currency: input.currency ?? "IDR",
+    },
+    request,
+  });
+
+  return NextResponse.json({ ok: true, offer_id: newOfferId });
 }

@@ -1,0 +1,130 @@
+/**
+ * Admin audit log helper.
+ *
+ * Phase 9 hardening. Provides a best-effort writer for the
+ * `admin_audit_log` table (migration 125).
+ *
+ * Design:
+ * - Best-effort: NEVER throws to the caller. If the DB write fails, the
+ *   failure is logged to the server console but the admin action still
+ *   succeeds. The audit log is observability, not a gate.
+ * - Uses the service-role client to bypass RLS — admin_audit_log is
+ *   locked down for non-service roles.
+ * - Strips potentially sensitive fields from request headers before
+ *   persisting.
+ * - Stable JSON: input is shallow-cloned to keep metadata BoundedJson.
+ */
+
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export type AdminAuditAction =
+  | "resolve_conflict"
+  | "manual_offer_upsert"
+  | "manual_offer_create"
+  | "manual_offer_update"
+  | "recheck_dispatch"
+  | "recheck_decision"
+  | "admin_login"
+  | "admin_promote"
+  | "admin_demote";
+
+export interface AdminAuditInput {
+  actorId: string | null;
+  actorEmail: string | null;
+  action: AdminAuditAction | string;
+  targetType?: string | null;
+  targetId?: string | null;
+  metadata?: Record<string, unknown>;
+  request?: Request | null;
+}
+
+const MAX_META_KEYS = 32;
+const MAX_META_STR = 1000;
+const MAX_UA = 240;
+const MAX_IP = 64;
+
+function safeString(v: unknown, max: number): string | null {
+  if (typeof v !== "string") return null;
+  const trimmed = v.trim();
+  if (!trimmed) return null;
+  return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
+}
+
+function safeMeta(input: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!input || typeof input !== "object") return {};
+  const out: Record<string, unknown> = {};
+  const entries = Object.entries(input).slice(0, MAX_META_KEYS);
+  for (const [k, v] of entries) {
+    if (typeof k !== "string" || k.length === 0 || k.length > 64) continue;
+    if (v === null || v === undefined) {
+      out[k] = null;
+      continue;
+    }
+    if (typeof v === "string") {
+      out[k] = v.length > MAX_META_STR ? v.slice(0, MAX_META_STR) : v;
+      continue;
+    }
+    if (typeof v === "number" || typeof v === "boolean") {
+      out[k] = v;
+      continue;
+    }
+    // Skip functions, symbols, bigints. Coerce arrays/objects to string for safety.
+    try {
+      out[k] = JSON.parse(JSON.stringify(v));
+    } catch {
+      out[k] = String(v).slice(0, MAX_META_STR);
+    }
+  }
+  return out;
+}
+
+function extractRequestContext(request: Request | null | undefined) {
+  if (!request) return { ip: null, userAgent: null, requestId: null };
+
+  const ip =
+    safeString(request.headers.get("x-forwarded-for")?.split(",")[0], MAX_IP) ??
+    safeString(request.headers.get("x-real-ip"), MAX_IP);
+
+  const userAgent = safeString(request.headers.get("user-agent"), MAX_UA);
+  const requestId =
+    safeString(request.headers.get("x-request-id"), 64) ??
+    safeString(request.headers.get("x-vercel-id"), 64);
+
+  return { ip, userAgent, requestId };
+}
+
+/**
+ * Best-effort write to the admin audit log. NEVER throws.
+ */
+export async function logAdminAction(input: AdminAuditInput): Promise<void> {
+  try {
+    const supabase = createAdminClient();
+    const { ip, userAgent, requestId } = extractRequestContext(input.request);
+
+    const row = {
+      actor_id: input.actorId,
+      actor_email: input.actorEmail,
+      action: safeString(input.action, 64) ?? "unknown",
+      target_type: safeString(input.targetType ?? null, 40),
+      target_id: safeString(input.targetId ?? null, 128),
+      metadata: safeMeta(input.metadata),
+      ip,
+      user_agent: userAgent,
+      request_id: requestId,
+    };
+
+    /* eslint-disable @typescript-eslint/ban-ts-comment */
+    // @ts-ignore — admin client type inference limitation on inserts
+    const { error } = await supabase.from("admin_audit_log").insert(row);
+    /* eslint-enable @typescript-eslint/ban-ts-comment */
+
+    if (error) {
+      console.error("[admin-audit] insert failed:", error.message, {
+        action: row.action,
+        target: row.target_id,
+      });
+    }
+  } catch (err) {
+    console.error("[admin-audit] unexpected error:", err);
+  }
+}
