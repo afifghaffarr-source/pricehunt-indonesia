@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "lint:migrations": "node scripts/lint-migrations.mjs",
+    "verify:vercel-prod": "node scripts/verify-vercel-prod.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

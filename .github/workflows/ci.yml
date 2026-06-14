@@ -55,6 +55,26 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Verify Vercel production matches HEAD
+        # Phase 12 safety net: queries the Vercel API to confirm that
+        # the production deployment serving our custom domain
+        # (bijakbeli.app) was built from the same commit as HEAD.
+        # Catches "preview built but never promoted" gaps - the exact
+        # class of bug that hit us on 2026-06-14 with commit cfefb8d.
+        # Defaults to warn-only; set VERCEL_PROD_REQUIRE_MATCH=1 to
+        # fail CI on mismatch. Skipped on PRs (production always
+        # points at main, so the comparison is meaningless on PRs).
+        # If the VERCEL_* secrets are not configured the script logs
+        # a notice and exits 0, so the step is safe to add before
+        # the secrets are set. See docs/DEPLOY_VERIFY.md.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: npm run verify:vercel-prod
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
