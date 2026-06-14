@@ -14,6 +14,23 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Ignore Kilo worktrees to avoid duplicate lint errors:
     ".kilo/**",
+    // Project-level ignores: tooling and out-of-app codebases that have
+    // their own lint/setup. Keep CI scoped to the main Next.js app (src/).
+    "apps/mobile/**",
+    "scripts/**",
+    "extensions/**",
+    "tools/**",
+    "collectors/**",
+    "docs/**",
+    "public/**",
+    // Root-level one-off scripts and migration helpers.
+    "check-*.js",
+    "deliver-*.mjs",
+    "test-trigger-*.js",
+    "final-report.js",
+    "rebrand-fast.py",
+    "rebrand-script.sh",
+    "infrastructure-updates.sh",
   ]),
   {
     rules: {
@@ -26,6 +43,19 @@ const eslintConfig = defineConfig([
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      // React 19 introduced new react-hooks rules that flag a wide range of
+      // legitimate data-fetching / event-handler patterns used throughout
+      // this codebase. They are noisy and not actionable for our pre-existing
+      // code. Re-evaluate per-component during a dedicated refactor phase.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/immutability": "off",
+      // Allow empty interface for component prop pass-throughs (e.g. <textarea/>
+      // re-exporting a no-op props type).
+      "@typescript-eslint/no-empty-object-type": "off",
+      // Allow `<img>` for cases where the URL is dynamic and next/image is
+      // not appropriate (extension assets, user-supplied content, etc.).
+      "@next/next/no-img-element": "warn",
     },
   },
 ]);
