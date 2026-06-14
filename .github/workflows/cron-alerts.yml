@@ -1,0 +1,19 @@
+name: Cron - Price Alerts
+on:
+  schedule:
+    - cron: "0 * * * *"   # every hour, UTC
+  workflow_dispatch:        # lets you trigger manually from the Actions tab
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Hit /api/cron/alerts
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+        run: |
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${PRODUCTION_URL}/api/cron/alerts"
