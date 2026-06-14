@@ -186,10 +186,11 @@ describe("verifyApiKey", () => {
     else process.env.EXTERNAL_API_KEY = ORIGINAL;
   });
 
-  it("returns null when EXTERNAL_API_KEY is not configured (auth check fallback)", () => {
+  it("returns 503 when EXTERNAL_API_KEY is not configured (fail-closed)", () => {
     delete process.env.EXTERNAL_API_KEY;
     const res = verifyApiKey(makeRequest());
-    expect(res).toBeNull();
+    expect(res).not.toBeNull();
+    expect(res!.status).toBe(503);
   });
 
   it("returns 401 when key is wrong", () => {

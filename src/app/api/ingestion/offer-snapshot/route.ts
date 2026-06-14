@@ -62,26 +62,10 @@ interface OfferSnapshotResponse {
   code?: string;
 }
 
-/**
- * CORS headers for Chrome Extension support
- */
-function getCorsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  };
-}
-
-/**
- * OPTIONS handler for CORS preflight
- */
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: getCorsHeaders(),
-  });
-}
+// A-006: CORS is enforced by src/proxy.ts (allowed-origin allowlist).
+// Returning ACAO: * here would let any origin call the ingestion endpoint
+// once the CSRF/INGESTION_SECRET gate is satisfied — proxy already
+// handles preflight + non-preflight headers for /api/ingestion/*.
 
 /**
  * Authenticate request - either INGESTION_SECRET or user session
@@ -191,9 +175,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
           message: auth.error || "Unauthorized",
           code: "UNAUTHORIZED"
         },
-        { 
+        {
           status: 401,
-          headers: getCorsHeaders(),
         }
       );
     }
@@ -210,9 +193,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
           code: "VALIDATION_ERROR",
           warnings: validationResult.error.issues.map(i => `${i.path.join(".")}: ${i.message}`),
         },
-        { 
+        {
           status: 400,
-          headers: getCorsHeaders(),
         }
       );
     }
@@ -389,22 +371,19 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
       confidence_label: confidenceResult.label,
       validation_status: "pending",
       warnings: warnings.length > 0 ? warnings : undefined,
-    }, {
-      headers: getCorsHeaders(),
     });
     
   } catch (error) {
     console.error("[OfferSnapshot] Unexpected error:", error);
     
     return NextResponse.json(
-      {
+      { 
         success: false,
         message: "Internal server error",
         code: "INTERNAL_ERROR",
       },
       { 
         status: 500,
-        headers: getCorsHeaders(),
       }
     );
   }

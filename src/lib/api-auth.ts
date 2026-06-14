@@ -99,15 +99,31 @@ export function verifyCronSecret(request: NextRequest): NextResponse | null {
 
 /**
  * Middleware: Verify API key or bearer token
- * For external API access
+ *
+ * A-009: Was fail-OPEN when EXTERNAL_API_KEY was not configured (returned
+ * null, which routes interpreted as "allow"). That violated the project's
+ * fail-closed posture (verifyCronSecret returns 503 in the same scenario).
+ *
+ * New behavior — consistent with verifyCronSecret:
+ * - If EXTERNAL_API_KEY is not configured → 503 (caller must configure
+ *   the env to use this gate; routes that want to be public should not
+ *   call verifyApiKey at all).
+ * - If env is set but the request lacks a matching x-api-key → 401.
+ * - If env is set and key matches → null (continue).
+ *
+ * Note: no callers in the codebase as of 2026-06-15; this is hardening
+ * for the moment someone wires a route through this gate.
  */
 export function verifyApiKey(request: NextRequest): NextResponse | null {
   const apiKey = request.headers.get("x-api-key");
   const validApiKey = process.env.EXTERNAL_API_KEY;
 
   if (!validApiKey) {
-    // If no API key configured, fall back to auth check
-    return null;
+    console.error("EXTERNAL_API_KEY not configured");
+    return NextResponse.json(
+      { error: "API key verification not configured" },
+      { status: 503 }
+    );
   }
 
   if (apiKey !== validApiKey) {
