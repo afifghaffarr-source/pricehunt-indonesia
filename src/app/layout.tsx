@@ -7,6 +7,7 @@ import { PWARegister } from "@/components/common/PWARegister";
 import { SkipToContent } from "@/components/common/SkipToContent";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { getAppUrl } from "@/lib/app-url";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -14,7 +15,7 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.bijakbeli.app";
+const baseUrl = getAppUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),

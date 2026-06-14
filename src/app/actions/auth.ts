@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAppUrl } from "@/lib/app-url";
 
 export type AuthState = {
   error?: string;
@@ -84,7 +85,7 @@ export async function requestPasswordReset(
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
+    redirectTo: `${getAppUrl()}/auth/reset-password`,
   });
 
   if (error) {

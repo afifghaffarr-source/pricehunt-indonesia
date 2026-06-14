@@ -1,10 +1,11 @@
 import { MetadataRoute } from "next"
 import { createClient } from "@/lib/supabase/server"
+import { getAppUrl } from "@/lib/app-url"
 
 export const dynamic = "force-dynamic"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bijakbeli-app.vercel.app"
+  const baseUrl = getAppUrl()
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [

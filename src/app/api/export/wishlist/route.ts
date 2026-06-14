@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/api-auth";
+import { getAppUrl } from "@/lib/app-url";
 
 export async function GET(_request: NextRequest) {
   // Require authentication
@@ -61,7 +62,7 @@ export async function GET(_request: NextRequest) {
         "Average Price": product?.average_price || 0,
         "Deal Score": product?.deal_score || 0,
         "Added Date": new Date(item.created_at).toLocaleDateString("id-ID"),
-        "URL": `${process.env.NEXT_PUBLIC_APP_URL}/product/${product?.slug}`,
+        "URL": `${getAppUrl()}/product/${product?.slug}`,
       };
     });
 

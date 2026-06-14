@@ -1,3 +1,5 @@
+import { getAppUrl } from './app-url';
+
 /**
  * CSRF Protection Utilities
  */
@@ -42,7 +44,7 @@ export async function validateCSRF(request: Request): Promise<boolean> {
   if (!headerToken) {
     const referer = request.headers.get('referer');
     const origin = request.headers.get('origin');
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bijakbeli.app';
+    const appUrl = getAppUrl();
     
     if (referer && new URL(referer).origin === appUrl) return true;
     if (origin === appUrl) return true;

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
+import { getAppUrl } from "./app-url";
 import type * as WebPush from "web-push";
 
 interface PushNotificationPayload {
@@ -112,7 +113,7 @@ export async function sendPriceAlertPush(
   targetPrice: number,
   currentPrice: number
 ): Promise<boolean> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
 
   return sendPushNotificationToUser(userId, {
     title: "🎉 Harga Turun!",
@@ -138,7 +139,7 @@ export async function sendPriceDropPush(
   oldPrice: number,
   newPrice: number
 ): Promise<boolean> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
   const savings = oldPrice - newPrice;
 
   return sendPushNotificationToUser(userId, {

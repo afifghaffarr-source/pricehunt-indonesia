@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
 import { sendPriceAlertPush } from "@/lib/push-notifications";
+import { getAppUrl } from "./app-url";
 
 /**
  * Escape HTML special characters to prevent XSS in email templates
@@ -124,7 +125,7 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
   try {
     const { Resend } = await import("resend");
     const resend = new Resend(resendApiKey);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = getAppUrl();
 
     // Escape user-provided data to prevent XSS
     const safeName = escapeHtml(data.userName);
@@ -191,7 +192,7 @@ async function sendPriceAlertEmail(data: AlertEmail): Promise<boolean> {
  */
 export async function sendEmailDigest() {
   const supabase = createAdminClient();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
 
   // Get users who want email digest (opted in via preferences)
   type ProfileData = {

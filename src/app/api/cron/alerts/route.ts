@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
+import { getAppUrl } from "@/lib/app-url";
 
 type AlertRow = {
   id: string;
@@ -35,7 +36,7 @@ async function sendAlertEmail(input: {
 
   const { Resend } = await import("resend");
   const resend = new Resend(resendApiKey);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
 
   await resend.emails.send({
     from: "BijakBeli <onboarding@resend.dev>",
