@@ -10,11 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `collectors/cron_scraper.py`: also fetch `crawl_status='pending'` targets (was missing them — only `queued` was crawled). Verified via end-to-end test (test_cron_query.py, test_or_filter.py).
 - `supabase/migrations/122_performance_indexes_safe.sql`: fix table name `rate_limits` → `api_rate_limits`. The actual table is `api_rate_limits` (created in migration 106); the original 122 referenced the wrong name and would fail on clean apply with "relation does not exist".
+- `package.json` + `package-lock.json` (A-001 / A-004): explicitly pin `zod@^3.25.76` (was a phantom transitive dep used by 2 ingestion routes — supply-chain risk if hulu dropped it). Removed `bun.lock` to keep one lockfile; CI uses `npm ci`.
 
 ### Added
 - `collectors/probe_schema.py`: diagnostic script — table/column existence + row counts via Supabase REST API. Useful for verifying migration state before applying.
 - `collectors/test_cron_query.py`: dry-run test of the cron scraper query (no mutation), shows pending vs queued breakdown.
 - `collectors/test_or_filter.py`: end-to-end test of the OR filter (inserts+verifies+cleans up a `pending` test row).
+- `docs/AUDIT_2026-06-14.md` (in progress): independent senior audit, 2-batch scope.
+  - **Batch 1 (Fase 1) — applied:** A-001 (zod phantom → pinned), A-004 (bun.lock → removed). Verified: lint 0 errors, typecheck clean, 239/239 tests pass.
+  - **Batch 2 (Fase 1) — pending user action:** A-003 (3 missing `offers` columns from migration 124: `rating`, `review_count`, `currency`) — self-heals when Part 3a of the previously-provided migration SQL bundle is run.
+  - **Backlog (Fase 2+):** A-002 critical (dualisme `prices` vs `offers` — `deals`/`scrape`/`products/[id]`/`ai-advisor` all read legacy `prices` table while ingestion writes `offers`; 72 vs 165 rows, UI & pipeline not converging); A-005 (9 orphan offers with null product_id); A-006 (`offer-snapshot` returns `Access-Control-Allow-Origin: *` despite strict proxy CORS); A-007 (2 validation systems parallel: zod + custom `lib/validation`); A-008 (`as any` debt, tracked in `deals`/`offer-snapshot` as "Phase 5 backlog"); A-009 (`verifyApiKey` fail-OPEN if env not set, opposite of `verifyCronSecret` fail-closed); A-010 (~40 status markdown files in root, many likely stale); A-011 (two `requireAdmin` implementations with different signatures: `api-auth.ts:51` returns `NextResponse|null`, `admin-auth.ts:57` returns typed result).
+  - **What audit did NOT find (good):** all admin routes use `requireAdmin` BEFORE `createAdminClient`; cron routes call `verifyCronSecret` first; ingestion routes compare INGESTION_SECRET with `===` (not timing-safe but acceptable for non-PII bearer); CSRF double-submit enforced in `proxy.ts` for state-changing methods; security headers + CSP comprehensive in `next.config.ts`; rate-limiter fails closed; product/recheck/review UI components manage submit-state with disabled-while-pending + success/error feedback + dialog auto-close on success; 24/26 audited routes have an explicit auth/guard pattern (only public-by-design are `/api/auth/csrf`, `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/health`, `/api/health/db`, `/api/deals`, `/api/leaderboard`).
+  - **Not yet audited (deferred to Fase 2+):** 38 Python collectors, mobile app, performance runtime, E2E test gap, full accessibility audit.
+
 
 ## [2026-06-13 15:37]
 
