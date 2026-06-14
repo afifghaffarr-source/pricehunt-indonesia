@@ -53,7 +53,7 @@ async def main():
             "Authorization": f"Bearer {SUPABASE_KEY}",
         },
         params={
-            "crawl_status": "eq.queued",
+            "or": "(crawl_status.eq.pending,crawl_status.eq.queued)",
             "select": "id,url,domain",
             "order": "next_crawl_at.asc.nullsfirst,priority_score.desc",
             "limit": BATCH_SIZE
