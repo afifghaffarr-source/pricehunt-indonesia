@@ -10,20 +10,28 @@ jobs:
   test:
     name: Test & Build
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Security audit (production deps)
+        # Fail the build if a HIGH or CRITICAL CVE is introduced in a
+        # production dependency. Lower severities are warnings only so we
+        # can triage without blocking every PR.
+        # Docs: https://docs.npmjs.com/cli/commands/npm-audit
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: false
+
       - name: Run linter
         run: npm run lint
 
@@ -32,14 +40,14 @@ jobs:
 
       - name: Run tests
         run: npm test
-      
+
       - name: Build
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
