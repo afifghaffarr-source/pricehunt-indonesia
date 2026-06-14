@@ -31,7 +31,7 @@ interface ConflictResult {
  */
 export function detectPriceConflicts(
   snapshots: PriceSnapshot[],
-  productId: string
+  _productId: string
 ): ConflictResult {
   if (snapshots.length < 2) {
     return {

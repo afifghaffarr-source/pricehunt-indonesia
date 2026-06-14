@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Image from 'next/image';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Sparkles, 
-  TrendingUp, 
-  Package, 
+import {
+  Sparkles,
+  TrendingUp,
+  Package,
   ExternalLink,
   RefreshCw,
   ThumbsUp,
@@ -35,6 +36,7 @@ export function AIRecommendations({ productId }: { productId?: string }) {
 
   useEffect(() => {
     loadRecommendations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
 
   const loadRecommendations = async () => {
@@ -145,9 +147,12 @@ export function AIRecommendations({ productId }: { productId?: string }) {
               {/* Product Image */}
               <div className="relative aspect-square mb-4 bg-muted rounded-lg overflow-hidden">
                 {rec.product_image ? (
-                  <img
+                  <Image
                     src={rec.product_image}
                     alt={rec.product_name}
+                    width={400}
+                    height={400}
+                    unoptimized
                     className="object-cover w-full h-full"
                   />
                 ) : (

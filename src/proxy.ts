@@ -28,26 +28,6 @@ const CSRF_PROTECTED_PATHS = [
   '/api/push/subscribe',
 ];
 
-// Paths that are public (no auth required)
-const PUBLIC_PATHS = [
-  '/api/health',
-  '/api/health/db',
-  '/api/products',
-  '/api/search',
-  '/api/vexo/images',
-  '/api/vexo/search',
-  '/api/deals',
-  '/api/auth/csrf', // CSRF token issuer
-];
-
-// Rate limit headers to pass through
-const RATE_LIMIT_HEADERS = [
-  'x-ratelimit-limit',
-  'x-ratelimit-remaining',
-  'x-ratelimit-reset',
-  'retry-after',
-];
-
 const CSRF_HEADER = 'x-csrf-token';
 const CSRF_COOKIE = 'csrf-token';
 const CSRF_HEADER_ALT = 'x-csrf';
@@ -79,13 +59,6 @@ function addCorsHeaders(response: NextResponse, origin: string | null) {
   }
 
   return response;
-}
-
-function generateCSRFToken(): string {
-  // Generate a random CSRF token (256-bit, hex)
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /**

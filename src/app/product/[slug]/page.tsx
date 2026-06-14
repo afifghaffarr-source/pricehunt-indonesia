@@ -25,7 +25,6 @@ import { TotalCostCalculator } from "@/components/product/TotalCostCalculator";
 import { TrustSignalsBar } from "@/components/product/TrustSignalsBar";
 import { BestOfferCard } from "@/components/product/BestOfferCard";
 import { PriceComparisonPreview } from "@/components/product/PriceComparisonPreview";
-import { ValidationStatusAlert } from "@/components/product/ValidationStatusAlert";
 import { DataTransparencyDisclaimer } from "@/components/product/DataTransparencyDisclaimer";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";

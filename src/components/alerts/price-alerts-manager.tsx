@@ -11,7 +11,6 @@ import {
   Plus, 
   Trash2, 
   TrendingDown,
-  DollarSign,
   Package
 } from 'lucide-react';
 

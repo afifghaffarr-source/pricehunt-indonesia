@@ -154,9 +154,9 @@ async function findOrCreateMarketplace(supabase: ReturnType<typeof createAdminCl
  * Try to match product by title and marketplace
  */
 async function findProductByTitle(
-  supabase: ReturnType<typeof createAdminClient>, 
+  supabase: ReturnType<typeof createAdminClient>,
   title: string,
-  marketplaceId: string
+  _marketplaceId: string
 ): Promise<string | null> {
   // Simple title-based matching
   // TODO: Use matcher.ts for smarter matching

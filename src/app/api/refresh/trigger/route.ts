@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { target_ids, force = false } = body;
+    const { target_ids } = body;
 
     if (!Array.isArray(target_ids) || target_ids.length === 0) {
       return NextResponse.json(

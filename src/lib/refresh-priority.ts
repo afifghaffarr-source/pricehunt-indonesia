@@ -161,7 +161,6 @@ export function calculateNextCrawlTime(
   priorityScore: number
 ): Date {
   const now = new Date();
-  const hoursSinceLastCrawl = (now.getTime() - lastCrawledAt.getTime()) / (1000 * 60 * 60);
 
   let intervalHours: number;
 

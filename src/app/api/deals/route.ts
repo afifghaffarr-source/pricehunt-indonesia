@@ -12,28 +12,6 @@ interface PriceHistoryRecord {
   recorded_at: string;
 }
 
-interface ProductWithHistory {
-  id: string;
-  name: string;
-  slug: string;
-  image_url: string | null;
-  category: string;
-  lowest_price: number | null;
-  prices: Array<{
-    id: string;
-    price: number;
-    seller: string | null;
-    seller_rating: number | null;
-    in_stock: boolean;
-    marketplace_id: string;
-    marketplaces: Array<{
-      name: string;
-      display_name: string;
-    }>;
-  }>;
-  price_history: PriceHistoryRecord[];
-}
-
 /**
  * Calculate median from array of numbers
  */

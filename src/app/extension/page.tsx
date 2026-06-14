@@ -8,7 +8,6 @@ import {
   Shield, 
   TrendingUp, 
   CheckCircle2,
-  Sparkles,
   MousePointerClick
 } from "lucide-react";
 import Link from "next/link";
