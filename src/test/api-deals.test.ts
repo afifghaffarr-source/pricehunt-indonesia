@@ -116,10 +116,10 @@ describe('Deal Score Calculation Optimization', () => {
         name,
         slug,
         lowest_price,
-        prices (
-          price,
+        offers (
+          current_price,
           seller_rating,
-          in_stock,
+          stock_status,
           marketplaces (name)
         ),
         price_history (
@@ -136,7 +136,7 @@ describe('Deal Score Calculation Optimization', () => {
     expect(error).toBeNull();
     expect(products).toBeTruthy();
     expect(Array.isArray(products) && products.length).toBeGreaterThan(0);
-    
+
     if (Array.isArray(products) && products.length > 0) {
       const product = products[0];
       expect(product.id).toBeDefined();
