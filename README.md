@@ -195,6 +195,34 @@ bijakbeli-app/
 
 ---
 
+### **Database Migrations**
+
+The migration runner (`scripts/db-migrate.mjs`) applies SQL files in `supabase/migrations/` in lexical order, skipping files that have already been applied (tracked via `_migrations` table). Use it locally and on Vercel deploys.
+
+```bash
+# Apply all pending migrations (uses DATABASE_URL or SUPABASE_DB_URL)
+npm run db:migrate
+
+# Skip destructive migrations (114, 115) — safe for production path
+npm run db:migrate -- --skip-destructive
+
+# Override the connection string
+npm run db:migrate -- --url "postgresql://user:pass@host:5432/db"
+```
+
+**Required env:** `DATABASE_URL` (or `SUPABASE_DB_URL`).
+
+**Production safety rules:**
+
+- Migrations ending in `*_destructive_*.sql` are skipped by default; run them only after the additive path is verified.
+- Destructive migrations (`114`, `115`) drop/replace tables — see [`docs/MIGRATION_ROLLBACK.md`](docs/MIGRATION_ROLLBACK.md) for rollback/backup steps.
+- All migrations are **idempotent** (`IF NOT EXISTS`, `IF EXISTS` guards). Re-running is safe.
+- A new migration should never `DROP TABLE` without a corresponding additive migration in the same sequence number range.
+
+See [`docs/MIGRATION_ROLLBACK.md`](docs/MIGRATION_ROLLBACK.md) for the full rollback playbook.
+
+---
+
 ## 🧪 **Testing & Quality Gates**
 
 ```bash

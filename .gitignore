@@ -60,3 +60,9 @@ collectors/venv/
 
 # Cache directories
 .codegraph/cache/
+
+# Local test outputs
+test.out
+
+build.out
+

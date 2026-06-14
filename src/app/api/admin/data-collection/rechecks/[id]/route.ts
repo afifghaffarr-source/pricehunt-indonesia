@@ -6,7 +6,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/auth";
 import { z } from "@/lib/validation";
+import { logAdminAction } from "@/lib/admin-audit";
 
 const recheckUpdateSchema = z.object({
   request_status: z.string({ minLength: 1, maxLength: 40 }),
@@ -52,6 +54,22 @@ export async function PATCH(
     console.error("recheck update error", error);
     return NextResponse.json({ success: false, error: "Failed to update recheck" }, { status: 500 });
   }
+
+  // Best-effort audit log. NEVER throws to caller. requireAdmin has
+  // already verified the caller is admin, so the user is non-null.
+  const actor = await getUser();
+  await logAdminAction({
+    actorId: actor?.id ?? null,
+    actorEmail: actor?.email ?? null,
+    action: "recheck_decision",
+    targetType: "recheck_request",
+    targetId: id,
+    metadata: {
+      request_status: input.request_status,
+      has_message: !!input.result_message,
+    },
+    request,
+  });
 
   return NextResponse.json({ success: true, message: "Recheck request updated successfully" });
 }

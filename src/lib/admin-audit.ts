@@ -6,16 +6,19 @@
  *
  * Design:
  * - Best-effort: NEVER throws to the caller. If the DB write fails, the
- *   failure is logged to the server console but the admin action still
- *   succeeds. The audit log is observability, not a gate.
+ *   failure is logged via the structured logger but the admin action
+ *   still succeeds. The audit log is observability, not a gate.
  * - Uses the service-role client to bypass RLS — admin_audit_log is
  *   locked down for non-service roles.
  * - Strips potentially sensitive fields from request headers before
  *   persisting.
  * - Stable JSON: input is shallow-cloned to keep metadata BoundedJson.
+ * - Failures emit a structured `audit_log_write_failed` event so an
+ *   on-call runbook / log drain (Vercel, Datadog, etc.) can alert on it.
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logAuditFailure, logError } from "@/lib/log";
 
 export type AdminAuditAction =
   | "resolve_conflict"
@@ -95,6 +98,10 @@ function extractRequestContext(request: Request | null | undefined) {
 
 /**
  * Best-effort write to the admin audit log. NEVER throws.
+ *
+ * On any failure the caller does NOT see an error. The failure is
+ * emitted as a structured log event (`audit_log_write_failed`) so that
+ * the operations log drain can alert on it.
  */
 export async function logAdminAction(input: AdminAuditInput): Promise<void> {
   try {
@@ -119,12 +126,17 @@ export async function logAdminAction(input: AdminAuditInput): Promise<void> {
     /* eslint-enable @typescript-eslint/ban-ts-comment */
 
     if (error) {
-      console.error("[admin-audit] insert failed:", error.message, {
+      logAuditFailure({
         action: row.action,
-        target: row.target_id,
+        target_id: row.target_id,
+        error,
       });
     }
   } catch (err) {
-    console.error("[admin-audit] unexpected error:", err);
+    // Last-resort log. Logger swallows its own errors; we must not throw.
+    logError("admin_audit_unexpected", err, {
+      action: typeof input.action === "string" ? input.action : "unknown",
+      target_id: input.targetId ?? null,
+    });
   }
 }
