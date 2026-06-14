@@ -35,6 +35,13 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      - name: Lint migrations
+        # Static linter that fails the build if a non-allowlisted
+        # supabase/migrations/*.sql file contains a destructive pattern
+        # (DROP TABLE, TRUNCATE, ALTER TABLE ... DROP, etc.). See
+        # scripts/lint-migrations.mjs and docs/MIGRATION_LINT.md.
+        run: npm run lint:migrations
+
       - name: Run typecheck
         run: npm run typecheck
 

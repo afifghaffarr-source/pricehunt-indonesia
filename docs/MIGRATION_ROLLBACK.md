@@ -249,8 +249,44 @@ If a migration goes wrong in production:
 
 ## 10. CI / pre-deploy migration lint
 
-There is currently no CI step that lints the migrations for
-destructive patterns. A future improvement (Phase 5+) is to add a
-script that greps for `DROP TABLE` and `DROP COLUMN` in any new
-migration and warns the reviewer. Track this in
-`docs/ROADMAP_NEXT.md`.
+CI runs `npm run lint:migrations` on every push and PR (see
+`.github/workflows/ci.yml`, step "Lint migrations"). The script
+(`scripts/lint-migrations.mjs`) statically scans every file in
+`supabase/migrations/*.sql` for destructive SQL patterns.
+
+**Patterns detected** (after stripping SQL comments):
+
+- `DROP TABLE` / `DROP TABLE IF EXISTS` ...
+- `DROP SCHEMA` ...
+- `DROP FUNCTION` ...
+- `DROP DATABASE` ...
+- `ALTER TABLE ... DROP ...` (column, constraint, etc.)
+- `TRUNCATE` ...
+
+Commented-out examples do not trip the lint (both `--` and `/* */`
+comments are stripped before matching).
+
+**Allowlist** — files containing destructive patterns that are known
+and already applied to production. For historical context see
+`supabase/migrations/123_destructive_migration_notes.sql`:
+
+- `114_upgrade_offers_schema.sql`
+- `114_upgrade_offers_schema_v3.sql`
+- `115_upgrade_price_snapshots.sql`
+
+**How to add a new destructive migration** (only if absolutely
+required):
+
+1. Prefer the additive alternative first — see
+   `supabase/migrations/124_offers_additive_migration.sql` for the
+   `ADD COLUMN IF NOT EXISTS` pattern.
+2. If a DROP is truly required, take a Supabase database snapshot
+   BEFORE applying.
+3. Add the file to the `ALLOWLIST` set in
+   `scripts/lint-migrations.mjs` with a short comment explaining why.
+4. Document the migration, reason, and rollback procedure here in
+   `docs/MIGRATION_ROLLBACK.md` and in a new
+   `NNN_destructive_migration_notes.sql` file under
+   `supabase/migrations/`.
+
+See `docs/MIGRATION_LINT.md` for the full lint design.
