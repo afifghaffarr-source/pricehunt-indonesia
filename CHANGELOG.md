@@ -11,11 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `collectors/cron_scraper.py`: also fetch `crawl_status='pending'` targets (was missing them — only `queued` was crawled). Verified via end-to-end test (test_cron_query.py, test_or_filter.py).
 - `supabase/migrations/122_performance_indexes_safe.sql`: fix table name `rate_limits` → `api_rate_limits`. The actual table is `api_rate_limits` (created in migration 106); the original 122 referenced the wrong name and would fail on clean apply with "relation does not exist".
 - `package.json` + `package-lock.json` (A-001 / A-004): explicitly pin `zod@^3.25.76` (was a phantom transitive dep used by 2 ingestion routes — supply-chain risk if hulu dropped it). Removed `bun.lock` to keep one lockfile; CI uses `npm ci`.
+- A-008 (`as any` debt): all 11 production `as any` casts in supabase writes now have explicit TODO comments explaining the root cause — `supabase-js` strict typing rejects `.upsert()`/`.insert()` when the `Database` type is built from a `interface` vs `type` alias. Cannot be fully cleaned up without `supabase gen types typescript` (needs `SUPABASE_ACCESS_TOKEN`, Phase 5 blocker).
 
 ### Added
 - `collectors/probe_schema.py`: diagnostic script — table/column existence + row counts via Supabase REST API. Useful for verifying migration state before applying.
 - `collectors/test_cron_query.py`: dry-run test of the cron scraper query (no mutation), shows pending vs queued breakdown.
 - `collectors/test_or_filter.py`: end-to-end test of the OR filter (inserts+verifies+cleans up a `pending` test row).
+- A-011 (admin auth consolidation): all 8 admin routes now use the typed `requireAdmin` from `@/lib/admin-auth` (was previously importing from `@/lib/api-auth` which returns a different shape). See commit `a810fd8`.
+- A-005 (orphan offers): `collectors/backfill_orphan_offers.py` — attempts to attach the 9 orphan offers to existing products via title matching. Result: 0/9 matched (products table doesn't contain those SKUs). 9 orphans preserved in DB for future manual product creation.
+- A-010 (doc cleanup): deleted 5 stale root `.md` files (`DEPLOYMENT_STATUS.md`, `IMPLEMENTATION_REPORT_FINAL.md`, `LAUNCH_COMPLETE.md`, `OPSI_B1_PROGRESS.md`, `AUDIT_REPORT_2026-06-11.md`). 17 candidates flagged for user review in `docs/DOCS_CLEANUP_2026-06-15.md`.
+- A-007 (validation): documented the dual-validation system (zod for ingestion, custom `lib/validation` for admin) is **by design**, not tech debt. Each has its niche.
+- `src/lib/supabase/local-database.types.ts` (A-008 infra): hand-written `LocalDatabase` interface for `offers` + `price_snapshots` tables, integrated into `src/lib/supabase/types.ts`. Unblocks typed reads; supabase-js write methods (`upsert`/`insert`) still need full typegen to drop `as any` casts.
+- `supabase/migrations/A-003_OFFERS_MISSING_COLUMNS.sql`: self-heal bundle for the 3 missing columns (`rating`, `review_count`, `currency`) — safe to run in Supabase SQL Editor. See `docs/MIGRATION_A003_GUIDE_2026-06-15.md`.
+- `docs/COLLECTOR_AUDIT_2026-06-15.md`: collector architecture audit — `collectors/` is legacy/deprecated, `tools/price-collector/` is production, `tools/refresh_cron.py` is automated enqueue. **No code changes required.**
+- `docs/MOBILE_AUDIT_2026-06-15.md`: mobile app audit — `apps/mobile/` is **not buildable** (3 missing routes, NativeWind unconfigured, no auth, Expo SDK 50 EOL). Recommendation: delete after web launch, focus PWA.
+- `docs/ROUTE_AUDIT_2026-06-15.md`: complete route auth audit of all 48 routes. Found 2 routes with `POST` and no auth (`recommendation/buy-or-wait`, `recommendation/fake-discount`) — both pure local compute, low risk. **All admin routes verified consistent post-A-011.**
+- `docs/A11Y_AUDIT_2026-06-15.md`: a11y quick scan. Fixed: `SearchBar` missing `aria-label`, 2 icon-only buttons missing labels. 4 remaining gaps in Phase 3 backlog.
 - `docs/AUDIT_2026-06-14.md` (in progress): independent senior audit, 2-batch scope.
   - **Batch 1 (Fase 1) — applied:** A-001 (zod phantom → pinned), A-004 (bun.lock → removed). Verified: lint 0 errors, typecheck clean, 239/239 tests pass.
   - **Batch 2 (Fase 1) — pending user action:** A-003 (3 missing `offers` columns from migration 124: `rating`, `review_count`, `currency`) — self-heals when Part 3a of the previously-provided migration SQL bundle is run.

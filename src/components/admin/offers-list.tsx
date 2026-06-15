@@ -125,7 +125,7 @@ export function OffersList() {
               <SelectItem value="bukalapak">Bukalapak</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={loadOffers} variant="outline" size="icon">
+          <Button onClick={loadOffers} variant="outline" size="icon" aria-label="Refresh offers list">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>

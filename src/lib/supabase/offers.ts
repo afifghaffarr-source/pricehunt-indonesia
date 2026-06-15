@@ -183,7 +183,9 @@ export async function getBestOffer(productId: string): Promise<Offer | null> {
 export async function upsertOffer(offer: Omit<Offer, "id" | "created_at" | "updated_at">): Promise<Offer | null> {
   const supabase = createAdminClient();
 
-  // Cast to any because offers table not in generated types yet (migrations 107/108)
+  // TODO: supabase-js strict typing rejects upsert() when Database type is
+  // built from a `interface` (vs `type` alias). Once we regenerate types via
+  // `supabase gen types typescript`, this `as any` can be removed.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.from("offers") as any)
     .upsert({
@@ -215,7 +217,7 @@ export async function createPriceSnapshot(
 ): Promise<PriceSnapshot | null> {
   const supabase = createAdminClient();
 
-  // Cast to any because price_snapshots table not in generated types yet
+  // TODO: see upsertOffer comment — remove when types regenerated.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.from("price_snapshots") as any)
     .insert({
@@ -249,7 +251,7 @@ export async function batchUpsertOffers(offers: Omit<Offer, "id" | "created_at" 
     updated_at: new Date().toISOString(),
   }));
 
-  // Cast to any because offers table not in generated types yet
+  // TODO: see upsertOffer comment — remove when types regenerated.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.from("offers") as any)
     .upsert(offersWithTimestamp, {

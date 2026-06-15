@@ -55,6 +55,7 @@ export function SearchBar({
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
+        aria-label="Cari produk"
         className={cn(
           "pr-20",
           size === "lg"
@@ -66,6 +67,7 @@ export function SearchBar({
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Hapus pencarian"
           className="absolute right-12 h-8 w-8"
           onClick={() => setQuery("")}
         >

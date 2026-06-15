@@ -1,3 +1,5 @@
+import type { LocalDatabase } from "./local-database.types";
+
 export type Json =
   | string
   | number
@@ -324,6 +326,20 @@ export interface Database {
           user_id?: string;
           created_at?: string;
         };
+      };
+      // Local additions — tables not yet in generated types.
+      // Keep in sync with src/lib/supabase/local-database.types.ts
+      // and supabase/migrations/107_*.sql, 108_*.sql, 124_*.sql.
+      // TODO: Regenerate full Database type via `supabase gen types` (Phase 5).
+      offers: {
+        Row: LocalDatabase["public"]["Tables"]["offers"]["Row"];
+        Insert: LocalDatabase["public"]["Tables"]["offers"]["Insert"];
+        Update: LocalDatabase["public"]["Tables"]["offers"]["Update"];
+      };
+      price_snapshots: {
+        Row: LocalDatabase["public"]["Tables"]["price_snapshots"]["Row"];
+        Insert: LocalDatabase["public"]["Tables"]["price_snapshots"]["Insert"];
+        Update: LocalDatabase["public"]["Tables"]["price_snapshots"]["Update"];
       };
     };
     Views: {
