@@ -74,18 +74,25 @@ jobs:
 
       - name: Diagnostic — capture home page response
         run: |
-          echo "=== / response status ==="
+          echo "=== IMMEDIATE / response status ==="
           curl -sI http://localhost:3000/ | head -5
-          echo "=== / response body (first 2000 chars) ==="
-          curl -s http://localhost:3000/ | head -c 2000
+          echo "=== IMMEDIATE / response body (first 1500 chars) ==="
+          curl -s http://localhost:3000/ | head -c 1500
+          echo ""
           echo ""
           echo "=== /auth/login response status ==="
           curl -sI http://localhost:3000/auth/login | head -5
-          echo "=== /auth/login response body (first 2000 chars) ==="
-          curl -s http://localhost:3000/auth/login | head -c 2000
           echo ""
-          echo "=== Server log (first 100 lines) ==="
-          head -100 /tmp/next-start.log
+          # Simulate what tests do — hit page multiple times with delay
+          echo "=== After 30s wait, hit / again ==="
+          sleep 30
+          curl -sI http://localhost:3000/ | head -5
+          echo "=== / response body after wait (first 1500 chars) ==="
+          curl -s http://localhost:3000/ | head -c 1500
+          echo ""
+          echo ""
+          echo "=== Server log (last 100 lines) ==="
+          tail -100 /tmp/next-start.log
 
       - name: Run Playwright E2E tests
         env:
