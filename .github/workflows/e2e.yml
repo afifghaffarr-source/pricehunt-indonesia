@@ -59,8 +59,47 @@ jobs:
       - name: Build app
         run: npm run build
 
+      - name: Start server (background)
+        run: |
+          npm start > /tmp/next-start.log 2>&1 &
+          echo $! > /tmp/next-start.pid
+          # Wait for server to be ready (max 30s)
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000 -o /dev/null 2>/dev/null; then
+              echo "Server ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Diagnostic — capture home page response
+        run: |
+          echo "=== / response status ==="
+          curl -sI http://localhost:3000/ | head -5
+          echo "=== / response body (first 2000 chars) ==="
+          curl -s http://localhost:3000/ | head -c 2000
+          echo ""
+          echo "=== /auth/login response status ==="
+          curl -sI http://localhost:3000/auth/login | head -5
+          echo "=== /auth/login response body (first 2000 chars) ==="
+          curl -s http://localhost:3000/auth/login | head -c 2000
+          echo ""
+          echo "=== Server log (first 100 lines) ==="
+          head -100 /tmp/next-start.log
+
       - name: Run Playwright E2E tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
         run: npx playwright test --workers=1
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f /tmp/next-start.pid ]; then
+            kill $(cat /tmp/next-start.pid) 2>/dev/null || true
+          fi
+          pkill -f "next start" 2>/dev/null || true
+          pkill -f "next-server" 2>/dev/null || true
 
       - name: Upload test report on failure
         if: failure()

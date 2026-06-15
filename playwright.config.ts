@@ -38,12 +38,10 @@ export default defineConfig({
     },
   ],
 
-  // Auto-build + start `next start` only when hitting localhost.
-  // We use production mode (not dev) because:
-  //   1. dev server's memory threshold restart (default ~1.5GB) wipes the
-  //      Turbopack cache, causing next test to hit 30s compile timeout
-  //   2. `next start` is deterministic — same as CI
-  // Skip with PLAYWRIGHT_BASE_URL pointing to an already-running server.
+  // In CI we start the server manually in the workflow (so we can run a
+  // diagnostic curl between build and tests). When PLAYWRIGHT_BASE_URL is
+  // set, Playwright skips the webServer block entirely.
+  // Locally (no env var), webServer auto-builds + starts.
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
@@ -51,7 +49,17 @@ export default defineConfig({
         url: `http://localhost:${PORT}`,
         reuseExistingServer: !process.env.CI,
         timeout: 300_000, // build can take 60-120s on small VPS
-        stdout: "ignore",
+        // Pipe BOTH stdout and stderr so CI logs surface server errors
+        // (e.g. Supabase auth failures, layout errors). Without this, a
+        // broken page just shows the global-error.tsx with no clue why.
+        stdout: "pipe",
         stderr: "pipe",
+        // Explicitly inherit env (Supabase URLs/keys, etc.) — Playwright
+        // already inherits by default, but being explicit guards against
+        // future regressions in env propagation. Drop undefined values to
+        // satisfy Playwright's typed env map.
+        env: Object.fromEntries(
+          Object.entries(process.env).filter(([, v]) => v !== undefined)
+        ) as Record<string, string>,
       },
 });
