@@ -99,6 +99,15 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
         run: npx playwright test --workers=1
 
+      - name: Dump server log (post-test, for diagnostics)
+        if: always()
+        run: |
+          echo "=== Server log after tests (last 200 lines) ==="
+          tail -200 /tmp/next-start.log
+          echo ""
+          echo "=== Server process status ==="
+          ps -ef | grep -E "next|node" | grep -v grep | head -5
+
       - name: Stop server
         if: always()
         run: |
