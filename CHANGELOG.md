@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.4.0 (2026-06-15) — P8: Mobile Polish + A11y
+
+- **Tap targets ≥44px (WCAG 2.5.5 / Apple HIG)**:
+  - `TabsTrigger`: min-h-[44px] min-w-[44px] on touch (sm:min-h-0 desktop)
+  - Header theme toggle: 32×32 → 40×40 (h-10 w-10, rounded-full)
+  - Header bottom nav: min-h-[44px] per item, text-[11px] → text-xs
+  - `AuthButton` user menu: 36×36 → 40×40, menu items min-h-[44px]
+- **Focus rings (WCAG 2.4.7)**: added focus-visible:ring-2 to all nav links, theme toggle, AuthButton trigger + menu items
+- **ARIA improvements**:
+  - aria-label on desktop nav (Menu utama) + mobile nav (Menu mobile)
+  - aria-current=page on active links (desktop + mobile)
+  - aria-label on theme toggle (was sr-only, now visible to AT)
+  - `AuthButton`: aria-label=Menu akun, aria-expanded, aria-haspopup, role=menu/menuitem
+  - All icon-only buttons: aria-hidden=true on icon, label on button
+- **touch-action: manipulation** in globals.css (prevents iOS double-tap zoom on all interactive elements)
+- **Verified**: typecheck clean, build succeeded, deployed via auto-deploy hook
+
 ### Added - v1.3.0 (2026-06-15) — P7-Post: Drop `price_history`, Single-Source Chart Data
 
 - **Migration 129 APPLIED** — Drop legacy `price_history` table
