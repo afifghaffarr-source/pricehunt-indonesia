@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - v1.5.2 (2026-06-16) — VexoAPI Marketplace Mock Guard
+
+- **Refuse to serve VexoAPI mock data to users**
+  - VexoAPI's `/api/tools/marketplace` currently returns `_meta.is_mock: true`
+    for every call (the endpoint is not yet wired to a real marketplace
+    data source)
+  - The previous route relayed that to the frontend unfiltered — which
+    would have shown fake prices and fake image URLs to users as soon
+    as VexoAPI's marketplace went live
+  - Route now returns **HTTP 503 + `{mockDisabled: true, data: null}`**
+    when upstream reports `is_mock: true`, instead of 200 + fake data
+  - `VexoImageFallback` requires `mktRes.ok` (was: just `success`), so a
+    503 response correctly falls through to the next fallback (VexoAPI
+    images → picsum.photos)
+  - Reads `VEXO_API_KEY` at request time (was module-load), enabling
+    testability
+- **7 new unit tests** in `src/test/api-vexo-marketplace.test.ts`:
+  - 503 + `mockDisabled` when upstream is_mock
+  - Mock data leak guard (FAKE PRODUCT / fake.example never escape)
+  - 200 + real data when upstream is_mock: false
+  - Defensive: missing `_meta` treated as real
+  - 500 no-key, 400 missing-param, 502 upstream-no-data
+- **Tests: 282/282** (was 275, +7)
+
 ### Fixed - v1.5.1 (2026-06-16) — Placeholder Offer URL Rewrite
 
 - **Adapter-level rewrite of internal placeholder URLs** in public API responses
