@@ -45,8 +45,29 @@ These are kept because they're referenced or contain durable content:
 ## Already removed (5 files, 2026-06-15)
 
 The 5 safest files were removed without further input:
-- `README.old.md` (old README, replaced)
+- `DEPLOYMENT_STATUS.md` (stale deployment status, superseded by `DEPLOY_GUIDE.md`)
+- `IMPLEMENTATION_REPORT_FINAL.md` (one-time implementation report, "FINAL" suffix)
+- `LAUNCH_COMPLETE.md` (one-time launch snapshot)
+- `OPSI_B1_PROGRESS.md` (task progress, completed)
 - `AUDIT_REPORT_2026-06-11.md` (superseded by `docs/AUDIT_2026-06-14.md`)
-- `LAUNCH_COMPLETE.md` (duplicate of `LAUNCH_SUCCESS.md`)
-- `LAUNCH_SUCCESS.md` (one-time launch snapshot)
-- `REBRANDING_COMPLETE.md` (one-time rebrand snapshot)
+
+## Now removing (per user confirmation 2026-06-15)
+
+17 files below will be deleted in this batch:
+- `FULL_UPGRADE_COMPLETE.md`
+- `INGESTION_INFRASTRUCTURE_COMPLETE.md`
+- `IMPROVEMENTS_SUMMARY.md`
+- `EXECUTIVE_SUMMARY.md`
+- `PROJECT_STATUS_FINAL.md`
+- `ROADMAP_NEXT.md`
+- `OPSI_BD_FINAL_REPORT.md`
+- `OPSI_BD_PROGRESS.md`
+- `OPSI_B_PROGRESS.md`
+- `DAILY_PROGRESS_20260612.md`
+- `SESSION_SUMMARY_20260612.md`
+- `KIRO_QUICK_REFERENCE.md`
+- `GITHUB_RESEARCH_RESULTS.md`
+- `TODO_REMAINING.md`
+- `VERCEL_ENV_UPDATE.md`
+- `VEXO_API_UPDATE.md`
+- `MANUAL_ACTIONS_GUIDE.md`

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBuyOrWaitRecommendation } from "@/lib/buy-or-wait";
 import { createClient } from "@/lib/supabase/server";
+import { checkPersistentRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 
-export const runtime = "edge";
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 30; // 30 requests per minute per identifier
 
 // GET handler for extension and simple usage - accepts slug
 export async function GET(request: NextRequest) {
@@ -75,6 +77,28 @@ export async function GET(request: NextRequest) {
 // POST handler for advanced usage with full control
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 30 req/min per user/IP (public endpoint, abuse protection)
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const rateLimit = await checkPersistentRateLimit({
+      identifier: getRequestIdentifier(user?.id ?? null, request),
+      endpoint: "buy-or-wait",
+      limit: RATE_LIMIT_MAX,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    });
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Terlalu banyak permintaan. Coba lagi nanti." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((rateLimit.retryAfterMs ?? RATE_LIMIT_WINDOW_MS) / 1000)),
+            "Cache-Control": "no-store",
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     
     const {
