@@ -5,8 +5,13 @@ name: E2E Tests
 #
 # Triggers: push to master/main, PRs to master/main, manual dispatch.
 #
-# Required secrets (same as CI):
-#   - SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+# Required secrets (one of these naming conventions):
+#   Modern:    SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+#   Legacy:    NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+#   Or both - whichever exists in repo settings is used.
+#
+# We support multiple naming conventions to avoid breaking when secrets
+# were created under different names during initial setup.
 
 on:
   push:
@@ -27,10 +32,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # Map GitHub secret names → Next.js env var names.
+    # `secrets.X || secrets.Y` falls back to alternate name.
+    # Order matters: first non-empty wins. NEXT_PUBLIC_* are required at
+    # BUILD time (Next.js inlines them into the client bundle).
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
     steps:
       - name: Checkout code
@@ -56,6 +67,18 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
+      - name: Verify Supabase env vars are set
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL is set: $([ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && echo yes || echo NO)"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY is set: $([ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] && echo yes || echo NO)"
+          echo "SUPABASE_SERVICE_ROLE_KEY is set: $([ -n "$SUPABASE_SERVICE_ROLE_KEY" ] && echo yes || echo NO)"
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Required Supabase secrets are missing. Add them at:"
+            echo "::error::https://github.com/afifghaffarr-source/pricehunt-indonesia/settings/secrets/actions"
+            echo "::error::Expected names: SUPABASE_URL + SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY)"
+            exit 1
+          fi
+
       - name: Build app
         run: npm run build
 
@@ -63,8 +86,8 @@ jobs:
         run: |
           npm start > /tmp/next-start.log 2>&1 &
           echo $! > /tmp/next-start.pid
-          # Wait for server to be ready (max 30s)
-          for i in $(seq 1 30); do
+          # Wait for server to be ready (max 60s for slow CI runners)
+          for i in $(seq 1 60); do
             if curl -sf http://localhost:3000 -o /dev/null 2>/dev/null; then
               echo "Server ready after ${i}s"
               break
@@ -72,41 +95,16 @@ jobs:
             sleep 1
           done
 
-      - name: Diagnostic — capture home page response
-        run: |
-          echo "=== IMMEDIATE / response status ==="
-          curl -sI http://localhost:3000/ | head -5
-          echo "=== IMMEDIATE / response body (first 1500 chars) ==="
-          curl -s http://localhost:3000/ | head -c 1500
-          echo ""
-          echo ""
-          echo "=== /auth/login response status ==="
-          curl -sI http://localhost:3000/auth/login | head -5
-          echo ""
-          # Simulate what tests do — hit page multiple times with delay
-          echo "=== After 30s wait, hit / again ==="
-          sleep 30
-          curl -sI http://localhost:3000/ | head -5
-          echo "=== / response body after wait (first 1500 chars) ==="
-          curl -s http://localhost:3000/ | head -c 1500
-          echo ""
-          echo ""
-          echo "=== Server log (last 100 lines) ==="
-          tail -100 /tmp/next-start.log
-
       - name: Run Playwright E2E tests
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
         run: npx playwright test --workers=1
 
-      - name: Dump server log (post-test, for diagnostics)
-        if: always()
+      - name: Dump server log (on failure, for debug)
+        if: failure()
         run: |
-          echo "=== Server log after tests (last 200 lines) ==="
+          echo "=== Server log (last 200 lines) ==="
           tail -200 /tmp/next-start.log
-          echo ""
-          echo "=== Server process status ==="
-          ps -ef | grep -E "next|node" | grep -v grep | head -5
 
       - name: Stop server
         if: always()
