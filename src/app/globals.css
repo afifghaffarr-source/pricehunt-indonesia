@@ -138,6 +138,15 @@
   html {
     @apply font-sans;
   }
+  /* Mobile a11y: prevent double-tap zoom on all interactive elements
+     (faster than relying on each component to set touch-action). */
+  button,
+  a,
+  [role="button"],
+  [role="tab"],
+  [role="link"] {
+    touch-action: manipulation;
+  }
 }
 
 /* Custom animations for modern UI */

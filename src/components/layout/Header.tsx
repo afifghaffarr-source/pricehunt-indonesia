@@ -69,16 +69,17 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-6 md:flex" aria-label="Menu utama">
           {visibleNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || 
+            const isActive = pathname === item.href ||
                             (item.href === '/dashboard' && pathname.startsWith('/dashboard'));
             return (
               <Link
                 key={item.label}
                 href={item.href}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-2 rounded-md text-sm font-medium transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >
@@ -92,66 +93,51 @@ export function Header() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-muted"
+            // Mobile a11y (P8): 40px tap target (up from 32px). Not 44px
+            // because the button is in a tight header bar; 40px still
+            // meets Material Design and is close to Apple HIG. Uses
+            // rounded-full and explicit aria-label for screen readers.
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={toggleTheme}
+            aria-label={isDark ? "Aktifkan tema terang" : "Aktifkan tema gelap"}
             suppressHydrationWarning
           >
             {isDark ? (
-              <Sun className="h-4 w-4" suppressHydrationWarning />
+              <Sun className="h-5 w-5" suppressHydrationWarning />
             ) : (
-              <Moon className="h-4 w-4" suppressHydrationWarning />
+              <Moon className="h-5 w-5" suppressHydrationWarning />
             )}
-            <span className="sr-only">Toggle tema</span>
           </button>
           <AuthButton />
         </div>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-background/95 px-2 py-2 shadow-lg backdrop-blur md:hidden">
-        <Link
-          href="/search"
-          className={`flex flex-col items-center gap-1 text-[11px] transition-colors ${
-            pathname === "/search" ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          <Search className="h-4 w-4" />
-          <span>Cari</span>
-        </Link>
-        <Link
-          href="/dashboard"
-          className={`flex flex-col items-center gap-1 text-[11px] transition-colors ${
-            pathname.startsWith("/dashboard") ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          <Heart className="h-4 w-4" />
-          <span>Wishlist</span>
-        </Link>
-        <Link
-          href="/compare"
-          className={`flex flex-col items-center gap-1 text-[11px] transition-colors ${
-            pathname === "/compare" ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          <BarChart3 className="h-4 w-4" />
-          <span>Bandingkan</span>
-        </Link>
-        <Link
-          href="/deals"
-          className={`flex flex-col items-center gap-1 text-[11px] transition-colors ${
-            pathname === "/deals" ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>Promo</span>
-        </Link>
-        <Link
-          href="/settings"
-          className={`flex flex-col items-center gap-1 text-[11px] transition-colors ${
-            pathname === "/settings" ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          <User className="h-4 w-4" />
-          <span>Akun</span>
-        </Link>
+      <nav
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-background/95 px-2 py-2 shadow-lg backdrop-blur md:hidden"
+        aria-label="Menu mobile"
+      >
+        {[
+          { href: "/search", label: "Cari", icon: Search, isActive: pathname === "/search" },
+          { href: "/dashboard", label: "Wishlist", icon: Heart, isActive: pathname.startsWith("/dashboard") },
+          { href: "/compare", label: "Bandingkan", icon: BarChart3, isActive: pathname === "/compare" },
+          { href: "/deals", label: "Promo", icon: Sparkles, isActive: pathname === "/deals" },
+          { href: "/settings", label: "Akun", icon: User, isActive: pathname === "/settings" },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={item.isActive ? "page" : undefined}
+              aria-label={item.label}
+              className={`flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-md px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                item.isActive ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Icon className="h-5 w-5" aria-hidden="true" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </header>
   );
