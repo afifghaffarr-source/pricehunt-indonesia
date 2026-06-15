@@ -6,6 +6,12 @@
  * These helpers cover what we need right now (whitelisted object payloads
  * for /api/admin/* routes). If validation requirements grow, this file is
  * the single place to swap in a schema library.
+ *
+ * A-007 resolution (2026-06-15): the audit originally flagged this as
+ * "dual validation systems" alongside zod. The intent was deliberate —
+ * complex ingestion routes use zod (unions, enums, regex, transforms);
+ * admin routes use these tiny helpers to avoid a new dep in security-
+ * critical paths. Two tools, two niches — not a debt to consolidate.
  */
 
 export type ValidationIssue = { path: string; message: string };
