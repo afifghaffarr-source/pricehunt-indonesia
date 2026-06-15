@@ -76,12 +76,14 @@ export async function POST(request: NextRequest) {
       .filter((o) => isOfferInStock(o.stock_status, o.is_active) && (o.current_price ?? 0) > 0)
       .sort((a, b) => (a.current_price ?? 0) - (b.current_price ?? 0));
 
+    // P7-Post: read from price_snapshots (joined to offers for product_id).
+    // The legacy `price_history` table was dropped in migration 129.
     const { data: history } = await supabase
-      .from("price_history")
-      .select("price, recorded_at")
-      .eq("product_id", productId)
-      .gte("recorded_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
-      .order("recorded_at", { ascending: true });
+      .from("price_snapshots")
+      .select("current_price, captured_at, offers!inner(product_id)")
+      .eq("offers.product_id", productId)
+      .gte("captured_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
+      .order("captured_at", { ascending: true });
 
     if (!process.env.OPENAI_API_KEY) {
       const fallback = generateFallbackVerdict(product, inStockOffers, history || []);
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     const historySummary = (history || [])
       .slice(-10)
-      .map((h) => `${h.recorded_at}: Rp${h.price.toLocaleString("id-ID")}`)
+      .map((h) => `${h.captured_at}: Rp${(h.current_price as number).toLocaleString("id-ID")}`)
       .join(", ");
 
     const completion = await openai.chat.completions.create({
@@ -149,7 +151,10 @@ export async function POST(request: NextRequest) {
 function generateFallbackVerdict(
   product: { name: string; lowest_price: number; highest_price: number; deal_score: number },
   offers: Array<{ current_price: number | null }>,
-  history: { price: number; recorded_at: string }[]
+  // P7-Post: history comes from `price_snapshots` (joined via offers) and
+  // has `current_price`/`captured_at` columns instead of the legacy
+  // `price`/`recorded_at` from `price_history`.
+  history: { current_price: number; captured_at: string }[]
 ): string {
   const score = product.deal_score;
 
@@ -157,7 +162,7 @@ function generateFallbackVerdict(
     return `Harga ${product.name} saat ini sangat bagus! Deal score ${score}/100 menunjukkan ini harga terbaik. Beli sekarang sebelum harga naik.`;
   }
   if (score >= 70) {
-    const trend = history.length >= 2 && history[history.length - 1].price < history[0].price ? "turun" : "stabil";
+    const trend = history.length >= 2 && history[history.length - 1].current_price < history[0].current_price ? "turun" : "stabil";
     return `Harga ${product.name} tergolong bagus (score ${score}/100). Tren harga 30 hari terakhir ${trend}. Worth it untuk dibeli sekarang.`;
   }
   if (score >= 50) {

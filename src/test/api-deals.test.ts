@@ -18,15 +18,21 @@ describe('Deal Score Calculation Optimization', () => {
 
   it('should have products with price history', async () => {
     if (!supabase) return; // env-missing skip
+    // P7-Post: `price_history` was dropped in migration 129. The legacy
+    // embed is replaced with a direct `price_snapshots` join (via
+    // `offers!inner(product_id)`). We still sanity-check that products
+    // have at least one snapshot in the last 30 days.
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split('T')[0];
     const { data, error } = await supabase
-      .from('products')
-      .select('id, name, price_history(price, recorded_at)')
-      .not('lowest_price', 'is', null)
+      .from('price_snapshots')
+      .select('current_price, captured_at, offers!inner(product_id)')
+      .gte('captured_at', thirtyDaysAgo)
       .limit(5);
 
     expect(error).toBeNull();
     expect(data).toBeTruthy();
-    // @ts-expect-error - Supabase type inference issue with complex queries
     expect(data?.length).toBeGreaterThan(0);
   });
 
@@ -109,6 +115,10 @@ describe('Deal Score Calculation Optimization', () => {
 
   it('should fetch products with all required data for deal scoring', async () => {
     if (!supabase) return; // env-missing skip
+    // P7-Post: dropped the `price_history` PostgREST embed (legacy table
+    // dropped in migration 129). Deal-score stats are now derived from
+    // `price_snapshots` in the route handler. This integration test
+    // only verifies that products + offers loads correctly.
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -121,10 +131,6 @@ describe('Deal Score Calculation Optimization', () => {
           seller_rating,
           stock_status,
           marketplaces (name)
-        ),
-        price_history (
-          price,
-          recorded_at
         )
       `)
       .not('lowest_price', 'is', null)

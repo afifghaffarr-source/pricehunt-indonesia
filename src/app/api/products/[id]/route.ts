@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { toPriceViews, type OfferRow } from "@/lib/ingestion/adapter";
+import { fetchPriceHistoryByProductId } from "@/lib/supabase/data";
 
 export async function GET(
   request: NextRequest,
@@ -37,16 +38,17 @@ export async function GET(
 
     const prices = toPriceViews((offers ?? []) as OfferRow[]);
 
-    const { data: history } = await supabase
-      .from("price_history")
-      .select("price, recorded_at, marketplaces(name)")
-      .eq("product_id", product.id)
-      .order("recorded_at", { ascending: true });
+    // P7-Post: read from price_snapshots (via helper). The legacy
+    // `price_history` table was dropped in migration 129. Helper returns
+    // unified `PriceHistoryPoint[]` shape (date + per-marketplace prices),
+    // which is what `PriceHistoryChart` and the median-30/90 day
+    // calculators in `product/[slug]/page.tsx` expect.
+    const priceHistory = await fetchPriceHistoryByProductId(product.id as string);
 
     return NextResponse.json({
       product,
       prices,
-      priceHistory: history || [],
+      priceHistory,
     });
   } catch (err) {
     console.error("Product detail API error:", err);

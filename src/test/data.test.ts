@@ -231,35 +231,46 @@ describe("P7: fetchPriceHistoryByProductId (merged chart data)", () => {
     vi.clearAllMocks();
   });
 
-  it("merges price_history + price_snapshots into unified shape", async () => {
-    // Legacy price_history
-    const phRows = [
-      { product_id: "p1", price: 100000, recorded_at: "2026-06-10", marketplaces: { name: "tokopedia" } },
-      { product_id: "p1", price: 95000, recorded_at: "2026-06-10", marketplaces: { name: "shopee" } },
-      { product_id: "p1", price: 98000, recorded_at: "2026-06-11", marketplaces: { name: "tokopedia" } },
-    ];
-    // New price_snapshots (joined to offers)
+  it("returns price_snapshots in unified shape, deduped per (date, marketplace)", async () => {
+    // P7-Post: helper no longer reads from `price_history` (legacy table
+    // dropped in migration 129). All chart data comes from
+    // `price_snapshots` joined to offers.
     const psRows = [
+      {
+        current_price: 100000,
+        captured_at: "2026-06-10T08:00:00Z",
+        offers: { product_id: "p1", marketplace_id: "m1", marketplaces: { name: "tokopedia" } },
+      },
+      {
+        current_price: 95000,
+        captured_at: "2026-06-10T08:00:00Z",
+        offers: { product_id: "p1", marketplace_id: "m2", marketplaces: { name: "shopee" } },
+      },
+      {
+        // Same date + marketplace as tokopedia above, later capture —
+        // the later one should win (per the helper's dedup logic).
+        current_price: 92000,
+        captured_at: "2026-06-10T20:00:00Z",
+        offers: { product_id: "p1", marketplace_id: "m1", marketplaces: { name: "tokopedia" } },
+      },
+      {
+        current_price: 98000,
+        captured_at: "2026-06-11T10:00:00Z",
+        offers: { product_id: "p1", marketplace_id: "m1", marketplaces: { name: "tokopedia" } },
+      },
       {
         current_price: 92000,
         captured_at: "2026-06-11T10:00:00Z",
-        offers: { marketplace_id: "m1", marketplaces: { name: "blibli" } },
+        offers: { product_id: "p1", marketplace_id: "m3", marketplaces: { name: "blibli" } },
       },
       {
         current_price: 97000,
         captured_at: "2026-06-12T10:00:00Z",
-        offers: { marketplace_id: "m2", marketplaces: { name: "tokopedia" } },
+        offers: { product_id: "p1", marketplace_id: "m1", marketplaces: { name: "tokopedia" } },
       },
     ];
 
     mockFrom.mockImplementation((table: string) => {
-      if (table === "price_history") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ data: phRows, error: null }),
-          }),
-        };
-      }
       if (table === "price_snapshots") {
         return {
           select: vi.fn().mockReturnValue({
@@ -276,67 +287,24 @@ describe("P7: fetchPriceHistoryByProductId (merged chart data)", () => {
     // Should have 3 distinct dates: 2026-06-10, 2026-06-11, 2026-06-12
     expect(result).toHaveLength(3);
 
-    // Find 2026-06-10 — should have tokopedia + shopee
+    // Find 2026-06-10 — should have tokopedia (92000, the later capture)
+    // and shopee (95000)
     const day1 = result.find((r) => r.date === "2026-06-10")!;
-    expect(day1.prices.tokopedia).toBe(100000);
+    expect(day1.prices.tokopedia).toBe(92000);
     expect(day1.prices.shopee).toBe(95000);
 
-    // Find 2026-06-11 — should have tokopedia (from legacy) + blibli (from new)
+    // Find 2026-06-11 — should have tokopedia (98000) + blibli (92000)
     const day2 = result.find((r) => r.date === "2026-06-11")!;
     expect(day2.prices.tokopedia).toBe(98000);
     expect(day2.prices.blibli).toBe(92000);
 
-    // Find 2026-06-12 — only from new
+    // Find 2026-06-12 — only tokopedia
     const day3 = result.find((r) => r.date === "2026-06-12")!;
     expect(day3.prices.tokopedia).toBe(97000);
   });
 
-  it("does NOT overwrite legacy data with new sparse data", async () => {
-    const phRows = [
-      { product_id: "p1", price: 100000, recorded_at: "2026-06-10", marketplaces: { name: "tokopedia" } },
-    ];
-    const psRows = [
-      {
-        current_price: 50000, // different price
-        captured_at: "2026-06-10T10:00:00Z",
-        offers: { marketplace_id: "m1", marketplaces: { name: "tokopedia" } },
-      },
-    ];
-
+  it("returns empty array when no snapshots exist", async () => {
     mockFrom.mockImplementation((table: string) => {
-      if (table === "price_history") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ data: phRows, error: null }),
-          }),
-        };
-      }
-      if (table === "price_snapshots") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ data: psRows, error: null }),
-          }),
-        };
-      }
-      return { select: vi.fn() };
-    });
-
-    const { fetchPriceHistoryByProductId } = await import("@/lib/supabase/data");
-    const result = await fetchPriceHistoryByProductId("p1");
-
-    // Legacy 100000 wins
-    expect(result[0].prices.tokopedia).toBe(100000);
-  });
-
-  it("returns empty array when both sources are empty", async () => {
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "price_history") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        };
-      }
       if (table === "price_snapshots") {
         return {
           select: vi.fn().mockReturnValue({

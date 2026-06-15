@@ -57,7 +57,17 @@ export async function GET(request: NextRequest) {
 
     const typedOffers = allOffers as OfferRow[];
     const offerUpdates: Array<{ id: string; current_price: number; last_checked_at: string }> = [];
-    const historyRecords: Array<{ product_id: string; marketplace_id: string; price: number; recorded_at: string }> = [];
+    // P7-Post: snapshots are now written per offer (granular) instead of
+    // per (product, marketplace, day). The legacy `price_history` insert
+    // (one row per product+marketplace+date) is gone — `price_history`
+    // was dropped in migration 129.
+    const snapshotRecords: Array<{
+      offer_id: string;
+      current_price: number;
+      stock_status: string;
+      source: string;
+      captured_at: string;
+    }> = [];
     const productStats = new Map<string, { prices: number[]; id: string }>();
 
     for (const offerRow of typedOffers) {
@@ -75,12 +85,13 @@ export async function GET(request: NextRequest) {
         last_checked_at: new Date().toISOString(),
       });
 
-      // Collect history record
-      historyRecords.push({
-        product_id: offerRow.product_id,
-        marketplace_id: offerRow.marketplace_id,
-        price: newPrice,
-        recorded_at: today,
+      // Collect snapshot record (per offer, granular chart data)
+      snapshotRecords.push({
+        offer_id: offerRow.id,
+        current_price: newPrice,
+        stock_status: offerRow.stock_status ?? "unknown",
+        source: "manual_admin",
+        captured_at: new Date().toISOString(),
       });
 
       // Collect for product stats calculation (only in-stock)
@@ -108,17 +119,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ✅ BATCH INSERT: Insert all history records in batches
-    let historyInserted = 0;
+    // ✅ BATCH INSERT: Insert all snapshot records in batches
+    let snapshotsInserted = 0;
 
-    for (let i = 0; i < historyRecords.length; i += BATCH_SIZE) {
-      const batch = historyRecords.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < snapshotRecords.length; i += BATCH_SIZE) {
+      const batch = snapshotRecords.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
-        .from("price_history")
-        .upsert(batch as never, { onConflict: "product_id,marketplace_id,recorded_at" });
+        .from("price_snapshots")
+        .insert(batch as never);
 
       if (!error) {
-        historyInserted += batch.length;
+        snapshotsInserted += batch.length;
+      } else {
+        console.error("price_snapshots batch insert failed:", error);
       }
     }
 
@@ -171,7 +184,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       products: products.length,
       offersUpdated,
-      historyInserted,
+      snapshotsInserted,
       productsUpdated,
       alertsSent,
       performance: "Optimized batch operations - reduced from 1500+ to ~5 queries",

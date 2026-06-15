@@ -37,18 +37,26 @@ export async function GET(request: NextRequest) {
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
+    // P7-Post: read from price_snapshots (joined to offers for product_id +
+    // marketplace name). The legacy `price_history` table was dropped in
+    // migration 129. `captured_at` replaces `recorded_at`, `current_price`
+    // replaces `price`, and the marketplace name is reached via the FK
+    // chain `price_snapshots -> offers -> marketplaces`.
     const { data: history, error } = await supabase
-      .from("price_history")
+      .from("price_snapshots")
       .select(`
-        price,
-        recorded_at,
-        marketplaces (
-          display_name
+        current_price,
+        captured_at,
+        offers!inner(
+          product_id,
+          marketplaces (
+            display_name
+          )
         )
       `)
-      .eq("product_id", productId)
-      .gte("recorded_at", ninetyDaysAgo.toISOString().split("T")[0])
-      .order("recorded_at", { ascending: false });
+      .eq("offers.product_id", productId)
+      .gte("captured_at", ninetyDaysAgo.toISOString().split("T")[0])
+      .order("captured_at", { ascending: false });
 
     if (error) {
       console.error("Price history export error:", error);
@@ -59,8 +67,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No price history available" }, { status: 404 });
     }
 
+    // Normalize to legacy row shape for the CSV builder.
+    const normalized = history.map((item) => {
+      const offerRaw = item.offers;
+      const o = Array.isArray(offerRaw) ? offerRaw[0] : offerRaw;
+      const mp = o?.marketplaces as unknown as { display_name: string } | { display_name: string }[] | null;
+      const marketplace = Array.isArray(mp) ? mp[0] : mp;
+      return {
+        price: item.current_price as number,
+        recorded_at: item.captured_at as string,
+        marketplaces: marketplace ?? null,
+      };
+    });
+
     // Format data for CSV
-    const csvData = history.map((item) => {
+    const csvData = normalized.map((item) => {
       const marketplace = item.marketplaces as unknown as { display_name: string } | null;
       return {
         "Date": new Date(item.recorded_at).toLocaleDateString("id-ID"),

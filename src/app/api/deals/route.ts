@@ -1,17 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { calculateDealScore, type DealScoreInput } from '@/lib/deal-score';
-import { toPriceViews, type OfferRow } from '@/lib/ingestion/adapter';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { calculateDealScore, type DealScoreInput } from "@/lib/deal-score";
+import { toPriceViews, type OfferRow } from "@/lib/ingestion/adapter";
+import { fetchHistoricalStatsByProductIds } from "@/lib/supabase/data";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Cache for 1 hour
-
-interface PriceHistoryRecord {
-  price: number;
-  recorded_at: string;
-}
 
 interface ProductWithOffers {
   id: string;
@@ -21,63 +17,15 @@ interface ProductWithOffers {
   category: string;
   lowest_price: number | null;
   offers: OfferRow[];
-  price_history: PriceHistoryRecord[];
-}
-
-/**
- * Calculate median from array of numbers
- */
-function calculateMedian(values: number[]): number | null {
-  if (values.length === 0) return null;
-
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1] + sorted[mid]) / 2;
-  }
-  return sorted[mid];
-}
-
-/**
- * Calculate historical statistics from price history
- */
-function calculateHistoricalStats(priceHistory: PriceHistoryRecord[], currentDate: Date) {
-  if (priceHistory.length === 0) {
-    return {
-      median30Day: null,
-      median90Day: null,
-      lowestHistoricalPrice: null,
-    };
-  }
-
-  const thirtyDaysAgo = new Date(currentDate);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  const ninetyDaysAgo = new Date(currentDate);
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-
-  const last30DayPrices = priceHistory
-    .filter(h => new Date(h.recorded_at) >= thirtyDaysAgo)
-    .map(h => h.price);
-
-  const last90DayPrices = priceHistory
-    .filter(h => new Date(h.recorded_at) >= ninetyDaysAgo)
-    .map(h => h.price);
-
-  const allPrices = priceHistory.map(h => h.price);
-
-  return {
-    median30Day: calculateMedian(last30DayPrices),
-    median90Day: calculateMedian(last90DayPrices),
-    lowestHistoricalPrice: allPrices.length > 0 ? Math.min(...allPrices) : null,
-  };
 }
 
 /**
  * GET /api/deals
  *
- * Returns products with calculated deal scores based on real historical data.
+ * P7-Post: historical stats (median30, median90, lowestHistorical) are
+ * fetched in a single batched query via `fetchHistoricalStatsByProductIds`
+ * (replaces the per-product `price_history` PostgREST embed).
+ *
  * Optimized with proper indexing and batch processing.
  *
  * A-002: Now reads from `offers` (post-114 schema) instead of legacy `prices`.
@@ -105,6 +53,10 @@ export async function GET(request: NextRequest) {
     // Build query — read from `offers` (A-002 migration). Only active offers.
     // Filter is_active here so the in-stock filter below doesn't run on
     // stale/deactivated rows.
+    // P7-Post: dropped the `price_history` PostgREST embed (legacy table
+    // dropped in migration 129). Historical stats are now fetched in a
+    // single batched query against `price_snapshots` after the product
+    // list is materialized (see fetchHistoricalStatsByProductIds).
     let query = supabase
       .from('products')
       .select(`
@@ -129,10 +81,6 @@ export async function GET(request: NextRequest) {
             name,
             display_name
           )
-        ),
-        price_history (
-          price,
-          recorded_at
         )
       `)
       .order('created_at', { ascending: false });
@@ -157,10 +105,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ products: [], total: 0 });
     }
 
+    const rawProducts = products as unknown as ProductWithOffers[];
+    const productIds = rawProducts.map((p) => p.id);
+
+    // Batched stats query: 1 round trip for all candidate products.
+    const statsByProduct = await fetchHistoricalStatsByProductIds(
+      productIds,
+      currentDate
+    );
+
     // Calculate deal scores with real historical data.
     // The Supabase join returns a generic shape (offers is an array of
     // unknown rows). Adapter normalizes each into the narrower PriceView.
-    const rawProducts = products as unknown as ProductWithOffers[];
     const productsWithScores = rawProducts
       .filter((product) => {
         // Only include products that have at least one in-stock offer
@@ -188,53 +144,54 @@ export async function GET(request: NextRequest) {
         // type propagates).
         const bestOffer = inStockPrices[0];
 
-      // Calculate historical statistics
-      const stats = calculateHistoricalStats(
-        product.price_history || [],
-        currentDate
-      );
+        // Historical stats: looked up from the batched result by product id.
+        const stats = statsByProduct[product.id] ?? {
+          median30Day: null,
+          median90Day: null,
+          lowestHistoricalPrice: null,
+        };
 
-      // Build deal score input. Now using real data from `offers`:
-      // - isOfficialStore: from best offer's marketplace_offer data
-      // - hasFreeShipping: derived from shipping_estimate
-      // - sellerReviewCount: would need review_count column (A-003 still
-      //   pending — falls back to undefined).
-      const dealScoreInput: DealScoreInput = {
-        currentPrice: lowestPrice,
-        median30Day: stats.median30Day || undefined,
-        median90Day: stats.median90Day || undefined,
-        lowestHistoricalPrice: stats.lowestHistoricalPrice || undefined,
-        sellerRating: bestOffer?.seller_rating || undefined,
-        sellerReviewCount: undefined, // A-003: review_count missing in DB
-        isOfficialStore: false, // offers.is_official_store is selected; not in PriceView — see note
-        stockStatus: bestOffer?.in_stock ? 'in_stock' : 'unknown',
-        hasVoucher: false, // offers.voucher_text exists; not yet in PriceView
-        hasFreeShipping: bestOffer?.shipping_cost === 0,
-      };
+        // Build deal score input. Now using real data from `offers`:
+        // - isOfficialStore: from best offer's marketplace_offer data
+        // - hasFreeShipping: derived from shipping_estimate
+        // - sellerReviewCount: would need review_count column (A-003 still
+        //   pending — falls back to undefined).
+        const dealScoreInput: DealScoreInput = {
+          currentPrice: lowestPrice,
+          median30Day: stats.median30Day || undefined,
+          median90Day: stats.median90Day || undefined,
+          lowestHistoricalPrice: stats.lowestHistoricalPrice || undefined,
+          sellerRating: bestOffer?.seller_rating || undefined,
+          sellerReviewCount: undefined, // A-003: review_count missing in DB
+          isOfficialStore: false, // offers.is_official_store is selected; not in PriceView — see note
+          stockStatus: bestOffer?.in_stock ? 'in_stock' : 'unknown',
+          hasVoucher: false, // offers.voucher_text exists; not yet in PriceView
+          hasFreeShipping: bestOffer?.shipping_cost === 0,
+        };
 
-      // Calculate deal score
-      const dealScore = calculateDealScore(dealScoreInput);
+        // Calculate deal score
+        const dealScore = calculateDealScore(dealScoreInput);
 
-      return {
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        image_url: product.image_url,
-        category: product.category,
-        lowest_price: lowestPrice,
-        marketplace_count: inStockPrices.length,
-        best_marketplace: bestOffer?.marketplaces?.[0]?.display_name || null,
-        deal_score: dealScore.score,
-        deal_label: dealScore.label,
-        deal_color: dealScore.color,
-        deal_explanation: dealScore.explanation,
-        deal_risks: dealScore.risks,
-        confidence: dealScore.confidence,
-        // Expose adapter-mapped offers in the legacy prices shape so
-        // existing components (PriceComparisonTable etc.) keep working.
-        prices: offerViews,
-      };
-    });
+        return {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          image_url: product.image_url,
+          category: product.category,
+          lowest_price: lowestPrice,
+          marketplace_count: inStockPrices.length,
+          best_marketplace: bestOffer?.marketplaces?.[0]?.display_name || null,
+          deal_score: dealScore.score,
+          deal_label: dealScore.label,
+          deal_color: dealScore.color,
+          deal_explanation: dealScore.explanation,
+          deal_risks: dealScore.risks,
+          confidence: dealScore.confidence,
+          // Expose adapter-mapped offers in the legacy prices shape so
+          // existing components (PriceComparisonTable etc.) keep working.
+          prices: offerViews,
+        };
+      });
 
     // Filter by minimum score
     const filtered = productsWithScores
