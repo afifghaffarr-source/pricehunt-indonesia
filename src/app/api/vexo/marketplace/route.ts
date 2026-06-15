@@ -3,7 +3,6 @@ import { getAuthenticatedUser } from "@/lib/api-auth";
 import { checkPersistentRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 
 const VEXO_BASE = process.env.VEXO_API_BASE_URL || "https://vexoapi.dev";
-const VEXO_KEY = process.env.VEXO_API_KEY || "";
 
 interface VexoMarketplaceData {
   status: number | boolean;
@@ -26,6 +25,9 @@ interface VexoMarketplaceData {
 }
 
 export async function GET(request: NextRequest) {
+  // v1.5.2: read env at request time so tests can override it.
+  const VEXO_KEY = process.env.VEXO_API_KEY || "";
+
   const user = await getAuthenticatedUser();
   const { searchParams } = request.nextUrl;
   const url = (searchParams.get("url") || "").trim();
@@ -78,6 +80,24 @@ export async function GET(request: NextRequest) {
     }
 
     const d = data.data;
+
+    // v1.5.2: refuse to serve mock/fake data. VexoAPI's `/api/tools/marketplace`
+    // currently returns `_meta.is_mock: true` for all calls (the endpoint is
+    // not yet connected to a real marketplace data source). Passing that
+    // through to the frontend would mean showing fake prices/images to users
+    // — exactly the silent-failure mode we want to avoid. Surface the
+    // unavailability instead so callers can fall back gracefully.
+    if (d._meta?.is_mock) {
+      return NextResponse.json(
+        {
+          error: "VexoAPI marketplace saat ini mengembalikan data mock. Fitur ini belum aktif.",
+          data: null,
+          mockDisabled: true,
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       product: {
@@ -93,7 +113,7 @@ export async function GET(request: NextRequest) {
         soldCount: d.sold_count,
         stockStatus: d.stock_status,
       },
-      isMock: d._meta?.is_mock || false,
+      isMock: false,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";

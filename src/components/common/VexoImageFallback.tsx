@@ -48,11 +48,14 @@ export function VexoImageFallback({
 
     async function fetchImage() {
       // 1) Try VexoAPI marketplace (returns product image from marketplace data)
+      // v1.5.2: if VexoAPI returns mock data (503 + mockDisabled: true) or
+      // any other error, fall through to the next fallback instead of
+      // serving a fake image URL to users.
       try {
         const mktRes = await fetch(`/api/vexo/marketplace?name=${encodeURIComponent(productName)}`);
         const mktData = await mktRes.json();
         if (cancelled) return;
-        if (mktData.success && mktData.product?.imageUrl) {
+        if (mktRes.ok && mktData.success && mktData.product?.imageUrl) {
           setSrc(mktData.product.imageUrl);
           setImageError(false);
           return;
