@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - PHASE 4D: WCAG 2.1 AA Audit (2026-06-15)
+- **`@axe-core/playwright@4.11.3`** + **`axe-core@4.12.1`** dev deps — automated a11y sweep
+- **`tests/e2e/a11y.spec.ts`** (5 tests) — WCAG 2.1 AA scan across 4 critical pages: home, search, product detail, login. Per-page tests fail on critical/serious violations; a summary report groups all violations by rule for triage.
+- **`docs/WCAG_AUDIT_2026-06-15.md`** — full audit report: ruleset, baseline violations, fixes, file-by-file change log, re-run instructions.
+- E2E test count: **19/19 pass** (5 a11y + 14 existing critical flows).
+
+### Fixed - PHASE 4D: WCAG 2.1 AA Audit (2026-06-15)
+- **CRITICAL: `button-name`** (search page) — `<SelectTrigger>` for category + sort filters had no accessible name (Radix UI renders as `role="combobox"` with name only injected by `SelectValue` child, but axe scans the trigger before the value is injected). Added `aria-label="Filter kategori"` and `aria-label="Urutkan hasil"`.
+- **SERIOUS: `color-contrast`** (3 pages, 11 nodes) — multiple `text-white` on Tailwind 500/600 backgrounds failed 4.5:1 contrast. Bumped all badge/button backgrounds to 700+ shades (emerald-700, green-700, amber-700, red-700, blue-700). Affected files:
+  - `src/lib/utils.ts` — central `getDealScoreInfo()` colors
+  - `src/app/page.tsx` — hero badge + opacity text (`text-primary-foreground/80` → `text-primary-foreground`)
+  - `src/app/deals/page.tsx` — deal score badge
+  - `src/app/global-error.tsx` — error retry button
+  - `src/components/product/BuyOrWaitDecision.tsx` — recommendation colors (4 categories)
+  - `src/components/product/ConfidenceBadge.tsx` — confidence badges (2 levels)
+  - `src/components/product/PriceComparisonPreview.tsx` — cheapest badge + CTA button
+  - `src/components/product/SocialShare.tsx` — WhatsApp share button
+  - `src/test/utils.test.ts` — test expectations updated to match new color values
+
 ### Fixed
 - `collectors/cron_scraper.py`: also fetch `crawl_status='pending'` targets (was missing them — only `queued` was crawled). Verified via end-to-end test (test_cron_query.py, test_or_filter.py).
 - `supabase/migrations/122_performance_indexes_safe.sql`: fix table name `rate_limits` → `api_rate_limits`. The actual table is `api_rate_limits` (created in migration 106); the original 122 referenced the wrong name and would fail on clean apply with "relation does not exist".

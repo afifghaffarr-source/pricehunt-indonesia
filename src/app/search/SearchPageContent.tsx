@@ -238,7 +238,7 @@ export function SearchPageContent() {
             setCategory(val === "all" || val === null ? undefined : val)
           }
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px]" aria-label="Filter kategori">
             <SelectValue placeholder="Kategori" />
           </SelectTrigger>
           <SelectContent>
@@ -254,7 +254,7 @@ export function SearchPageContent() {
           value={sortBy}
           onValueChange={(val: string | null) => setSortBy(val || "deal-score")}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Urutkan hasil">
             <SelectValue placeholder="Urutkan" />
           </SelectTrigger>
           <SelectContent>

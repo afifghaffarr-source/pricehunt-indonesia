@@ -164,7 +164,7 @@ export default async function DealsPage() {
                       <Badge
                         className={
                           product.dealScore >= 85
-                            ? "bg-green-500 hover:bg-green-600"
+                            ? "bg-green-700 hover:bg-green-800"
                             : product.dealScore >= 75
                             ? "bg-blue-500 hover:bg-blue-600"
                             : "bg-gray-500 hover:bg-gray-600"

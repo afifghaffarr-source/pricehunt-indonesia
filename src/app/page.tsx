@@ -143,7 +143,7 @@ export default async function HomePage() {
                 <h3 className="text-lg font-semibold">iPhone 15 Pro Max 256GB</h3>
                 <p className="text-sm text-muted-foreground">Contoh analisis real-time</p>
               </div>
-              <Badge className="bg-green-600 text-white">
+              <Badge className="bg-green-700 text-white">
                 Deal Score: 87/100
               </Badge>
             </div>
@@ -567,7 +567,7 @@ export default async function HomePage() {
           <h2 className="text-2xl font-bold sm:text-3xl">
             Belanja Cerdas, Hemat Waktu & Uang
           </h2>
-          <p className="mx-auto mt-3 max-w-lg text-primary-foreground/80">
+          <p className="mx-auto mt-3 max-w-lg text-primary-foreground">
             Dirancang untuk membantu pembeli Indonesia membandingkan harga dengan lebih cerdas, jujur, dan berbasis data.
           </p>
           <Link

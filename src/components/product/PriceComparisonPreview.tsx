@@ -75,7 +75,7 @@ export function PriceComparisonPreview({
                 {/* Cheapest Badge */}
                 {isCheapest && (
                   <div className="absolute -right-1 -top-1">
-                    <Badge className="gap-1 bg-green-600 text-white shadow-sm hover:bg-green-600">
+                    <Badge className="gap-1 bg-green-700 text-white shadow-sm hover:bg-green-700">
                       <TrendingDown className="h-3 w-3" />
                       Termurah
                     </Badge>
@@ -125,7 +125,7 @@ export function PriceComparisonPreview({
                     rel="noopener noreferrer"
                     className={`mt-2 flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                       isCheapest
-                        ? "bg-green-600 text-white hover:bg-green-700"
+                        ? "bg-green-700 text-white hover:bg-green-800"
                         : "bg-muted text-muted-foreground hover:bg-muted/80"
                     }`}
                   >

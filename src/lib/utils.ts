@@ -27,11 +27,14 @@ export function formatCompactRupiah(amount: number): string {
 }
 
 export function getDealScoreInfo(score: number): DealScoreInfo {
+  // Background colors chosen for WCAG 2.1 AA compliance on small (12px) white
+  // text. Tailwind 500/600 shades fail contrast (3.0-3.6:1); 700+ shades pass
+  // 4.5:1+. See tests/e2e/a11y.spec.ts.
   if (score >= 85) {
     return {
       label: "Harga Terbaik",
       color: "text-white",
-      bgColor: "bg-emerald-600",
+      bgColor: "bg-emerald-700",
       description: "Harga ini jauh di bawah rata-rata pasar!",
     };
   }
@@ -39,7 +42,7 @@ export function getDealScoreInfo(score: number): DealScoreInfo {
     return {
       label: "Deal Bagus",
       color: "text-white",
-      bgColor: "bg-green-500",
+      bgColor: "bg-green-700",
       description: "Harga lebih murah dari kebanyakan penjual.",
     };
   }
@@ -47,14 +50,14 @@ export function getDealScoreInfo(score: number): DealScoreInfo {
     return {
       label: "Harga Wajar",
       color: "text-white",
-      bgColor: "bg-amber-500",
+      bgColor: "bg-amber-700",
       description: "Harga di sekitar rata-rata pasar.",
     };
   }
   return {
     label: "Mahal",
     color: "text-white",
-    bgColor: "bg-red-500",
+    bgColor: "bg-red-700",
     description: "Harga ini di atas rata-rata pasar.",
   };
 }

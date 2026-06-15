@@ -142,7 +142,7 @@ export function BuyOrWaitDecision({
   const config = {
     buy_now: {
       icon: CheckCircle2,
-      color: "text-green-600 dark:text-green-400",
+      color: "text-green-700 dark:text-green-400",
       bgColor: "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30",
       borderColor: "border-green-200 dark:border-green-800",
       cardBgColor: "bg-green-50/50 dark:bg-green-950/20",
@@ -152,7 +152,7 @@ export function BuyOrWaitDecision({
     },
     wait: {
       icon: Clock,
-      color: "text-yellow-600 dark:text-yellow-400",
+      color: "text-yellow-700 dark:text-yellow-400",
       bgColor: "bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30",
       borderColor: "border-yellow-200 dark:border-yellow-800",
       cardBgColor: "bg-yellow-50/50 dark:bg-yellow-950/20",
@@ -162,7 +162,7 @@ export function BuyOrWaitDecision({
     },
     watch: {
       icon: Eye,
-      color: "text-blue-600 dark:text-blue-400",
+      color: "text-blue-700 dark:text-blue-400",
       bgColor: "bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30",
       borderColor: "border-blue-200 dark:border-blue-800",
       cardBgColor: "bg-blue-50/50 dark:bg-blue-950/20",
@@ -172,7 +172,7 @@ export function BuyOrWaitDecision({
     },
     avoid: {
       icon: AlertTriangle,
-      color: "text-red-600 dark:text-red-400",
+      color: "text-red-700 dark:text-red-400",
       bgColor: "bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30",
       borderColor: "border-red-200 dark:border-red-800",
       cardBgColor: "bg-red-50/50 dark:bg-red-950/20",
