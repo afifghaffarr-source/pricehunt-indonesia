@@ -1,0 +1,244 @@
+name: Production Monitor
+
+# ============================================================================
+# BijakBeli.app — Production Health Monitor
+# ============================================================================
+# Runs daily. Checks two things:
+#   1. E2E workflow status (last N runs must all be successful)
+#   2. Production URL health (HTTP 200, no error page)
+#
+# On SUCCESS: silent exit (no notifications, no token waste).
+# On FAILURE: opens/updates a GitHub Issue with label "monitoring-alert"
+#             (owner is auto-subscribed to Issues on their own repo).
+#
+# Triggers: cron (daily 09:00 UTC) + manual dispatch.
+#
+# Cost: ~30s of GitHub Actions minutes per day. ~$0.05/month.
+# No new secrets required (uses GITHUB_TOKEN + existing PRODUCTION_URL).
+# ============================================================================
+
+on:
+  schedule:
+    # Daily at 09:00 UTC (16:00 WIB). After typical workday push window.
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      lookback:
+        description: 'How many recent E2E runs to check'
+        required: false
+        default: '5'
+        type: string
+
+# Don't pile up runs if previous one is still going.
+concurrency:
+  group: production-monitor
+  cancel-in-progress: false
+
+jobs:
+  check-e2e:
+    name: Check E2E workflow health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      status: ${{ steps.check.outputs.status }}
+      failed_runs: ${{ steps.check.outputs.failed_runs }}
+    steps:
+      - name: Check last N E2E runs
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOOKBACK: ${{ github.event.inputs.lookback || '5' }}
+        run: |
+          echo "Checking last $LOOKBACK E2E runs..."
+
+          # Fetch recent workflow runs for E2E workflow.
+          # GH_TOKEN is provided via env block (auto-redacted in logs).
+          response=$(curl -sf \
+            -H "Authorization: Bearer $GH_TOKEN \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/e2e.yml/runs?per_page=$LOOKBACK")
+
+          if [ -z "$response" ]; then
+            echo "::error::Failed to query GitHub API"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "failed_runs=api_error" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Count failed runs (conclusion != success and != skipped)
+          failed=$(echo "$response" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          runs = data.get('workflow_runs', [])
+          failed = [r for r in runs if r.get('conclusion') not in ('success', 'skipped')]
+          print(','.join(f\"#{r['run_number']}:{r.get('conclusion','?')}\" for r in failed))
+          ")
+
+          if [ -n "$failed" ]; then
+            echo "::warning::Failed E2E runs detected: $failed"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "failed_runs=$failed" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "All last $LOOKBACK E2E runs successful"
+            echo "status=ok" >> $GITHUB_OUTPUT
+            echo "failed_runs=" >> $GITHUB_OUTPUT
+          fi
+
+  check-url:
+    name: Check production URL health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      status: ${{ steps.check.outputs.status }}
+      http_code: ${{ steps.check.outputs.http_code }}
+      latency_ms: ${{ steps.check.outputs.latency_ms }}
+    steps:
+      - name: Curl production URL
+        id: check
+        env:
+          URL: ${{ secrets.PRODUCTION_URL }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "::error::PRODUCTION_URL secret is not set"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "http_code=0" >> $GITHUB_OUTPUT
+            echo "latency_ms=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "Checking $URL..."
+
+          # Measure latency and capture body
+          start_ms=$(date +%s%3N)
+          body=$(curl -sS --max-time 30 -w "\n%{http_code}" -L "$URL" 2>&1)
+          end_ms=$(date +%s%3N)
+          latency=$((end_ms - start_ms))
+
+          http_code=$(echo "$body" | tail -1)
+          body_content=$(echo "$body" | sed '$d')
+
+          echo "HTTP: $http_code | Latency: ${latency}ms"
+          echo "Body length: $(echo "$body_content" | wc -c)"
+
+          # Check 1: HTTP code
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Non-200 HTTP code: $http_code"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "http_code=$http_code" >> $GITHUB_OUTPUT
+            echo "latency_ms=$latency" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Check 2: Look for known error markers in body
+          if echo "$body_content" | grep -qiE "terjadi kesalahan|something went wrong|application error"; then
+            echo "::error::Error marker found in body"
+            echo "Body excerpt:"
+            echo "$body_content" | head -c 500
+            echo
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "http_code=$http_code" >> $GITHUB_OUTPUT
+            echo "latency_ms=$latency" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Check 3: Latency too high (Vercel/Supabase cold start safety)
+          if [ "$latency" -gt 10000 ]; then
+            echo "::warning::High latency: ${latency}ms (not failing, just warning)"
+          fi
+
+          echo "Production URL is healthy"
+          echo "status=ok" >> $GITHUB_OUTPUT
+          echo "http_code=$http_code" >> $GITHUB_OUTPUT
+          echo "latency_ms=$latency" >> $GITHUB_OUTPUT
+
+  alert:
+    name: Create alert issue (on failure)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    needs: [check-e2e, check-url]
+    if: failure()
+    permissions:
+      issues: write
+    steps:
+      - name: Build alert body
+        id: build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_STATUS: ${{ needs.check-e2e.outputs.status }}
+          E2E_FAILED: ${{ needs.check-e2e.outputs.failed_runs }}
+          URL_STATUS: ${{ needs.check-url.outputs.status }}
+          URL_CODE: ${{ needs.check-url.outputs.http_code }}
+          URL_LATENCY: ${{ needs.check-url.outputs.latency_ms }}
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+        run: |
+          cat > /tmp/alert_body.md << EOF
+          ## 🔴 Production Health Alert
+
+          **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          **Workflow run:** $RUN_ID ([logs]($SERVER/$REPO/actions/runs/$RUN_ID))
+
+          ### E2E Status
+          - Status: \`$E2E_STATUS\`
+          - Failed runs: \`$E2E_FAILED\`
+
+          ### Production URL
+          - Status: \`$URL_STATUS\`
+          - HTTP code: \`$URL_CODE\`
+          - Latency: \`$URL_LATENCY\`ms
+
+          ### Action items
+          1. Check workflow run logs above
+          2. Check Vercel deployment status
+          3. Check Supabase project health
+          4. Verify GitHub secrets are still present
+
+          ---
+          _Auto-generated by production-monitor workflow._
+          EOF
+
+          cat /tmp/alert_body.md
+
+      - name: Create or update alert issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if an open monitoring-alert issue already exists
+          existing=$(curl -sf \
+            -H "Authorization: Bearer $GH_TOKEN \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues?labels=monitoring-alert&state=open" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d[0]['number'] if d else '')")
+
+          # Build the JSON body and choose endpoint
+          python3 << PYEOF
+          import json
+          body = open('/tmp/alert_body.md').read()
+          existing = "$existing"
+          if existing:
+              payload = {'body': body}
+              url = f"https://api.github.com/repos/${{ github.repository }}/issues/{existing}/comments"
+          else:
+              from datetime import datetime
+              payload = {
+                  'title': '🔴 Production health alert - ' + datetime.utcnow().strftime('%Y-%m-%d'),
+                  'body': body,
+                  'labels': ['monitoring-alert']
+              }
+              url = f"https://api.github.com/repos/${{ github.repository }}/issues"
+          with open('/tmp/alert_request.json', 'w') as f:
+              json.dump(payload, f)
+          with open('/tmp/alert_url.txt', 'w') as f:
+              f.write(url)
+          PYEOF
+
+          url=$(cat /tmp/alert_url.txt)
+          echo "POST $url"
+          curl -sf -X POST \
+            -H "Authorization: Bearer $GH_TOKEN \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            "$url" \
+            -d @/tmp/alert_request.json

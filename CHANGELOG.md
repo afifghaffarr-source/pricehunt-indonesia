@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - P6 Production Monitoring (2026-06-15)
+- **`.github/workflows/monitor.yml`** — daily production health check
+  - Schedule: 09:00 UTC daily + manual `workflow_dispatch` (lookback configurable)
+  - `check-e2e` job: queries GitHub API for last N E2E runs, fails if any non-success
+  - `check-url` job: curls `$PRODUCTION_URL`, fails on non-200 or error markers
+  - `alert` job: creates/updates GitHub Issue with `monitoring-alert` label on failure
+  - **No new secrets required** — uses existing `GITHUB_TOKEN` + `PRODUCTION_URL`
+  - Cost: ~30s/day, ~$0.05/month
+- **`scripts/health_check.py`** — ad-hoc local health check
+  - Checks: Supabase reachable, offers count, failed ingestion 24h, stale crawl targets 7d, Camofox
+  - Modes: human-readable, `--json`, `--fail-on-warning`
+  - Exit codes: 0 (healthy), 1 (failure), 2 (warning)
+  - Discovered & fixed 2 real bugs during testing: `ingestion_logs.success` → `log_status`, `crawl_targets.last_crawl_at` → `last_crawled_at`
+- **`docs/MONITORING_2026-06-15.md`** — full setup + alert flow + testing guide
+- **Design principle**: alert-on-failure only (no continuous noise), no VPS cron (saves tokens per user preference)
+
+### Note
+- No code changes to production — pure additive infra/docs.
+- GitHub Action will auto-activate on push to master.
+
+## [Unreleased - 2026-06-15 earlier]
+
 ### Added - P2 + P3 SQL Bundles (2026-06-15)
 - **`supabase/migrations/P2_STOCK_STATUS_BACKFILL.sql`** — backfill 159 unknown stock_status to in_stock (active+priced heuristic)
   - All 165 offers are `is_active=true + current_price>0`; 159 have `stock_status='unknown'`
