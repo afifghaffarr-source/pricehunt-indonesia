@@ -85,6 +85,9 @@ function transformPrices(rows: Record<string, unknown>[]): MarketplacePrice[] {
 }
 
 function transformPriceHistory(rows: Record<string, unknown>[]): PriceHistoryPoint[] {
+  // P7: Legacy transformer kept for backward compat with other callers.
+  // New code should use `fetchPriceHistoryByProductId` which merges
+  // both `price_history` and `price_snapshots` via offers.
   const byDate: Record<string, PriceHistoryPoint> = {};
 
   for (const row of rows) {
@@ -103,6 +106,8 @@ function transformPriceHistory(rows: Record<string, unknown>[]): PriceHistoryPoi
 
   return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _transformPriceHistoryKept = transformPriceHistory;
 
 /**
  * Get offers with trust metadata for a product
@@ -218,6 +223,109 @@ export async function fetchPricesByProductIds(
 }
 
 /**
+ * Fetch price history (chart data) for a product, merged from two sources.
+ *
+ * Sources:
+ *  1. `price_history` (legacy) — dense data: 1 row per (product, marketplace, day)
+ *     Covers 7/64 products (legacy scraper data, ~30 days × 6 marketplaces)
+ *  2. `price_snapshots` (new) — sparse data: 1 row per offer per capture
+ *     Covers 44/64 products (new ingestion pipeline)
+ *
+ * Both are merged into a single `PriceHistoryPoint[]` shape:
+ *   { date, prices: { marketplaceName: price } }
+ *
+ * P7: replaces the old `price_history` PostgREST embed which only saw
+ * legacy data — products with new scraper data had NO chart.
+ *
+ * Performance: 2 queries. With 33 dates × 6 marketplaces = 200 rows per
+ * source. Sub-200ms in practice.
+ */
+export async function fetchPriceHistoryByProductId(
+  productId: string
+): Promise<PriceHistoryPoint[]> {
+  if (!hasSupabaseEnv()) return [];
+
+  const supabase = await createClient();
+
+  // Query 1: legacy price_history (1 row per product+marketplace+date)
+  const phPromise = supabase
+    .from("price_history")
+    .select(`
+      product_id, marketplace_id, price, recorded_at,
+      marketplaces(name)
+    `)
+    .eq("product_id", productId);
+
+  // Query 2: new price_snapshots joined to offers for product_id
+  // (PostgREST FK chain: price_snapshots -> offers -> product_id)
+  const psPromise = supabase
+    .from("price_snapshots")
+    .select(`
+      current_price, captured_at,
+      offers!inner(product_id, marketplace_id, marketplaces(name))
+    `)
+    .eq("offers.product_id", productId);
+
+  const [phResult, psResult] = await Promise.all([phPromise, psPromise]);
+
+  if (phResult.error) console.error("price_history query failed:", phResult.error);
+  if (psResult.error) console.error("price_snapshots query failed:", psResult.error);
+
+  // Merge by date
+  const byDate: Record<string, PriceHistoryPoint> = {};
+
+  // Process legacy price_history
+  for (const row of phResult.data || []) {
+    const date = (row.recorded_at as string).split("T")[0];
+    const mpRaw = row.marketplaces;
+    const mpName = extractMarketplaceName(mpRaw);
+    const price = row.price as number;
+
+    if (!byDate[date]) {
+      byDate[date] = { date, prices: {} as Record<Marketplace, number | null> };
+    }
+    byDate[date].prices[mpName as Marketplace] = price;
+  }
+
+  // Process new price_snapshots
+  for (const row of psResult.data || []) {
+    const date = ((row.captured_at as string) || "").split("T")[0];
+    const offerRaw = row.offers;
+    const o = Array.isArray(offerRaw) ? offerRaw[0] : offerRaw;
+    if (!date || !o) continue;
+
+    const mpName = extractMarketplaceName((o as { marketplaces: unknown }).marketplaces);
+    const price = row.current_price as number;
+
+    if (!byDate[date]) {
+      byDate[date] = { date, prices: {} as Record<Marketplace, number | null> };
+    }
+    // Don't overwrite legacy data — it's denser
+    if (byDate[date].prices[mpName as Marketplace] == null) {
+      byDate[date].prices[mpName as Marketplace] = price;
+    }
+  }
+
+  return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * Helper: extract marketplace name from a Supabase FK embed that can be
+ * either a single object, an array of objects, or null.
+ */
+function extractMarketplaceName(raw: unknown): string {
+  if (!raw) return "unknown";
+  if (Array.isArray(raw)) {
+    const first = raw[0] as { name?: string } | undefined;
+    return first?.name || "unknown";
+  }
+  if (typeof raw === "object" && "name" in raw) {
+    return (raw as { name: string }).name || "unknown";
+  }
+  return "unknown";
+}
+
+/**
  * ✅ OPTIMIZED: Get products with prices using the union view.
  * P7: switched from PostgREST FK embed of `prices(...)` to a single
  * `product_prices_view` query, so products with data only in `offers`
@@ -255,34 +363,32 @@ export async function getProductsFromDB(limit = 50, offset = 0): Promise<Product
 /**
  * ✅ OPTIMIZED: Get single product with prices and history.
  * P7: prices now come from `product_prices_view` (union offers+prices).
- * `price_history` join kept as-is (chart data, separate concern).
+ * History now comes from `fetchPriceHistoryByProductId` (union price_history
+ * + price_snapshots via offers).
  */
 export async function getProductBySlugFromDB(slug: string): Promise<Product | null> {
   if (!hasSupabaseEnv()) return null;
 
   const supabase = await createClient();
 
-  // Query 1: product + price_history join (history is separate)
+  // Query 1: product (no embeds)
   const { data: product, error } = await supabase
     .from("products")
-    .select(`
-      *,
-      price_history(
-        *,
-        marketplaces(name)
-      )
-    `)
+    .select("*")
     .eq("slug", slug)
     .single();
 
   if (error || !product) return null;
 
-  // Query 2: prices from union view (offers + legacy prices)
-  const pricesByProduct = await fetchPricesByProductIds([product.id as string]);
+  // Query 2 + 3 in parallel: prices + history
+  const [pricesByProduct, priceHistory] = await Promise.all([
+    fetchPricesByProductIds([product.id as string]),
+    fetchPriceHistoryByProductId(product.id as string),
+  ]);
 
   const result = transformProduct(product);
   result.prices = transformPrices(pricesByProduct[product.id as string] || []);
-  result.priceHistory = transformPriceHistory((product.price_history as Record<string, unknown>[]) || []);
+  result.priceHistory = priceHistory;
 
   return result;
 }

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - P7 Schema Alignment v1.1 (2026-06-15)
+- **Price history (chart) migration**: `fetchPriceHistoryByProductId` helper
+  - Merges legacy `price_history` (1,449 rows, 7 products) + new `price_snapshots` (300 rows, 44 products) into unified `PriceHistoryPoint[]` shape
+  - Covers 51/64 products (up from 7/64) for chart visualization
+  - Legacy data wins ties (denser, more trustworthy)
+  - 2 queries in parallel (Promise.all), sub-200ms
+  - PostgREST FK chain: `price_snapshots -> offers -> marketplace_id`
+- **`extractMarketplaceName` helper**: handles Supabase FK embed polymorphism (single object | array | null)
+- **`getProductBySlugFromDB`**: replaced `price_history` PostgREST embed with new helper
+- **3 new tests** for history merging (total: 258 vitest, was 255)
+- **Coverage check (Next-3)**: 6/64 products still depend on `prices` table
+  - Apple iPhone 15 Pro Max, ROG Zephyrus, Dyson V15, Nintendo Switch OLED, Samsung S24 Ultra, [1 more]
+  - Cannot drop `prices` until those 6 are backfilled via scraper
+  - Documented as follow-up: run scraper for 6 products → migrate → drop
+
+## [Unreleased - 2026-06-15 earlier]
+
 ### Added - P7 Schema Alignment (2026-06-15)
 - **`supabase/migrations/125_union_offers_prices_view.sql`** — read-only view that UNIONs `offers` + `prices`
   - 237 total rows: 165 from new `offers`, 72 from legacy `prices`

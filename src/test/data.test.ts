@@ -226,3 +226,130 @@ describe("P7: transformPrices (unified view shape)", () => {
     expect(products[0].prices[0].inStock).toBe(false);
   });
 });
+
+describe("P7: fetchPriceHistoryByProductId (merged chart data)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("merges price_history + price_snapshots into unified shape", async () => {
+    // Legacy price_history
+    const phRows = [
+      { product_id: "p1", price: 100000, recorded_at: "2026-06-10", marketplaces: { name: "tokopedia" } },
+      { product_id: "p1", price: 95000, recorded_at: "2026-06-10", marketplaces: { name: "shopee" } },
+      { product_id: "p1", price: 98000, recorded_at: "2026-06-11", marketplaces: { name: "tokopedia" } },
+    ];
+    // New price_snapshots (joined to offers)
+    const psRows = [
+      {
+        current_price: 92000,
+        captured_at: "2026-06-11T10:00:00Z",
+        offers: { marketplace_id: "m1", marketplaces: { name: "blibli" } },
+      },
+      {
+        current_price: 97000,
+        captured_at: "2026-06-12T10:00:00Z",
+        offers: { marketplace_id: "m2", marketplaces: { name: "tokopedia" } },
+      },
+    ];
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "price_history") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: phRows, error: null }),
+          }),
+        };
+      }
+      if (table === "price_snapshots") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: psRows, error: null }),
+          }),
+        };
+      }
+      return { select: vi.fn() };
+    });
+
+    const { fetchPriceHistoryByProductId } = await import("@/lib/supabase/data");
+    const result = await fetchPriceHistoryByProductId("p1");
+
+    // Should have 3 distinct dates: 2026-06-10, 2026-06-11, 2026-06-12
+    expect(result).toHaveLength(3);
+
+    // Find 2026-06-10 — should have tokopedia + shopee
+    const day1 = result.find((r) => r.date === "2026-06-10")!;
+    expect(day1.prices.tokopedia).toBe(100000);
+    expect(day1.prices.shopee).toBe(95000);
+
+    // Find 2026-06-11 — should have tokopedia (from legacy) + blibli (from new)
+    const day2 = result.find((r) => r.date === "2026-06-11")!;
+    expect(day2.prices.tokopedia).toBe(98000);
+    expect(day2.prices.blibli).toBe(92000);
+
+    // Find 2026-06-12 — only from new
+    const day3 = result.find((r) => r.date === "2026-06-12")!;
+    expect(day3.prices.tokopedia).toBe(97000);
+  });
+
+  it("does NOT overwrite legacy data with new sparse data", async () => {
+    const phRows = [
+      { product_id: "p1", price: 100000, recorded_at: "2026-06-10", marketplaces: { name: "tokopedia" } },
+    ];
+    const psRows = [
+      {
+        current_price: 50000, // different price
+        captured_at: "2026-06-10T10:00:00Z",
+        offers: { marketplace_id: "m1", marketplaces: { name: "tokopedia" } },
+      },
+    ];
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "price_history") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: phRows, error: null }),
+          }),
+        };
+      }
+      if (table === "price_snapshots") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: psRows, error: null }),
+          }),
+        };
+      }
+      return { select: vi.fn() };
+    });
+
+    const { fetchPriceHistoryByProductId } = await import("@/lib/supabase/data");
+    const result = await fetchPriceHistoryByProductId("p1");
+
+    // Legacy 100000 wins
+    expect(result[0].prices.tokopedia).toBe(100000);
+  });
+
+  it("returns empty array when both sources are empty", async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "price_history") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      if (table === "price_snapshots") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return { select: vi.fn() };
+    });
+
+    const { fetchPriceHistoryByProductId } = await import("@/lib/supabase/data");
+    const result = await fetchPriceHistoryByProductId("p1");
+    expect(result).toEqual([]);
+  });
+});
