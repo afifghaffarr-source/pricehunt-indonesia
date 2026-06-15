@@ -18,6 +18,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/app/api/ingestion/route.ts` and `src/app/api/ingestion/offer-snapshot/route.ts` were writing to `ingestion_logs` with WRONG field names: `status` should be `log_status`, `error_summary` should be `error_message`, `finished_at` should be `completed_at`, `processed_count`/`success_count`/`failed_count` should be `items_processed`/`items_created`/`items_failed`, and `job_name`/`duration_ms` should live in `metadata`. These writes were **silently failing** in production (no `error` log path because the `await` was outside a try/catch in some places). Fixed in this batch.
   - `src/app/api/ingestion/route.ts` price-snapshot insert was using `price: number` (Zod schema) but the DB column is `current_price`. Mapped at insert time.
   - `src/app/api/scrape/route.ts` was the only remaining `as any` (products update) — replaced with a narrowly typed `as unknown as { update: ... }` assertion that documents the chain shape.
+- **PHASE 4C** (2026-06-15): `src/app/product/[slug]/error.tsx` was catching `notFound()` and rendering the "Produk Tidak Dapat Dimuat" error UI with HTTP 200. Added route-local `src/app/product/[slug]/not-found.tsx` and re-throw logic in `error.tsx` for `NEXT_HTTP_ERROR_FALLBACK` digests. Side effect: caught by new E2E test `product-detail.spec.ts > 404 for unknown product slug`.
+
+### Added - PHASE 4C: E2E Test Setup (2026-06-15)
+- **Playwright 1.60.0** + `@playwright/test` dev dep
+- **14 E2E tests** across 4 critical user flows:
+  - `tests/e2e/home.spec.ts` (3) — landing page hero, search bar, product card links, HTTP 200
+  - `tests/e2e/search.spec.ts` (3) — direct URL with query, form submit navigation, empty-search guard
+  - `tests/e2e/product-detail.spec.ts` (3) — product info render, 404 not-found UI, accessible nav
+  - `tests/e2e/auth.spec.ts` (5) — login form fields, forgot-password link, register link, HTML5 validation, invalid-creds error
+- **`playwright.config.ts`** — auto-builds + starts `next start` for local runs, uses external URL when `PLAYWRIGHT_BASE_URL` is set
+- **`.github/workflows/e2e.yml`** — separate CI workflow, caches Playwright Chromium, uploads HTML report + traces on failure (7 days) and success (3 days), runs on push to master/main + PRs
+- **`tests/e2e/README.md`** — operator docs (why `next start` not `next dev`, why `workers=1`, how to add a test)
+- **`src/app/product/[slug]/not-found.tsx`** — route-local 404 UI surfaced by E2E (real bug fix)
+- npm scripts: `test:e2e`, `test:e2e:headed`, `test:e2e:install`
+- `.gitignore`: added `test-results/`, `playwright-report/`, `playwright/.cache/`
 
 ### Added
 - `collectors/probe_schema.py`: diagnostic script — table/column existence + row counts via Supabase REST API. Useful for verifying migration state before applying.

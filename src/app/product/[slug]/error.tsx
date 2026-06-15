@@ -13,8 +13,20 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
+    // Re-throwing not-found errors is a no-op (they still bubble up to
+    // not-found.tsx), so we just skip logging them to avoid noise.
+    if (error.digest?.includes('NEXT_HTTP_ERROR_FALLBACK')) {
+      return;
+    }
     console.error('Product page error:', error)
   }, [error])
+
+  // Re-throw not-found errors so Next.js can render not-found.tsx with
+  // the correct 404 status. Without this, error.tsx catches the
+  // NEXT_HTTP_ERROR_FALLBACK;404 and renders with HTTP 200.
+  if (error.digest?.includes('NEXT_HTTP_ERROR_FALLBACK')) {
+    throw error;
+  }
 
   return (
     <div className="container mx-auto px-4 py-16">
