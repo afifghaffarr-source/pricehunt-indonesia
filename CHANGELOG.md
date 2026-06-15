@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Camofox Scraper PoC (2026-06-15)
+- **`collectors/camofox_scraper.py`** (370 LOC) — async Python wrapper for the Camofox REST API. `CamofoxScraper` async context manager; `TokopediaProduct` dataclass with normalized fields (title, price, stock, seller, etc.); `TOKOPEDIA_PRODUCT_SCHEMA` for Camofox's `extract-structured` endpoint. Zero external dependencies (uses urllib from stdlib).
+- **`collectors/test_camofox_scraper.py`** — 25 unit tests for parsers (`_parse_rupiah`, `_parse_int`, `_extract_regex`, `_last_word_before`, `_strip_official`). Pure functions, no camofox server required. Edge cases: `Rp14.980.000` vs `Rp 14.980.000` vs `Rp. 1.500.000`; garbage input; Indonesian location patterns; CamelCase split for concatenated seller names.
+- **`docs/CAMOFOX_POC_2026-06-15.md`** — full PoC report: baseline vs Playwright vs Camofox, REST API surface, live validation, performance notes, known limitations, next steps.
+- **`docs/camofox-tokopedia-product-poc-2026-06-15.png`** (378KB) — screenshot of real Tokopedia product page (Apple iPhone 15 Pro, DIGICELL seller) extracted via Camofox. Verified by vision model as legitimate Tokopedia listing.
+- **`docs/camofox-tokopedia-test-2026-06-15.png`** (411KB) — homepage screenshot from earlier validation.
+
+### Verified - Camofox PoC
+- Live test: `curl` to Tokopedia returns HTTP 410 (captcha); Camofox returns 200 with real product data
+- All 7 product fields extracted: title, price, stock, sold, rating, seller name, seller location
+- Example output: `Title: Apple iPhone 15 Pro 128GB 256GB 512GB Resmi - Titanium Hitam, 128GB SC RESMI`, `Price: Rp14,980,000`, `Stock: 8`, `Seller: DIGICELL`, `Location: Bandung`
+- End-to-end per product: ~6s (4s hydration + ~1s navigate + ~1s extract)
+
 ### Added - PHASE 4D: WCAG 2.1 AA Audit (2026-06-15)
 - **`@axe-core/playwright@4.11.3`** + **`axe-core@4.12.1`** dev deps — automated a11y sweep
 - **`tests/e2e/a11y.spec.ts`** (5 tests) — WCAG 2.1 AA scan across 4 critical pages: home, search, product detail, login. Per-page tests fail on critical/serious violations; a summary report groups all violations by rule for triage.
