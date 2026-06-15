@@ -73,7 +73,7 @@ SELECT
     ELSE 'unknown'::text
   END                                                   AS stock_status,
   p.shipping_cost                                       AS shipping_estimate,
-  NULL::jsonb                                           AS shipping_info,
+  NULL::text                                            AS shipping_info,
   NULL::integer                                         AS sold_count,
   NULL::text                                            AS voucher_text,
   false                                                 AS has_voucher,
