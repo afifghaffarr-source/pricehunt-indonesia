@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.2.0 (2026-06-15) — P7 Follow-up: Schema Consolidation
+
+- **Migration 125 APPLIED** — `product_prices_view` UNION view (237 rows → 280 with new backfills)
+- **Migration 126** — Backfill `prices` → `offers` (43 rows migrated)
+  - 6 products (Apple iPhone, ROG, Dyson, Switch, Samsung S24 2x) now have data in `offers`
+  - All 64 products now have ≥1 offer (was 49)
+- **Migration 127** — Backfill `price_history` → `price_snapshots` (5,550 rows migrated)
+  - 7 products get chart data (was 7/64, now 48/64 = 75% coverage)
+  - 5 backfilled products have 174-186 chart data points each
+- **Migration 128** — Drop legacy `prices` table
+  - View simplified to offers-only (208 rows)
+  - Schema now has 1 source of truth: `offers`
+- **Vercel cron fix** — `vercel.json` cron schedules changed from hourly/6-hourly to daily (Hobby plan limit)
+  - Old: `0 * * * *` for alerts, `0 */6 * * *` for prices → blocked all new deploys
+  - New: `0 0 * * *` for alerts, `0 6 * * *` for prices, `0 9 * * 1` for digest
+- **Production verified** — all 6 backfilled products show prices + chart on `bijakbeli.app`
+- **CI/CD fix** — Supabase PAT (`sbp_*`) saved to `/home/ubuntu/.config/bijakbeli/sb-pat` for future migrations
+
 ### Added - P7 Schema Alignment v1.1 (2026-06-15)
 - **Price history (chart) migration**: `fetchPriceHistoryByProductId` helper
   - Merges legacy `price_history` (1,449 rows, 7 products) + new `price_snapshots` (300 rows, 44 products) into unified `PriceHistoryPoint[]` shape
