@@ -86,21 +86,37 @@ export async function POST(request: NextRequest) {
       const mpId = mpMap.get(result.marketplace);
       if (!mpId) continue;
 
-      // Supabase generated types outdated - using type assertion until regenerated
-      await supabase.from("prices").upsert(
+      // A-002: write to `offers` (post-114) instead of legacy `prices`.
+      // Select an existing url for the (product, marketplace) tuple so the
+      // upsert can target the unique url index. Fall back to a synthetic URL.
+      const { data: existingOffers } = await supabase
+        .from("offers")
+        .select("id, url")
+        .eq("product_id", product.id)
+        .eq("marketplace_id", mpId)
+        .maybeSingle();
+
+      const offerUrl =
+        result.url ||
+        (existingOffers as { url: string | null } | null)?.url ||
+        `simulation://${product.id}/${mpId}`;
+
+      await supabase.from("offers").upsert(
         {
           product_id: product.id,
           marketplace_id: mpId,
-          price: result.price,
-          url: result.url,
-          seller: result.seller,
+          current_price: result.price,
+          url: offerUrl,
+          seller_name: result.seller,
           seller_rating: result.sellerRating,
-          in_stock: result.inStock,
-          shipping_cost: result.shippingCost,
-          last_updated: result.scrapedAt,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
-        { onConflict: "product_id,marketplace_id" }
+          stock_status: result.inStock ? "in_stock" : "out_of_stock",
+          shipping_estimate: result.shippingCost,
+          source: "browser_collector",
+          last_checked_at: result.scrapedAt,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        } as never,
+        { onConflict: "url" }
       );
       updated++;
     }

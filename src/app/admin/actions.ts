@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
 import { isUserAdmin } from "@/lib/admin-auth";
+import { isOfferInStock } from "@/lib/ingestion/adapter";
 
 export type AdminState = { error?: string; success?: boolean } | undefined;
 
@@ -74,33 +75,49 @@ export async function upsertPrice(state: AdminState, formData: FormData): Promis
     return { error: "Semua field wajib diisi." };
   }
 
-  const priceData = {
+  // A-002: write to `offers` (post-114) instead of legacy `prices`.
+  // Use (product_id, marketplace_id) tuple via select-then-upsert on url.
+  const { data: existing } = await adminClient
+    .from("offers")
+    .select("id, url")
+    .eq("product_id", productId)
+    .eq("marketplace_id", marketplaceId)
+    .maybeSingle();
+
+  const offerUrl = url || (existing as { url: string | null } | null)?.url || `admin://${productId}/${marketplaceId}`;
+
+  const offerData = {
     product_id: productId,
     marketplace_id: marketplaceId,
-    price,
-    url: url || null,
-    seller: seller || null,
-    in_stock: true,
-    shipping_cost: 0,
-    last_updated: new Date().toISOString(),
+    current_price: price,
+    url: offerUrl,
+    seller_name: seller || null,
+    stock_status: "in_stock",
+    is_active: true,
+    source: "manual_admin",
+    last_checked_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   // Cast payload to `any` for upsert.
-  const { error } = await adminClient.from("prices").upsert(
-    priceData as never,
-    { onConflict: "product_id,marketplace_id" }
+  const { error } = await adminClient.from("offers").upsert(
+    offerData as never,
+    { onConflict: "url" }
   );
 
   if (error) return { error: `Gagal: ${error.message}` };
 
-  const { data: allPrices } = await adminClient
-    .from("prices")
-    .select("price")
-    .eq("product_id", productId)
-    .eq("in_stock", true);
+  // A-002: read from `offers` and use adapter stock-status logic.
+  const { data: allOffers } = await adminClient
+    .from("offers")
+    .select("current_price, stock_status, is_active")
+    .eq("product_id", productId);
 
-  if (allPrices && allPrices.length > 0) {
-    const vals = (allPrices as Array<{ price: number }>).map((p) => p.price);
+  if (allOffers && allOffers.length > 0) {
+    const inStock = (allOffers as Array<{ current_price: number | null; stock_status: string | null; is_active: boolean | null }>)
+      .filter((o) => isOfferInStock(o.stock_status, o.is_active) && (o.current_price ?? 0) > 0);
+    const vals = inStock.map((p) => p.current_price ?? 0);
+    if (vals.length === 0) return { success: true };
     const lowest = Math.min(...vals);
     const highest = Math.max(...vals);
     const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);

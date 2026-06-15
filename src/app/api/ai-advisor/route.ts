@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/api-auth";
 import { checkPersistentRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
+import { isOfferInStock, type OfferRow } from "@/lib/ingestion/adapter";
 import OpenAI from "openai";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
@@ -64,12 +65,16 @@ export async function POST(request: NextRequest) {
       return json({ verdict: (cached as { verdict: string }).verdict, source: "cache" });
     }
 
-    const { data: prices } = await supabase
-      .from("prices")
-      .select("price, marketplaces(display_name)")
-      .eq("product_id", productId)
-      .eq("in_stock", true)
-      .order("price", { ascending: true });
+    // A-002: read from `offers` (post-114) instead of legacy `prices`.
+    // Map to in-stock subset using the adapter's stock_status logic.
+    const { data: offers } = await supabase
+      .from("offers")
+      .select("id, current_price, stock_status, is_active, marketplace_id, marketplaces(display_name)")
+      .eq("product_id", productId);
+
+    const inStockOffers = ((offers ?? []) as OfferRow[])
+      .filter((o) => isOfferInStock(o.stock_status, o.is_active) && (o.current_price ?? 0) > 0)
+      .sort((a, b) => (a.current_price ?? 0) - (b.current_price ?? 0));
 
     const { data: history } = await supabase
       .from("price_history")
@@ -79,16 +84,17 @@ export async function POST(request: NextRequest) {
       .order("recorded_at", { ascending: true });
 
     if (!process.env.OPENAI_API_KEY) {
-      const fallback = generateFallbackVerdict(product, prices || [], history || []);
+      const fallback = generateFallbackVerdict(product, inStockOffers, history || []);
       return json({ verdict: fallback, source: "fallback" });
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const priceSummary = (prices || [])
-      .map((p) => {
-        const mp = p.marketplaces as unknown as { display_name: string } | null;
-        return `${mp?.display_name || "Unknown"}: Rp${p.price.toLocaleString("id-ID")}`;
+    const priceSummary = inStockOffers
+      .map((o) => {
+        const mp = (o as OfferRow & { marketplaces?: { display_name?: string } | { display_name: string }[] | null }).marketplaces;
+        const mpDisplay = Array.isArray(mp) ? mp[0]?.display_name : mp?.display_name;
+        return `${mpDisplay || "Unknown"}: Rp${(o.current_price ?? 0).toLocaleString("id-ID")}`;
       })
       .join(", ");
 
@@ -142,7 +148,7 @@ export async function POST(request: NextRequest) {
 
 function generateFallbackVerdict(
   product: { name: string; lowest_price: number; highest_price: number; deal_score: number },
-  prices: { price: number }[],
+  offers: Array<{ current_price: number | null }>,
   history: { price: number; recorded_at: string }[]
 ): string {
   const score = product.deal_score;
@@ -155,7 +161,7 @@ function generateFallbackVerdict(
     return `Harga ${product.name} tergolong bagus (score ${score}/100). Tren harga 30 hari terakhir ${trend}. Worth it untuk dibeli sekarang.`;
   }
   if (score >= 50) {
-    return `Harga ${product.name} di rata-rata pasar (score ${score}/100). Ada ${prices.length} marketplace tersedia. Bandingkan harga dan cek ongkir sebelum beli.`;
+    return `Harga ${product.name} di rata-rata pasar (score ${score}/100). Ada ${offers.length} marketplace tersedia. Bandingkan harga dan cek ongkir sebelum beli.`;
   }
   return `Harga ${product.name} saat ini di atas rata-rata (score ${score}/100). Kami sarankan tunggu beberapa hari atau cek marketplace lain untuk harga lebih baik.`;
 }

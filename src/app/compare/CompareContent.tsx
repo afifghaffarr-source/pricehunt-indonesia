@@ -72,21 +72,29 @@ export function CompareContent() {
         return;
       }
 
-      const { data: allPrices } = await supabase
-        .from("prices")
-        .select("product_id, price, in_stock, marketplaces(name)")
+      // A-002: read from `offers` (post-114) instead of legacy `prices`.
+      // Map to the minimal {marketplace, price, in_stock} shape the
+      // compare UI consumes.
+      const { data: allOffers } = await supabase
+        .from("offers")
+        .select("product_id, current_price, stock_status, is_active, marketplaces(name)")
         .in("product_id", currentIds);
 
+      const IN_STOCK = new Set(["in_stock", "low_stock", "limited", "pre_order"]);
       const pricesByProduct = new Map<string, CompareProduct["prices"]>();
-      if (allPrices) {
-        for (const p of allPrices) {
-          const pid = p.product_id as string;
+      if (allOffers) {
+        for (const o of allOffers) {
+          const pid = o.product_id as string;
           if (!pricesByProduct.has(pid)) pricesByProduct.set(pid, []);
-          const mp = p.marketplaces as unknown as { name: Marketplace } | null;
+          const mp = o.marketplaces as unknown as { name: Marketplace } | null;
+          const inStock =
+            o.is_active !== false &&
+            (o.stock_status == null || !o.stock_status.startsWith("out_of_stock")) &&
+            (o.stock_status == null || o.stock_status === "unknown" || IN_STOCK.has(o.stock_status));
           pricesByProduct.get(pid)!.push({
             marketplace: mp?.name || "tokopedia",
-            price: p.price as number,
-            in_stock: p.in_stock as boolean,
+            price: (o.current_price ?? 0) as number,
+            in_stock: inStock,
           });
         }
       }
