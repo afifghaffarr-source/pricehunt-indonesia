@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - v1.5.1 (2026-06-16) — Placeholder Offer URL Rewrite
+
+- **Adapter-level rewrite of internal placeholder URLs** in public API responses
+  - 36 offers in `offers.url` are `<domain>/product/<slug>` (placeholder from
+    `backfill_orphan_offers.py`) — internal pattern, not real marketplace links
+  - Public API was leaking the internal slug mapping and the links 404'd when
+    users clicked them
+  - `toPriceView()` in `src/lib/ingestion/adapter.ts` now detects the
+    placeholder pattern and rewrites it to a real marketplace search URL
+    (e.g. `/search?q=<slug>`) per marketplace convention
+  - **DB column unchanged** — ingestion API, crawl target generation, and
+    admin tooling all still read the raw placeholder value
+
+- **Affected public endpoints** (all use the adapter, all benefit):
+  - `/api/deals` — deal listings
+  - `/api/products/[id]` — product detail
+  - `/api/search` — search results
+- **Real marketplace URLs preserved** (e.g. `https://www.tokopedia.com/...`)
+- **18 new unit tests** in `src/test/adapter-placeholder-url.test.ts` covering
+  all 6 marketplace search URL formats, null/missing marketplace fallback
+  (Google search), real URL preservation, and null URL handling
+- **Tests: 275/275** (was 257, +18)
+
 ### Added - v1.5.0 (2026-06-15) — P8: VexoAPI Search+AI Price Discovery
 
 - **NEW: `/api/internal/vexo-search` endpoint** (server-side proxy)
