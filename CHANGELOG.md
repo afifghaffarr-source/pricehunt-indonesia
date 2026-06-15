@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.0 (2026-06-15) — P8: VexoAPI Search+AI Price Discovery
+
+- **NEW: `/api/internal/vexo-search` endpoint** (server-side proxy)
+  - Auth: INGESTION_SECRET (matches existing /api/ingestion pattern)
+  - Pipeline: VexoAPI Google/DuckDuckGo search (`site:<marketplace>` filter)
+    → AI price extraction (gpt-oss-120b, fallback to duckai)
+  - Supports 6 marketplaces: tokopedia, shopee, bukalapak, lazada, blibli, tiktok
+  - VEXO_API_KEY never leaves the Vercel runtime
+- **NEW: `collectors/phase8_vexo_collector.py`** (Python)
+  - For each product: calls the production endpoint for 6 marketplaces
+  - Filters out ad redirects (duckduckgo.com/y.js, bing.com/aclick, etc.)
+  - Validates URL domain matches marketplace (rejects cross-marketplace results)
+  - Dry-run by default, prints planned URL swaps
+- **VexoAPI engine quirks discovered**:
+  - `/api/search/duckduckgo?query=<text>` is the most reliable (use as primary)
+  - `/api/search/google?q=<text>` works but Mojeek upstream frequently 403s
+  - `/api/search/bing` 404 (upstream broken)
+  - `/api/tools/marketplace` returns MOCK data (documented limitation)
+- **Verified**: 1-6 real URLs returned per batch (rate-limited, variable quality)
+  - iPhone 15 Pro Max: real Lazada product page + Blibili search page + Shopee product page
+  - Remaining products: mostly Bing/DuckDuckGo ad redirects (filtered out)
+- **Caveat**: VexoAPI upstream rate limits aggressively; batch runs need
+  delays between requests. URL discovery is best-effort, not exhaustive.
+
 ### Added - v1.4.0 (2026-06-15) — P8: Mobile Polish + A11y
 
 - **Tap targets ≥44px (WCAG 2.5.5 / Apple HIG)**:
