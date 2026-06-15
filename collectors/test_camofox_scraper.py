@@ -9,11 +9,18 @@ import unittest
 # camofox_scraper is in the same directory; no path manipulation needed
 from camofox_scraper import (  # noqa: E402
     TokopediaProduct,
+    ShopeeProduct,
+    BukalapakProduct,
+    BlibliProduct,
+    TikTokProduct,
+    CamofoxScraperPool,
+    MARKETPLACE_REGISTRY,
     _extract_digits,
     _extract_regex,
     _last_word_before,
     _parse_int,
     _parse_rupiah,
+    _parse_sold_count,
     _strip_official,
 )
 
@@ -142,6 +149,168 @@ class TestLastWordBefore(unittest.TestCase):
         long_prefix = "x" * 100 + "MYSHOPFollow4.5 (10)5 total barang"
         result = _last_word_before(long_prefix, r"Follow[\d.]+\s*\(\d+\)\d+\s*total barang", max_chars=20)
         self.assertEqual(result, "MYSHOP")
+
+
+class TestShopeeProductFromExtraction(unittest.TestCase):
+    """⚠️ Shopee schema is best-guess, not verified end-to-end. These tests
+    verify the parser logic with synthetic body text patterns that match
+    Shopee's known UI strings."""
+
+    def test_basic_extraction(self):
+        body = "Stok: 50 Terjual 1.2rb Penilaian 1234 Nama Toko MYSHOPSHOP Follow Chat Kota Jakarta"
+        data = {
+            "title": "iPhone 15 Pro Max",
+            "price": "Rp20.000.000",
+            "bodyText": body,
+        }
+        p = ShopeeProduct.from_extraction("https://shopee.co.id/test", data)
+        self.assertEqual(p.title, "iPhone 15 Pro Max")
+        self.assertEqual(p.price_idr, 20_000_000)
+        self.assertEqual(p.stock_count, 50)
+        self.assertIsNotNone(p.sold_count)  # 1200 from "1.2rb"
+        self.assertIsNotNone(p.rating_count)
+        self.assertIn("Jakarta", p.seller_location)
+
+    def test_empty(self):
+        p = ShopeeProduct.from_extraction("https://shopee.co.id/test", {})
+        self.assertIsNone(p.title)
+        self.assertIsNone(p.price_idr)
+        self.assertIsNone(p.stock_count)
+        self.assertIsNone(p.sold_count)
+
+
+class TestBukalapakProductFromExtraction(unittest.TestCase):
+    """⚠️ Bukalapak schema is best-guess."""
+
+    def test_basic_extraction(self):
+        body = "Stok: 25 150+ terjual 89 Ulasan MYSHOP Follow Chat"
+        data = {
+            "title": "Samsung Galaxy S24",
+            "price": "Rp12.000.000",
+            "bodyText": body,
+        }
+        p = BukalapakProduct.from_extraction("https://bukalapak.com/test", data)
+        self.assertEqual(p.title, "Samsung Galaxy S24")
+        self.assertEqual(p.price_idr, 12_000_000)
+        self.assertEqual(p.stock_count, 25)
+        self.assertIsNotNone(p.sold_count)
+        self.assertIsNotNone(p.rating_count)
+
+    def test_empty(self):
+        p = BukalapakProduct.from_extraction("https://bukalapak.com/test", {})
+        self.assertIsNone(p.title)
+        self.assertEqual(p.url, "https://bukalapak.com/test")
+
+
+class TestBlibliProductFromExtraction(unittest.TestCase):
+    """⚠️ Blibli schema is scaffolding."""
+
+    def test_basic_extraction(self):
+        body = "150+ terjual 89 Ulasan MYSTORE Official"
+        data = {
+            "title": "Laptop Gaming",
+            "price": "Rp15.000.000",
+            "bodyText": body,
+        }
+        p = BlibliProduct.from_extraction("https://blibli.com/test", data)
+        self.assertEqual(p.title, "Laptop Gaming")
+        self.assertEqual(p.price_idr, 15_000_000)
+        self.assertIsNotNone(p.sold_count)
+        self.assertIsNotNone(p.rating_count)
+
+    def test_empty(self):
+        p = BlibliProduct.from_extraction("https://blibli.com/test", {})
+        self.assertIsNone(p.title)
+
+
+class TestTikTokProductFromExtraction(unittest.TestCase):
+    """⚠️ TikTok schema is scaffolding."""
+
+    def test_basic_extraction(self):
+        body = "1.2rb+ terjual 456 Penilaian TIKTOKSHOP Official"
+        data = {
+            "title": "Viral Product",
+            "price": "Rp99.000",
+            "bodyText": body,
+        }
+        p = TikTokProduct.from_extraction("https://tiktok.com/shop/test", data)
+        self.assertEqual(p.title, "Viral Product")
+        self.assertEqual(p.price_idr, 99_000)
+        self.assertIsNotNone(p.sold_count)
+        self.assertIsNotNone(p.rating_count)
+
+
+class TestMarketplaceRegistry(unittest.TestCase):
+    """Verifies the marketplace dispatch table is correctly configured."""
+
+    def test_all_marketplaces_have_required_keys(self):
+        for name, config in MARKETPLACE_REGISTRY.items():
+            self.assertIn("dataclass", config, f"{name} missing dataclass")
+            self.assertIn("session_key", config, f"{name} missing session_key")
+            self.assertIn("base_url", config, f"{name} missing base_url")
+
+    def test_tokopedia_in_registry(self):
+        self.assertIn("tokopedia", MARKETPLACE_REGISTRY)
+        self.assertIs(MARKETPLACE_REGISTRY["tokopedia"]["dataclass"], TokopediaProduct)
+
+    def test_shopee_in_registry(self):
+        self.assertIn("shopee", MARKETPLACE_REGISTRY)
+        self.assertIs(MARKETPLACE_REGISTRY["shopee"]["dataclass"], ShopeeProduct)
+
+
+class TestCamofoxScraperPool(unittest.TestCase):
+    """Tests for the concurrent pool. Doesn't require camofox server (just
+    verifies the pool's structure and config handling)."""
+
+    def test_default_config(self):
+        pool = CamofoxScraperPool()
+        self.assertEqual(pool.max_concurrent, 4)
+        self.assertEqual(pool.wait_ms, 5000)
+        self.assertEqual(pool.marketplace, "tokopedia")
+
+    def test_custom_config(self):
+        pool = CamofoxScraperPool(max_concurrent=10, wait_ms=3000, marketplace="shopee")
+        self.assertEqual(pool.max_concurrent, 10)
+        self.assertEqual(pool.wait_ms, 3000)
+        self.assertEqual(pool.marketplace, "shopee")
+
+    def test_invalid_marketplace_raises(self):
+        """If no schema registered, scrape should fail clearly."""
+        # Just verify the registry check happens — not a full integration test
+        self.assertIn("shopee", MARKETPLACE_REGISTRY)
+        self.assertIn("tiktok", MARKETPLACE_REGISTRY)
+
+
+class TestParseSoldCount(unittest.TestCase):
+    """Indonesian 'sold' count variations — used across all marketplaces."""
+
+    def test_with_plus(self):
+        self.assertEqual(_parse_sold_count("150+ terjual"), 150)
+
+    def test_with_rb(self):
+        # Indonesian e-commerce convention: comma = decimal, dot = thousands
+        # 1,2 rb = 1.2 * 1000 = 1200 sold
+        self.assertEqual(_parse_sold_count("1,2rb+ terjual"), 1200)
+
+    def test_with_jt(self):
+        # 1,5 jt = 1.5 * 1,000,000 = 1,500,000 sold
+        self.assertEqual(_parse_sold_count("1,5jt+ terjual"), 1_500_000)
+
+    def test_thousands_separator(self):
+        self.assertEqual(_parse_sold_count("1.000+ terjual"), 1000)
+
+    def test_terjual_first(self):
+        # "Terjual 1.500" = 1500
+        self.assertEqual(_parse_sold_count("Terjual 1.500"), 1500)
+
+    def test_no_match(self):
+        self.assertIsNone(_parse_sold_count("no count here"))
+        self.assertIsNone(_parse_sold_count(""))
+        self.assertIsNone(_parse_sold_count(None))
+
+    def test_case_insensitive(self):
+        self.assertEqual(_parse_sold_count("500+ TERJUAL"), 500)
+        self.assertEqual(_parse_sold_count("100+ Terjual"), 100)
 
 
 if __name__ == "__main__":

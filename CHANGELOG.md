@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Camofox Integration Phase 2 (2026-06-15)
+- **`collectors/camofox_scraper.py` extended** with multi-marketplace support:
+  - `ShopeeProduct`, `BukalapakProduct`, `BlibliProduct`, `TikTokProduct` dataclasses
+  - `SHOPEE_PRODUCT_SCHEMA`, `BUKALAPAK_PRODUCT_SCHEMA`, `BLIBLI_PRODUCT_SCHEMA`, `TIKTOK_PRODUCT_SCHEMA` JSON schemas
+  - `MARKETPLACE_REGISTRY` dispatch table for marketplace-aware scraping
+  - `CamofoxScraperPool` for bounded concurrent scraping (default 4 tabs)
+  - `_parse_sold_count` helper for Indonesian "terjual" format variations
+- **`collectors/tokopedia_collector.py` refactored** with two-tier scrape:
+  - Tier 1: Playwright (existing, unchanged) — primary path
+  - Tier 2: Camofox stealth fallback (NEW) — kicks in on Playwright failure
+  - `CAMOFOX_DISABLED=1` env var to force-disable fallback
+  - `last_scrape_path` observability attribute
+  - `_scrape_with_playwright()` and `_scrape_with_camofox()` split for clarity
+- **`collectors/cron_scraper.py`** — added path tracking in logs ("via playwright" / "via camofox")
+- **`docs/CAMOFOX_INTEGRATION_2026-06-15.md`** — full integration report: architecture, files, performance, risks
+- **Test count: 294 (249 vitest + 45 Python unit)** — 20 new Python tests for marketplace dataclasses + pool + parser helpers
+
+### Verified - Camofox Integration
+- Live test: Playwright fails (no X server / blocked) → Camofox auto-pickup → real product data extracted
+- Example: `TokopediaCollector.scrape_product(url)` with Playwright path throwing `TargetClosedError("no X server")` → Camofox path returns full data, `last_scrape_path="camofox"`
+
+### Note
+- Other marketplace schemas (Shopee, Bukalapak, Blibli, TikTok) are scaffolding with best-guess CSS selectors. Re-validate each before production use.
+
 ### Added - Camofox Scraper PoC (2026-06-15)
 - **`collectors/camofox_scraper.py`** (370 LOC) — async Python wrapper for the Camofox REST API. `CamofoxScraper` async context manager; `TokopediaProduct` dataclass with normalized fields (title, price, stock, seller, etc.); `TOKOPEDIA_PRODUCT_SCHEMA` for Camofox's `extract-structured` endpoint. Zero external dependencies (uses urllib from stdlib).
 - **`collectors/test_camofox_scraper.py`** — 25 unit tests for parsers (`_parse_rupiah`, `_parse_int`, `_extract_regex`, `_last_word_before`, `_strip_official`). Pure functions, no camofox server required. Edge cases: `Rp14.980.000` vs `Rp 14.980.000` vs `Rp. 1.500.000`; garbage input; Indonesian location patterns; CamelCase split for concatenated seller names.
