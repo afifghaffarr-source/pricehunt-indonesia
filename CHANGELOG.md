@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.3.0 (2026-06-15) — P7-Post: Drop `price_history`, Single-Source Chart Data
+
+- **Migration 129 APPLIED** — Drop legacy `price_history` table
+  - 0 rows lost: `price_snapshots` is a strict superset (1,812 rows covering 48 products, ~33 days)
+  - 4 indexes, 1 RLS policy, and FK constraints all dropped via CASCADE
+- **`fetchPriceHistoryByProductId` refactored** (src/lib/supabase/data.ts)
+  - Removed the 2-query union (price_history + price_snapshots)
+  - Now reads from `price_snapshots` only, deduped by latest captured snapshot per (date, marketplace)
+  - Performance: 1 query instead of 2 (was ~160ms, now ~80ms)
+- **NEW: `fetchHistoricalStatsByProductIds`** (src/lib/supabase/data.ts)
+  - Batched median30/median90/lowestHistoricalPrice stats for multiple products in a single query
+  - Replaces the per-product `price_history` PostgREST embed used by `/api/deals`
+  - Default 64-product batch: ~80ms
+- **5 read callsites refactored** to use `price_snapshots`:
+  - `src/app/api/products/[id]/route.ts` — via helper (PriceHistoryPoint[] shape preserved)
+  - `src/app/api/deals/route.ts` — dropped embed, switched to batched stats
+  - `src/app/api/predict/route.ts` — read `current_price`/`captured_at` from snapshots
+  - `src/app/api/ai-advisor/route.ts` — same, plus updated `generateFallbackVerdict` signature
+  - `src/app/api/export/price-history/route.ts` — read snapshots, normalize to legacy row shape for CSV
+- **1 write callsite refactored**:
+  - `src/app/api/cron/prices/route.ts` — UPSERT to `price_history` (per product+marketplace+day) replaced with INSERT to `price_snapshots` (per offer, granular)
+- **Tests updated** (src/test/data.test.ts + src/test/api-deals.test.ts)
+  - 3 `price_history` mock-based tests rewritten for single-source `price_snapshots`
+  - 257/257 vitest pass
+- **Production verified** — all 6 backfilled products still show 6 prices + 33-34 chart points each on `bijakbeli.app` post-migration
+
 ### Added - v1.2.0 (2026-06-15) — P7 Follow-up: Schema Consolidation
 
 - **Migration 125 APPLIED** — `product_prices_view` UNION view (237 rows → 280 with new backfills)
