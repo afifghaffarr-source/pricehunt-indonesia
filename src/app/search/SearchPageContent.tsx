@@ -214,6 +214,12 @@ export function SearchPageContent() {
           title={query ? `Hasil pencarian: "${query}"` : "Semua Produk"}
           subtitle={loading ? "Memuat..." : `${products.length} produk dari database`}
         />
+        {/* A11y: announce result count changes to screen readers */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {loading
+            ? "Memuat hasil pencarian"
+            : `${products.length} produk${query ? ` untuk "${query}"` : ""} ditemukan`}
+        </div>
         <SearchBar
           defaultValue={query}
           onSearch={handleSearch}

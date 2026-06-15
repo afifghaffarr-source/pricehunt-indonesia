@@ -54,7 +54,7 @@ export function ProductCard({ product }: ProductCardProps) {
               {formatRupiah(product.lowestPrice)}
             </span>
             {discount > 5 && (
-              <span className="text-xs text-muted-foreground/70 line-through">
+              <span className="text-xs text-muted-foreground line-through">
                 {formatRupiah(product.highestPrice)}
               </span>
             )}
