@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - P2 + P3 SQL Bundles (2026-06-15)
+- **`supabase/migrations/P2_STOCK_STATUS_BACKFILL.sql`** — backfill 159 unknown stock_status to in_stock (active+priced heuristic)
+  - All 165 offers are `is_active=true + current_price>0`; 159 have `stock_status='unknown'`
+  - All `last_checked_at` are NULL (no staleness signal in DB)
+  - Heuristic: active offer with positive price = functionally listed = available
+  - Wrapped in transaction with verify step + ROLLBACK comments if needed
+  - Effect: deal-score 5 → 10, `hasStock` confidence gap closed
+  - Code already documents (adapter.ts:75) "treat unknown as in-stock" — DB now aligns with adapter
+- **`supabase/migrations/P3_APPLY_PERFORMANCE_INDEXES.sql`** — apply A-005 indexes
+  - 5 indexes: idx_offers_active_price, idx_crawl_targets_status_priority, idx_products_deal_score, idx_ingestion_logs_job_name, idx_price_snapshots_offer_time
+  - **Section A**: SQL Editor version (non-CONCURRENTLY, brief lock <100ms at 165 rows)
+  - **Section B**: Production CLI version (CONCURRENTLY, no locks, run each separately)
+  - Includes verification query, EXPLAIN ANALYZE test queries, and ROLLBACK
+  - Caveat: A-005 file uses CONCURRENTLY which fails in SQL Editor transactions; this P3 wrapper handles both
+- **No code changes** — pure SQL operations. User runs via Supabase SQL Editor per established workflow.
+
+### Note
+- Both migrations are deferred to user execution (SQL Editor paste).
+- Both are idempotent and safe to re-run (`IF NOT EXISTS` / `_offers_before` snapshot).
+
+## [Unreleased - 2026-06-15 earlier]
+
 ### Added - Camofox Integration Phase 2 (2026-06-15)
 - **`collectors/camofox_scraper.py` extended** with multi-marketplace support:
   - `ShopeeProduct`, `BukalapakProduct`, `BlibliProduct`, `TikTokProduct` dataclasses
