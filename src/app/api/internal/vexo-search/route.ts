@@ -181,71 +181,100 @@ export async function POST(request: NextRequest) {
   const results: SearchResult[] = [];
   const errors: Array<{ marketplace: string; error: string }> = [];
 
+  // Engine-specific config: VexoAPI endpoints use different param names.
+  // We use duckduckgo as primary (more reliable + supports `query` param).
+  // Fall back to google (`q` param) if duckduckgo fails.
+  const ENGINES = [
+    { name: "duckduckgo", param: "query" },
+    { name: "google", param: "q" },
+  ];
+
   await Promise.all(
     targets.map(async (marketplace) => {
       const siteFilter = SITE_FILTERS[marketplace];
       const searchQuery = `${siteFilter} ${query}`;
-      try {
-        const searchResp = (await vexoGet("/api/search/google", { q: searchQuery })) as {
-          results?: Array<{ title: string; url: string; snippet?: string; description?: string; body?: string }>;
-          data?: { results?: Array<{ title: string; url: string; snippet?: string }> };
-        };
-        const items = (searchResp.results || searchResp.data?.results || []) as Array<{
-          title?: string;
-          url?: string;
-          snippet?: string;
-          description?: string;
-          body?: string;
-        }>;
-        const top = items.slice(0, max_per_marketplace);
+      let lastError: string | null = null;
+      let items: Array<{
+        title?: string;
+        url?: string;
+        snippet?: string;
+        description?: string;
+        body?: string;
+      }> = [];
 
-        for (const item of top) {
-          const title = (item.title || "").toString();
-          const url = (item.url || "").toString();
-          const snippet = (item.snippet || item.description || item.body || "").toString();
-          const baseResult: SearchResult = {
-            marketplace,
-            url,
-            title,
-            snippet,
-            price_idr: null,
-            product_name: null,
-            confidence: "none",
-            source: "vexo-search+ai",
+      // Try each engine until one returns results
+      for (const engine of ENGINES) {
+        try {
+          const searchResp = (await vexoGet(`/api/search/${engine.name}`, {
+            [engine.param]: searchQuery,
+          })) as {
+            results?: Array<{ title: string; url: string; snippet?: string; description?: string; body?: string }>;
+            data?: { results?: Array<{ title: string; url: string; snippet?: string }> };
+            result?: Array<{ title: string; url: string; snippet?: string }>;
           };
+          items = (searchResp.results || searchResp.data?.results || searchResp.result || []) as Array<{
+            title?: string;
+            url?: string;
+            snippet?: string;
+            description?: string;
+            body?: string;
+          }>;
+          if (items.length > 0) break;
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : "Unknown error";
+        }
+      }
 
-          // AI extraction — try to get price from snippet/title
-          if (snippet || title) {
-            const prompt = `Extract the product price in Indonesian Rupiah (IDR) from this Google search result. Reply with ONLY a JSON object in this exact format:
+      if (items.length === 0) {
+        errors.push({ marketplace, error: lastError || "No results from any search engine" });
+        return;
+      }
+
+      const top = items.slice(0, max_per_marketplace);
+
+      for (const item of top) {
+        const title = (item.title || "").toString();
+        const url = (item.url || "").toString();
+        const snippet = (item.snippet || item.description || item.body || "").toString();
+        const baseResult: SearchResult = {
+          marketplace,
+          url,
+          title,
+          snippet,
+          price_idr: null,
+          product_name: null,
+          confidence: "none",
+          source: "vexo-search+ai",
+        };
+
+        // AI extraction — try to get price from snippet/title
+        if (snippet || title) {
+          const prompt = `Extract the product price in Indonesian Rupiah (IDR) from this Google search result. Reply with ONLY a JSON object in this exact format:
 {"price_idr": <integer or null>, "product_name": "<string or null>", "confidence": "<high|medium|low>"}
 - "price_idr" is the current selling price in IDR (convert from "Rp 1.234.000" format to integer, e.g. 1234000)
 - "product_name" is the actual product name from the result
 - "confidence" is "high" if price is clearly stated, "medium" if inferred, "low" if uncertain
 If no price is shown, return {"price_idr": null, "product_name": null, "confidence": "low"}.`;
-            const context = `Title: ${title}\nURL: ${url}\nSnippet: ${snippet}`;
-            const aiText = await vexoAi(prompt, context);
-            if (aiText) {
-              const parsed = extractJsonFromText(aiText);
-              if (parsed) {
-                const price = parsed.price_idr;
-                if (typeof price === "number" && price > 0) {
-                  baseResult.price_idr = price;
-                }
-                if (typeof parsed.product_name === "string") {
-                  baseResult.product_name = parsed.product_name;
-                }
-                if (parsed.confidence === "high" || parsed.confidence === "medium" || parsed.confidence === "low") {
-                  baseResult.confidence = parsed.confidence;
-                }
+          const context = `Title: ${title}\nURL: ${url}\nSnippet: ${snippet}`;
+          const aiText = await vexoAi(prompt, context);
+          if (aiText) {
+            const parsed = extractJsonFromText(aiText);
+            if (parsed) {
+              const price = parsed.price_idr;
+              if (typeof price === "number" && price > 0) {
+                baseResult.price_idr = price;
+              }
+              if (typeof parsed.product_name === "string") {
+                baseResult.product_name = parsed.product_name;
+              }
+              if (parsed.confidence === "high" || parsed.confidence === "medium" || parsed.confidence === "low") {
+                baseResult.confidence = parsed.confidence;
               }
             }
           }
-
-          results.push(baseResult);
         }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        errors.push({ marketplace, error: msg });
+
+        results.push(baseResult);
       }
     })
   );
