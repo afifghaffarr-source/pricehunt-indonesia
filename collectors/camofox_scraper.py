@@ -39,6 +39,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import urllib.error
 import urllib.request
 from contextlib import asynccontextmanager
@@ -254,6 +255,137 @@ def _parse_sold_count(text: str) -> int | None:
             num *= 1_000_000
 
     return int(num)
+
+
+# --- Blibli-specific helpers ---------------------------------------------------
+# (Added 2026-06-15 after live test of iPhone 15 product page.)
+
+
+def _parse_blibli_price_pair(text: str) -> tuple[int | None, int | None]:
+    """Parse Blibli's concatenated price string.
+
+    Blibli renders current + original prices concatenated:
+        "Rp12.999.000Rp16.499.00021%Cicilan 0%Mulai dari Rp541.625/bu..."
+    Returns (current_price, original_price) — original is None if not on sale.
+
+    Algorithm: find the first "Rp", then look for a second "Rp" within
+    reasonable distance. If found, the text between them is the current price
+    (concatenated digits, with dots as thousands separators). The text
+    between the second "Rp" and the next non-digit/dot char is the original.
+
+    If only one Rp is found, it's the current price and original is None.
+
+    Caveat: Blibli's price element has "21%" appended directly to the second
+    price (no separator). The naive `Rp([\d.]+)` regex would catch "16.499.00021"
+    as a single number. We use a bounded pattern: 1-3 digits, followed by
+    zero or more ".NNN" groups. This stops at the "%" boundary cleanly.
+
+    Also skips installment amounts ("Mulai dari Rp541.625/bulan") — these
+    appear later in the string and would otherwise be picked up as prices.
+    """
+    if not text:
+        return None, None
+    # Bounded: Rp<1-3 digits>(.<3 digits>)*  — matches "Rp12.999.000" but
+    # not "Rp16.499.00021"
+    matches = re.findall(r"Rp(\d{1,3}(?:\.\d{3})*)", text)
+    if not matches:
+        return None, None
+    # Convert and filter: skip installment prices (much smaller than current)
+    prices = []
+    for m in matches:
+        v = _clean_rupiah_str(m)
+        if v:
+            prices.append(v)
+    if not prices:
+        return None, None
+    if len(prices) == 1:
+        return prices[0], None
+    # Take first 2: current and original
+    # If the second is much smaller (e.g. installment), it's not the original
+    if prices[1] < prices[0] * 0.5:
+        # Second price is installment, no on-sale indicator
+        return prices[0], None
+    return prices[0], prices[1]
+
+
+def _clean_rupiah_str(s: str) -> int | None:
+    """'12.999.000' → 12999000. Strips dots (thousands sep) and parses int."""
+    cleaned = s.replace(".", "").replace(",", "")
+    try:
+        return int(cleaned) if cleaned else None
+    except ValueError:
+        return None
+
+
+def _parse_rating_value(text: str) -> float | None:
+    """Extract rating value from Blibli body text.
+
+    Pattern: "4,9 (3428)" or "4,9 (41,0 rb)" — rating value followed
+    by a parenthesized count. Returns the numeric rating (e.g. 4.9).
+    None if not found.
+
+    Why the parenthesized constraint: the body has many decimal numbers
+    ("2.4 days shipping", etc) that match a generic "X.Y" pattern. We
+    only want the rating, which on Blibli is always followed by "(N)".
+
+    Caveat: the body text from camofox is concatenated without spaces in
+    some places (e.g. "hari4,9 (3428)"). We must NOT use \\b word boundary
+    since the rating may be directly attached to a word character.
+    """
+    if not text:
+        return None
+    # Lookahead pattern: rating X.Y followed by " (" — no \b before X
+    m = re.search(
+        r"([0-5])[,.](\d)\s*\(\s*(\d[\d.,]*\s*(?:rb|ribu|jt|juta)?)\s*\)",
+        text,
+    )
+    if m:
+        try:
+            return float(f"{m.group(1)}.{m.group(2)}")
+        except ValueError:
+            return None
+    return None
+
+
+def _parse_blibli_rating_count(text: str) -> int | None:
+    """Extract review count from Blibli body text.
+
+    Pattern: "4,9 (3428)" or "4,9 (41,0 rb)" — the count inside parens
+    after the rating. Also "41,0 rb" = 41000 reviews.
+
+    Why the rating constraint: many "(\d+)" groups exist in body (timestamps,
+    dimensions, etc). Only counts adjacent to a rating are review counts.
+
+    Caveat for suffixed counts: "41,0 rb" — comma is decimal (41.0), then
+    × 1000 = 41000. We can't just strip dots/commas like _clean_rupiah_str.
+    """
+    if not text:
+        return None
+    # Match "X,Y (<count>)" — no \b before X (body text is concatenated)
+    m = re.search(
+        r"([0-5])[,.](\d)\s*\(\s*(\d[\d.,]*)\s*(rb|ribu|jt|juta)?\s*\)",
+        text,
+    )
+    if m:
+        num_str = m.group(3)
+        suffix = m.group(4)
+        # If there's a suffix (rb/jt), the comma is decimal. Otherwise
+        # both . and , are thousands separators (Blibli's standard).
+        if suffix:
+            # Decimal interpretation: replace "," with ".", strip "."
+            num = float(num_str.replace(".", "").replace(",", "."))
+        else:
+            # Standard thousands interpretation
+            num = float(num_str.replace(".", "").replace(",", ""))
+        count = round(num)
+        if suffix:
+            s = suffix.lower()
+            if s in ("rb", "ribu"):
+                count = round(num * 1000)
+            elif s in ("jt", "juta"):
+                count = round(num * 1_000_000)
+        return count
+    return None
 
 
 def _strip_official(text: str | None) -> str | None:
@@ -573,7 +705,15 @@ BUKALAPAK_PRODUCT_SCHEMA = {
 class BlibliProduct:
     """Normalized product data from a Blibli product page.
 
-    ⚠️ UNVERIFIED — scaffolding. Validate before production use.
+    ✅ VERIFIED end-to-end 2026-06-15 via camofox live test on iPhone 15.
+    Selectors confirmed by inspecting real Blibli page DOM:
+      - Title:   .product-info__product-name
+      - Price:   .product-info__price-wishlist__price (or .price-component)
+                 Returns "Rp12.999.000Rp16.499.00021%" — current and original
+                 prices concatenated. Parser splits on the second "Rp".
+    Body-text patterns (verified):
+      - "Terjual 9,6 rb"       → sold count
+      - "4,9 (3428)"           → rating (4.9) + review count (3428)
     """
 
     url: str
@@ -582,20 +722,112 @@ class BlibliProduct:
     original_price_idr: int | None
     sold_count: int | None
     rating_count: int | None
+    rating_value: float | None
     seller_name: str | None
     raw_data: dict[str, Any]
 
     @classmethod
     def from_extraction(cls, url: str, data: dict[str, Any]) -> "BlibliProduct":
-        body = data.get("bodyText", "")
+        body = data.get("bodyText", "") or ""
+
+        # Title: prefer .product-info__product-name, fall back to og:title
+        title = data.get("title")  # .product-info__product-name
+        if not title or title == "Online Mall Blibli.com, Sensasi Belanja Online Shop ala Mall":
+            # Title wasn't extracted; try the body text fallback
+            title = None
+        if not title and body:
+            # Last resort: find "iPhone 15" pattern in body (the product
+            # name appears in the product-info section, before price)
+            m = re.search(
+                r"^([A-Z][A-Za-z0-9 \-]+?)\n(?:Bagikan|Rp[\d.])",
+                body,
+                re.MULTILINE,
+            )
+            if m:
+                title = m.group(1).strip()
+
+        # Price: split concatenated "Rp12.999.000Rp16.499.000..."
+        # First Rp is current price, second is original price.
+        price_idr, original_price_idr = _parse_blibli_price_pair(
+            data.get("price", "")
+        )
+        # Fall back to body text
+        if price_idr is None:
+            price_idr, original_price_idr = _parse_blibli_price_pair(body)
+
+        # Rating: "4,9 (3428)" or "4,9 (41,0 rb)"
+        rating_value = _parse_rating_value(body)
+        rating_count = _parse_blibli_rating_count(body)
+
+        # Seller: on Blibli the seller is in the "Merk" section, right
+        # before the store rating. Body layout (concatenated with sparse \n):
+        #   ...Kategori<iPhone>Merk<Apple>Blibli - Apple Authorized...
+        #   4,9 (41,0 rb)   ← store rating (different from product rating)
+        # The line that ENDS with "Merk" and is followed by a rating is the seller.
+        # Strategy: find "Merk" and the rating, then take the text between them
+        # and the LAST "Official" or "Reseller" or known seller marker.
+        seller_name = None
+        # Find the second rating (store rating) — first is product rating
+        # We look for "4,9 (N)" NOT preceded by a "(\d)" in another rating
+        # Easier: find "Merk" then look ahead for next rating
+        # The text between Merk and the rating is the seller name.
+        # Pattern: "Merk...Apple...<SELLER>4,X (N)"
+        # The seller name typically ends with a known marker word
+        # (Flagship Store, Official, Channel, Reseller, etc) but not always.
+        seller_name = None
+        # Find the Merk → <brand> → <seller> → rating block
+        # The Merk section lists: brand, then seller name, then store rating.
+        # Body layout (concatenated):
+        #   ...Kategori<category>Merk<brand><SELLER>4,X (N)
+        # The seller name can be ANY brand (Apple, Samsung, Xiaomi, etc).
+        seller_name = None
+        # Pattern: Merk → anything (brand) → <seller name> → rating
+        # We need to find the segment between Merk and the rating.
+        merk_block = re.search(
+            r"Merk[\s\S]{0,500}?(?=\d[,.]\d\s*\(\d[\d.,]*\s*(?:rb|ribu|jt|juta)?\s*\))",
+            body,
+        )
+        if merk_block:
+            block_text = merk_block.group(0)
+            # Strip the "Merk" prefix
+            after_merk = re.sub(r"^Merk", "", block_text, count=1).strip()
+            # The seller's brand is the first word/phrase after Merk.
+            # The seller name is everything after the brand.
+            # Common brand patterns: "Apple", "Samsung", "Xiaomi", "Oppo", etc.
+            # We split at the first word that's a known brand, OR if the seller
+            # contains a marker (Store, Mall, Official, Reseller, etc), use that.
+            # Approach: take the LAST "word group" ending with a marker.
+            # If no marker, the seller is the text after the first non-brand chunk.
+            marker_m = re.search(
+                r"(.{3,80}?(?:Flagship Store|Official Store|Reseller|Channel|Authorized|Mall|Toko)[\w\s\-]*)",
+                after_merk,
+            )
+            if marker_m:
+                candidate = marker_m.group(1).strip()
+                # Strip leading brand-like words. Use grouped alternation so
+                # the ^ anchor applies to all options.
+                # E.g. "AppleBlibli - Apple Authorized..." → "Blibli - Apple Authorized..."
+                #      "SAMSUNGChannel B Flagship Store" → "Channel B Flagship Store"
+                candidate = re.sub(
+                    r"^(Apple|Samsung|Xiaomi|Oppo|Vivo|Realme|Huawei|Infinix|Tecno)",
+                    "",
+                    candidate,
+                    count=1,
+                    flags=re.IGNORECASE,
+                ).strip()
+                candidate = re.sub(r"[\dRp.,/()]+$", "", candidate).strip()
+                if 3 < len(candidate) < 100:
+                    seller_name = candidate
+
         return cls(
             url=url,
-            title=data.get("title"),
-            price_idr=_parse_rupiah(data.get("price", "")),
-            original_price_idr=_parse_rupiah(data.get("originalPrice", "")),
+            title=title,
+            price_idr=price_idr,
+            original_price_idr=original_price_idr,
             sold_count=_parse_sold_count(body),
-            rating_count=_parse_int(_extract_regex(body, r"(\d+)\s*[Uu]lasan")),
-            seller_name=_extract_regex(body, r"([A-Za-z0-9 &.\-]+?)\s+Official"),
+            rating_count=rating_count,
+            rating_value=rating_value,
+            seller_name=seller_name,
             raw_data=data,
         )
 
@@ -603,9 +835,16 @@ class BlibliProduct:
 BLIBLI_PRODUCT_SCHEMA = {
     "kind": "object",
     "fields": {
-        "title": {"kind": "text", "selector": "h1, [class*='product-title']"},
-        "price": {"kind": "text", "selector": "[class*='price']:not([class*='strike'])"},
-        "originalPrice": {"kind": "text", "selector": "[class*='original'], [class*='strike']"},
+        # Blibli's product name is in a div, not h1 (verified 2026-06-15)
+        "title": {
+            "kind": "text",
+            "selector": ".product-info__product-name, h1, [data-testid='product-name']",
+        },
+        # Price element contains BOTH current and original prices concatenated
+        "price": {
+            "kind": "text",
+            "selector": ".product-info__price-wishlist__price, .price-component",
+        },
         "bodyText": {"kind": "text", "selector": "body"},
     },
 }
@@ -810,26 +1049,51 @@ class CamofoxScraperPool:
         """Scrape using a marketplace-specific schema and dataclass.
 
         For non-Tokopedia marketplaces, this dispatches based on the registry.
-        Uses a per-marketplace navigate+extract flow (no shortcut method).
+        Navigates to the URL, waits for hydration, then extracts data using
+        the marketplace-specific CSS selector schema. Parsing is delegated
+        to the dataclass's `from_extraction()` classmethod, which knows how
+        to interpret the body text for that marketplace.
         """
         schema = registry.get("schema")
         dataclass = registry.get("dataclass")
         if not schema or not dataclass:
-            raise ValueError(f"No schema/dataclass registered for marketplace")
+            raise ValueError(
+                f"No schema/dataclass registered for marketplace"
+            )
+        if scraper._tab_id is None:
+            raise CamofoxError("Scraper not in context manager")
 
-        # We need to navigate then extract with the marketplace-specific schema.
-        # CamofoxScraper exposes _request() so we can do this manually.
-        # But to keep things simple, we use the existing TokopediaProduct
-        # path and trust the marketplace-specific parsing happens in
-        # dataclass.from_extraction() based on the body text patterns.
-        # For now, just use the generic body-text approach.
+        # 1. Navigate to the product URL
+        nav_result = await scraper._request(
+            "POST",
+            f"/tabs/{scraper._tab_id}/navigate",
+            {
+                "userId": scraper.user_id,
+                "sessionKey": scraper.session_key,
+                "url": url,
+            },
+        )
+        if not nav_result.get("ok"):
+            raise CamofoxError(f"Navigation failed: {nav_result}")
 
-        # TODO: implement marketplace-specific navigation+extraction.
-        # For scaffolding, we use the Tokopedia extraction which gives us
-        # the same body text and we delegate to the marketplace dataclass.
-        # This works because the body text contains all the strings we
-        # need to regex on; we just need a different parser.
-        return await scraper.scrape_product(url)  # placeholder
+        # 2. Wait for hydration (most marketplaces need 3-5s for JS)
+        await asyncio.sleep(scraper.wait_ms / 1000)
+
+        # 3. Extract with marketplace-specific schema
+        extract_result = await scraper._request(
+            "POST",
+            f"/tabs/{scraper._tab_id}/extract-structured",
+            {
+                "userId": scraper.user_id,
+                "sessionKey": scraper.session_key,
+                "schema": schema,
+            },
+        )
+        if not extract_result.get("ok"):
+            raise CamofoxError(f"Extraction failed: {extract_result}")
+
+        data = extract_result.get("data", {})
+        return dataclass.from_extraction(url, data)
 
 
 if __name__ == "__main__":

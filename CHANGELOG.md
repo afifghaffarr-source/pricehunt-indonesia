@@ -31,6 +31,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Note
 - Other marketplace schemas (Shopee, Bukalapak, Blibli, TikTok) are scaffolding with best-guess CSS selectors. Re-validate each before production use.
 
+### Added - Blibli Parser Validation (2026-06-15)
+- **`BlibliProduct.from_extraction()` rewritten** with verified selectors from real DOM inspection:
+  - Title: `.product-info__product-name` (Blibli has 0 `<h1>` elements on product pages)
+  - Price: `.product-info__price-wishlist__price` (returns concatenated "Rp12.999.000Rp16.499.00021%...")
+- **New parser helpers**:
+  - `_parse_blibli_price_pair()` — splits concatenated prices, skips installment amounts
+  - `_parse_rating_value()` — handles "X,Y (N)" format with no `\b` word boundary
+  - `_parse_blibli_rating_count()` — handles plain and suffixed (rb/jt) counts
+  - `_clean_rupiah_str()` — strips thousand separators
+- **`BLIBLI_PRODUCT_SCHEMA`** updated with verified selectors
+- **`BlibliProduct` fields added**: `rating_value: float | None` (in addition to `rating_count`)
+- **Live validation on 4 different Blibli products** — all 7 fields extracted correctly:
+  - iPhone 15: Rp12,999,000 / 4.9 (3428) / 9600 sold / "Blibli - Apple Authorized Reseller Flagship Store"
+  - Samsung Galaxy S24 FE: Rp10,998,000 / 4.8 (12000) / "Channel B Flagship Store"
+  - Samsung Galaxy S24+: Rp11,738,318 / 5.0 (1) / "jikalaku Flagship Store"
+  - Samsung S24 5G: Rp10,897,000 / 4.6 (185000) / "Digital Cellular Official"
+- **`CamofoxScraperPool._scrape_with_schema()`** — replaced placeholder TODO with real marketplace-aware dispatch (navigate → wait → extract with marketplace schema → parse with marketplace dataclass)
+- **24 new unit tests** — `TestCleanRupiahStr`, `TestParseBlibliPricePair`, `TestParseRatingValue`, `TestParseBlibliRatingCount`, `TestBlibliLiveIntegration`
+- **Test count: 362 (249 vitest + 69 Python unit + 19 E2E local + 19 E2E CI + 6 live validation)**
+- **`docs/MULTI_MARKETPLACE_VALIDATION_2026-06-15.md`** — full report: 4/4 Blibli products pass, schemas for Shopee/Bukalapak/TikTok need residential proxies
+- **`collectors/test_marketplaces_live.py`** and **`collectors/test_blibli_multiple.py`** — live validation scripts
+
+### Caveats - Other Marketplaces
+- **Shopee**: blocked by CAPTCHA ("Verifikasi untuk melanjutkan"). Search URL triggers verification wall.
+- **Bukalapak**: page-unreachable ("Halaman ini gak bisa diakses"). Camofox fingerprint rejected.
+- **TikTok Shop**: search returns 0 results. Aggressive bot detection.
+- **Recommendation**: use residential proxies (Bright Data, IPRoyal) for these 3 marketplaces. Cost ~$10/month for 5-10GB.
+
 ### Added - Camofox Scraper PoC (2026-06-15)
 - **`collectors/camofox_scraper.py`** (370 LOC) — async Python wrapper for the Camofox REST API. `CamofoxScraper` async context manager; `TokopediaProduct` dataclass with normalized fields (title, price, stock, seller, etc.); `TOKOPEDIA_PRODUCT_SCHEMA` for Camofox's `extract-structured` endpoint. Zero external dependencies (uses urllib from stdlib).
 - **`collectors/test_camofox_scraper.py`** — 25 unit tests for parsers (`_parse_rupiah`, `_parse_int`, `_extract_regex`, `_last_word_before`, `_strip_official`). Pure functions, no camofox server required. Edge cases: `Rp14.980.000` vs `Rp 14.980.000` vs `Rp. 1.500.000`; garbage input; Indonesian location patterns; CamelCase split for concatenated seller names.

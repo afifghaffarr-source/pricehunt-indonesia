@@ -22,6 +22,10 @@ from camofox_scraper import (  # noqa: E402
     _parse_rupiah,
     _parse_sold_count,
     _strip_official,
+    _parse_blibli_price_pair,
+    _parse_rating_value,
+    _parse_blibli_rating_count,
+    _clean_rupiah_str,
 )
 
 
@@ -203,10 +207,13 @@ class TestBukalapakProductFromExtraction(unittest.TestCase):
 
 
 class TestBlibliProductFromExtraction(unittest.TestCase):
-    """⚠️ Blibli schema is scaffolding."""
+    """Legacy tests for Blibli parser — kept for compatibility with the old
+    "X Ulasan" pattern. The new real-world parser uses "X,Y (N)" format.
+    """
 
     def test_basic_extraction(self):
-        body = "150+ terjual 89 Ulasan MYSTORE Official"
+        # Use the new Blibli real format: rating "X,Y (N)" + "Terjual N rb"
+        body = "150+ terjual 4,5 (89) Disediakan Blibli MYSTORE"
         data = {
             "title": "Laptop Gaming",
             "price": "Rp15.000.000",
@@ -216,7 +223,7 @@ class TestBlibliProductFromExtraction(unittest.TestCase):
         self.assertEqual(p.title, "Laptop Gaming")
         self.assertEqual(p.price_idr, 15_000_000)
         self.assertIsNotNone(p.sold_count)
-        self.assertIsNotNone(p.rating_count)
+        self.assertEqual(p.rating_count, 89)
 
     def test_empty(self):
         p = BlibliProduct.from_extraction("https://blibli.com/test", {})
@@ -311,6 +318,188 @@ class TestParseSoldCount(unittest.TestCase):
     def test_case_insensitive(self):
         self.assertEqual(_parse_sold_count("500+ TERJUAL"), 500)
         self.assertEqual(_parse_sold_count("100+ Terjual"), 100)
+
+
+class TestCleanRupiahStr(unittest.TestCase):
+    def test_basic(self):
+        self.assertEqual(_clean_rupiah_str("12.999.000"), 12_999_000)
+
+    def test_no_separator(self):
+        self.assertEqual(_clean_rupiah_str("14980000"), 14_980_000)
+
+    def test_empty(self):
+        self.assertIsNone(_clean_rupiah_str(""))
+        self.assertIsNone(_clean_rupiah_str("."))
+
+    def test_one_digit(self):
+        self.assertEqual(_clean_rupiah_str("5"), 5)
+
+
+class TestParseBlibliPricePair(unittest.TestCase):
+    """Tests for _parse_blibli_price_pair — the heart of the Blibli parser."""
+
+    def test_two_prices_concatenated(self):
+        # Real Blibli format from DOM:
+        # "Rp12.999.000Rp16.499.00021%Cicilan 0%Mulai dari Rp541.625/bulan"
+        cur, orig = _parse_blibli_price_pair(
+            "Rp12.999.000Rp16.499.00021%Cicilan 0%Mulai dari Rp541.625/bulan"
+        )
+        self.assertEqual(cur, 12_999_000)
+        self.assertEqual(orig, 16_499_000)
+
+    def test_single_price(self):
+        # No sale, only current price
+        cur, orig = _parse_blibli_price_pair("Rp15.000.000")
+        self.assertEqual(cur, 15_000_000)
+        self.assertIsNone(orig)
+
+    def test_installment_skipped(self):
+        # "Rp10.998.000Rp458.250" — second is installment (much smaller)
+        # Should be treated as no on-sale original
+        cur, orig = _parse_blibli_price_pair("Rp10.998.000Rp458.250")
+        self.assertEqual(cur, 10_998_000)
+        self.assertIsNone(orig)  # installment skipped, not original
+
+    def test_empty(self):
+        cur, orig = _parse_blibli_price_pair("")
+        self.assertIsNone(cur)
+        self.assertIsNone(orig)
+
+    def test_no_rp_prefix(self):
+        cur, orig = _parse_blibli_price_pair("just text no prices")
+        self.assertIsNone(cur)
+        self.assertIsNone(orig)
+
+    def test_three_prices_takes_first_two(self):
+        # Should not pick up the 3rd (installment)
+        cur, orig = _parse_blibli_price_pair(
+            "Rp1.000.000Rp1.500.000CicilanRp50.000"
+        )
+        self.assertEqual(cur, 1_000_000)
+        self.assertEqual(orig, 1_500_000)
+
+
+class TestParseRatingValue(unittest.TestCase):
+    """Tests for _parse_rating_value — the rating X.Y followed by (count)."""
+
+    def test_basic(self):
+        self.assertEqual(_parse_rating_value("4,9 (3428)"), 4.9)
+
+    def test_with_rb_suffix(self):
+        # "4,9 (41,0 rb)" → rating is 4.9
+        body = "4,9 (41,0 rb) More text"
+        self.assertEqual(_parse_rating_value(body), 4.9)
+
+    def test_no_rating(self):
+        self.assertIsNone(_parse_rating_value("no rating here"))
+        self.assertIsNone(_parse_rating_value(""))
+        self.assertIsNone(_parse_rating_value(""))  # type: ignore[arg-type]
+
+    def test_attached_to_word(self):
+        # Real Blibli body has "hari4,9 (3428)" with no whitespace
+        # Must not require \b word boundary
+        self.assertEqual(_parse_rating_value("hari4,9 (3428)"), 4.9)
+
+    def test_5_star(self):
+        self.assertEqual(_parse_rating_value("5,0 (1)"), 5.0)
+
+    def test_zero_star(self):
+        self.assertEqual(_parse_rating_value("0,0 (5)"), 0.0)
+
+
+class TestParseBlibliRatingCount(unittest.TestCase):
+    """Tests for _parse_blibli_rating_count — count inside parens after rating."""
+
+    def test_basic(self):
+        self.assertEqual(_parse_blibli_rating_count("4,9 (3428)"), 3428)
+
+    def test_with_rb_suffix(self):
+        # "4,9 (41,0 rb)" → 41000 reviews
+        self.assertEqual(_parse_blibli_rating_count("4,9 (41,0 rb)"), 41_000)
+
+    def test_with_jt_suffix(self):
+        # Hypothetical 1.2M reviews
+        self.assertEqual(_parse_blibli_rating_count("4,5 (1,2 jt)"), 1_200_000)
+
+    def test_no_count(self):
+        self.assertIsNone(_parse_blibli_rating_count("4,9"))
+        self.assertIsNone(_parse_blibli_rating_count(""))
+        self.assertIsNone(_parse_blibli_rating_count(""))  # type: ignore[arg-type]
+
+    def test_unrelated_parens(self):
+        # Many "(\d+)" exist in body (timestamps, etc) but only
+        # counts adjacent to ratings are review counts
+        self.assertIsNone(_parse_blibli_rating_count("2025 (2026)"))
+        self.assertIsNone(_parse_blibli_rating_count("100 USD (1)"))
+
+    def test_attached_to_word(self):
+        # Real body has "hari4,9 (3428)" — no \b boundary
+        self.assertEqual(_parse_blibli_rating_count("hari4,9 (3428)"), 3428)
+
+
+class TestBlibliLiveIntegration(unittest.TestCase):
+    """Integration tests for BlibliProduct.from_extraction().
+
+    Simulates the full extraction → parsing pipeline using realistic data
+    captured from real Blibli product pages (2026-06-15).
+    """
+
+    REAL_BODY_IPHONE = (
+        "iPhone 15\n"
+        "Disediakan Blibli\n"
+        "Gratis perlindungan 12 bln\n"
+        "Pasti ori\n"
+        "Gratis retur 15 hari\n"
+        "4,9 (3428)\n"
+        "Terjual 9,6 rb\n"
+        "Warna: Blue\n"
+        "Merk\n"
+        "Apple\n"
+        "Blibli - Apple Authorized Reseller Flagship Store\n"
+        "4,9 (41,0 rb)\n"
+        "Metode pengiriman\n"
+    )
+
+    def test_full_extraction_iphone(self):
+        data = {
+            "title": "iPhone 15",
+            "price": "Rp12.999.000Rp16.499.00021%Cicilan 0%Mulai dari Rp541.625/bulan",
+            "bodyText": self.REAL_BODY_IPHONE,
+        }
+        product = BlibliProduct.from_extraction(
+            "https://www.blibli.com/p/iphone-15/ps--APF-70017-00303",
+            data,
+        )
+        self.assertEqual(product.title, "iPhone 15")
+        self.assertEqual(product.price_idr, 12_999_000)
+        self.assertEqual(product.original_price_idr, 16_499_000)
+        self.assertEqual(product.sold_count, 9600)
+        self.assertEqual(product.rating_value, 4.9)
+        self.assertEqual(product.rating_count, 3428)
+        self.assertEqual(product.seller_name, "Blibli - Apple Authorized Reseller Flagship Store")
+
+    def test_samsung_seller_extraction(self):
+        # Simulated body for a Samsung product
+        body = (
+            "Samsung Galaxy S24 FE\n"
+            "Pasti ori\n"
+            "Gratis retur 15 hari\n"
+            "4,8 (12000)\n"
+            "Merk\n"
+            "SAMSUNGChannel B Flagship Store\n"
+            "4,7 (50000)\n"
+        )
+        data = {"title": "Samsung Galaxy S24 FE", "price": "Rp10.998.000", "bodyText": body}
+        product = BlibliProduct.from_extraction(
+            "https://www.blibli.com/p/samsung-galaxy-s24-fe/ps--BBP-60023-01710",
+            data,
+        )
+        self.assertEqual(product.title, "Samsung Galaxy S24 FE")
+        self.assertEqual(product.price_idr, 10_998_000)
+        self.assertEqual(product.rating_value, 4.8)
+        self.assertEqual(product.rating_count, 12000)
+        # Brand "SAMSUNG" stripped from front
+        self.assertEqual(product.seller_name, "Channel B Flagship Store")
 
 
 if __name__ == "__main__":
