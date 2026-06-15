@@ -158,6 +158,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate deal scores with real historical data
+    // Cast needed because Supabase's generated types don't know the
+    // `offers` PostgREST shape; the local ProductWithOffers interface
+    // keeps the rest type-safe. (File-level eslint-disable covers the
+    // remaining `as any` in this file — full typegen is Phase 5 backlog.)
     const productsWithScores = (products as any as ProductWithOffers[])
       .filter((product) => {
         // Only include products that have at least one in-stock offer
