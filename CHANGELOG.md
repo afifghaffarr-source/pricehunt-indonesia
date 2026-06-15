@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - P7 Schema Alignment (2026-06-15)
+- **`supabase/migrations/125_union_offers_prices_view.sql`** — read-only view that UNIONs `offers` + `prices`
+  - 237 total rows: 165 from new `offers`, 72 from legacy `prices`
+  - Field mapping: `price` → `current_price`, `seller` → `seller_name`, `in_stock` (bool) → `stock_status` (enum), etc.
+  - Denormalized `marketplace_name` for read convenience
+  - `origin` column (`'offers'` or `'legacy'`) for downstream prioritization
+  - `is_official_store` heuristic for legacy rows (text match: "official"/"resmi"/"authorized"/"flagship")
+  - **Critical fix**: products with data ONLY in `offers` (e.g. iPhone 15 Pro Max with 0 legacy prices) now show prices on public pages
+- **`src/lib/supabase/data.ts`** refactored:
+  - New helper `fetchPricesByProductIds(productIds)` — single query, grouped by product_id
+  - `getProductsFromDB`, `getProductBySlugFromDB`, `searchProductsFromDB` now use the view
+  - Replaced PostgREST FK embed `prices(...)` with explicit query (cleaner, works with view)
+  - `transformPrices()` updated to read new field names: `current_price`, `seller_name`, `stock_status`, `marketplace_name`, etc.
+  - `inStock` now derived from `stock_status !== "out_of_stock"` (enum comparison vs boolean)
+- **6 new tests** (`src/test/data.test.ts`):
+  - `fetchPricesByProductIds` queries the right view with the right columns
+  - Groups results by product_id
+  - Handles empty input + error cases
+  - `transformPrices` maps new schema → `MarketplacePrice` shape correctly
+  - `inStock=false` for `out_of_stock` rows
+- **Test count: 255 (was 249) — all green locally**
+- **Build: passes** (no Next.js compilation issues)
+
+### Deferred (not in this commit)
+- Apply migration 125 to Supabase (deferred to user — copy-paste to SQL Editor)
+- Drop `prices` table (after all products have `offers` data via scraper backfill)
+- Migrate `price_history` (chart data, separate concern, lower priority)
+
+## [Unreleased - 2026-06-15 earlier]
+
 ### Added - P6 Production Monitoring (2026-06-15)
 - **`.github/workflows/monitor.yml`** — daily production health check
   - Schedule: 09:00 UTC daily + manual `workflow_dispatch` (lookback configurable)

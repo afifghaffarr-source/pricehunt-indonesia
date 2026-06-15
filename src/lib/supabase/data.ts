@@ -72,19 +72,16 @@ function transformProduct(row: Record<string, unknown>): Product {
 }
 
 function transformPrices(rows: Record<string, unknown>[]): MarketplacePrice[] {
-  return rows.map((row) => {
-    const mp = row.marketplaces as Record<string, unknown> | null;
-    return {
-      marketplace: (mp?.name as Marketplace) || "tokopedia",
-      price: row.price as number,
-      url: (row.url as string) || "",
-      seller: (row.seller as string) || "",
-      sellerRating: Number(row.seller_rating) || 0,
-      inStock: row.in_stock as boolean,
-      shippingCost: (row.shipping_cost as number) || 0,
-      lastUpdated: (row.last_updated as string) || new Date().toISOString(),
-    };
-  });
+  return rows.map((row) => ({
+    marketplace: ((row.marketplace_name as string) || "tokopedia") as Marketplace,
+    price: row.current_price as number,
+    url: (row.url as string) || "",
+    seller: (row.seller_name as string) || "",
+    sellerRating: Number(row.seller_rating) || 0,
+    inStock: row.stock_status !== "out_of_stock",
+    shippingCost: (row.shipping_estimate as number) || 0,
+    lastUpdated: (row.last_checked_at as string) || new Date().toISOString(),
+  }));
 }
 
 function transformPriceHistory(rows: Record<string, unknown>[]): PriceHistoryPoint[] {
@@ -154,10 +151,10 @@ export async function getProductOffers(productId: string): Promise<Array<{
   return offers.map((offer) => {
     // Handle marketplace data (could be array or object depending on Supabase schema)
     const marketplaceData: any = offer.marketplaces;
-    const marketplaceName = Array.isArray(marketplaceData) 
-      ? marketplaceData[0]?.name 
+    const marketplaceName = Array.isArray(marketplaceData)
+      ? marketplaceData[0]?.name
       : marketplaceData?.name;
-    
+
     return {
       id: offer.id,
       marketplace: (marketplaceName as string) || "unknown",
@@ -176,9 +173,56 @@ export async function getProductOffers(productId: string): Promise<Array<{
 }
 
 /**
- * ✅ OPTIMIZED: Get products with prices in a single query using JOIN
- * Reduced from 2 queries to 1 query
- * 
+ * Fetch prices from the union view for a list of product IDs.
+ *
+ * Uses `product_prices_view` (migration 125) which combines `offers` and
+ * legacy `prices` so that ALL products — both new and old data sources —
+ * show prices on public pages. Groups results by product_id for O(1)
+ * merge in callers.
+ *
+ * P7: replaces the old PostgREST FK embed of `prices(...)` which only
+ * saw legacy data and missed products whose only data is in `offers`.
+ *
+ * Performance: 1 query for N products. With 50 products/page and
+ * 1-10 prices per product, returns 50-500 rows. Sub-100ms in practice.
+ */
+export async function fetchPricesByProductIds(
+  productIds: string[]
+): Promise<Record<string, Record<string, unknown>[]>> {
+  if (!hasSupabaseEnv() || productIds.length === 0) return {};
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("product_prices_view")
+    .select(`
+      id, product_id, marketplace_id,
+      current_price, seller_name, seller_rating,
+      url, stock_status, shipping_estimate, last_checked_at,
+      is_official_store, source, origin,
+      marketplace_name, marketplace_display_name, marketplace_color
+    `)
+    .in("product_id", productIds)
+    .eq("is_active", true);
+
+  if (error || !data) return {};
+
+  // Group by product_id
+  const grouped: Record<string, Record<string, unknown>[]> = {};
+  for (const row of data) {
+    const pid = row.product_id as string;
+    if (!grouped[pid]) grouped[pid] = [];
+    grouped[pid].push(row as Record<string, unknown>);
+  }
+  return grouped;
+}
+
+/**
+ * ✅ OPTIMIZED: Get products with prices using the union view.
+ * P7: switched from PostgREST FK embed of `prices(...)` to a single
+ * `product_prices_view` query, so products with data only in `offers`
+ * also surface prices.
+ *
  * @param limit - Optional limit for pagination (default: 50)
  * @param offset - Optional offset for pagination (default: 0)
  */
@@ -186,48 +230,43 @@ export async function getProductsFromDB(limit = 50, offset = 0): Promise<Product
   if (!hasSupabaseEnv()) return [];
 
   const supabase = await createClient();
-  
-  // ✅ Use JOIN to get products with their prices in ONE query
+
+  // Query 1: products (no embed — fetch prices separately from view)
   const { data: products, error } = await supabase
     .from("products")
-    .select(`
-      *,
-      prices(
-        *,
-        marketplaces(name, display_name, color)
-      )
-    `)
+    .select("*")
     .order("deal_score", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error || !products) return [];
+  if (error || !products || products.length === 0) return [];
+
+  // Query 2: all prices for these products via union view
+  const productIds = products.map((p) => p.id as string);
+  const pricesByProduct = await fetchPricesByProductIds(productIds);
 
   return products.map((p) => {
     const product = transformProduct(p);
-    // Prices are already nested from the join
-    product.prices = transformPrices((p.prices as Record<string, unknown>[]) || []);
+    const prices = pricesByProduct[p.id as string] || [];
+    product.prices = transformPrices(prices);
     return product;
   });
 }
 
 /**
- * ✅ OPTIMIZED: Get single product with prices and history using JOINs
- * Reduced from 3 queries to 1 query with multiple joins
+ * ✅ OPTIMIZED: Get single product with prices and history.
+ * P7: prices now come from `product_prices_view` (union offers+prices).
+ * `price_history` join kept as-is (chart data, separate concern).
  */
 export async function getProductBySlugFromDB(slug: string): Promise<Product | null> {
   if (!hasSupabaseEnv()) return null;
 
   const supabase = await createClient();
 
-  // ✅ Use JOIN to get product with prices and history in ONE query
+  // Query 1: product + price_history join (history is separate)
   const { data: product, error } = await supabase
     .from("products")
     .select(`
       *,
-      prices(
-        *,
-        marketplaces(name, display_name, color)
-      ),
       price_history(
         *,
         marketplaces(name)
@@ -238,22 +277,22 @@ export async function getProductBySlugFromDB(slug: string): Promise<Product | nu
 
   if (error || !product) return null;
 
+  // Query 2: prices from union view (offers + legacy prices)
+  const pricesByProduct = await fetchPricesByProductIds([product.id as string]);
+
   const result = transformProduct(product);
-  result.prices = transformPrices((product.prices as Record<string, unknown>[]) || []);
+  result.prices = transformPrices(pricesByProduct[product.id as string] || []);
   result.priceHistory = transformPriceHistory((product.price_history as Record<string, unknown>[]) || []);
 
   return result;
 }
 
 /**
- * ✅ OPTIMIZED: Search products with prices in a single query using JOIN
- * Reduced from 2 queries to 1 query
- * 
- * @param limit - Optional limit for pagination (default: 50)
- * @param offset - Optional offset for pagination (default: 0)
+ * ✅ OPTIMIZED: Search products with prices using the union view.
+ * P7: same migration as `getProductsFromDB`.
  */
 export async function searchProductsFromDB(
-  query: string, 
+  query: string,
   category?: string,
   limit = 50,
   offset = 0
@@ -264,13 +303,7 @@ export async function searchProductsFromDB(
 
   let queryBuilder = supabase
     .from("products")
-    .select(`
-      *,
-      prices(
-        *,
-        marketplaces(name, display_name, color)
-      )
-    `);
+    .select("*");
 
   if (query) {
     const escapedQuery = escapeILIKEPattern(query);
@@ -288,11 +321,15 @@ export async function searchProductsFromDB(
     .range(offset, offset + limit - 1);
 
   const { data: products, error } = await queryBuilder;
-  if (error || !products) return [];
+  if (error || !products || products.length === 0) return [];
+
+  const productIds = products.map((p) => p.id as string);
+  const pricesByProduct = await fetchPricesByProductIds(productIds);
 
   return products.map((p) => {
     const product = transformProduct(p);
-    product.prices = transformPrices((p.prices as Record<string, unknown>[]) || []);
+    const prices = pricesByProduct[p.id as string] || [];
+    product.prices = transformPrices(prices);
     return product;
   });
 }
