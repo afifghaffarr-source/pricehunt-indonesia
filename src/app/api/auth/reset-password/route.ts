@@ -1,8 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkPersistentRateLimit } from "@/lib/rate-limit";
+
+/**
+ * Rate limit: 10 attempts per IP per hour.
+ * The Supabase recovery token itself is single-use and short-lived,
+ * but this prevents bruteforce probing of expired/reused tokens.
+ */
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_PER_IP = 10;
+
+function getClientIp(request: NextRequest): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const ipLimit = await checkPersistentRateLimit({
+      identifier: `ip:${ip}`,
+      endpoint: "auth/reset-password",
+      limit: RATE_LIMIT_PER_IP,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    });
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Terlalu banyak percobaan. Coba lagi nanti." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((ipLimit.retryAfterMs || RATE_LIMIT_WINDOW_MS) / 1000)),
+            "X-RateLimit-Limit": String(RATE_LIMIT_PER_IP),
+            "X-RateLimit-Remaining": "0",
+          },
+        }
+      );
+    }
+
     const { token, password } = await request.json();
 
     if (!token || !password) {
