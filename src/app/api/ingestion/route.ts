@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/lib/supabase/types";
 import { z } from "zod";
 
 // Validation schema for ingestion data
@@ -136,8 +137,7 @@ export async function POST(request: NextRequest) {
               ...offer,
               last_checked_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any, {
+            } as Database["public"]["Tables"]["offers"]["Insert"], {
               onConflict: "product_id,marketplace_id,marketplace_product_id",
               ignoreDuplicates: false, // Update existing
             });
@@ -160,14 +160,17 @@ export async function POST(request: NextRequest) {
     if (data.price_snapshots && data.price_snapshots.length > 0) {
       for (const snapshot of data.price_snapshots) {
         try {
-          // TODO: Regenerate Supabase types after migrations 107+108
+          // Map legacy `price` field to `current_price` (DB column).
+          // The zod schema accepts `price` for backwards compatibility with
+          // existing collectors. New code should use `current_price`.
+          const { price: _legacyPrice, ...rest } = snapshot;
           const { error } = await supabase
             .from("price_snapshots")
             .insert({
-              ...snapshot,
+              ...rest,
+              current_price: snapshot.price,
               captured_at: new Date().toISOString(),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any);
+            } as Database["public"]["Tables"]["price_snapshots"]["Insert"]);
           
           if (error) {
             snapshotsFailed++;
@@ -189,20 +192,25 @@ export async function POST(request: NextRequest) {
                    (offersProcessed > 0 || snapshotsProcessed > 0) ? "partial" : "failed";
     
     try {
-      // TODO: Regenerate Supabase types after migrations 107+108
+      // Map to actual ingestion_logs schema columns.
+      // Old field names → DB column names:
+      //   job_name, status, duration_ms, error_summary → all in metadata
+      //   status → log_status
+      //   error_summary → error_message
       await supabase
         .from("ingestion_logs")
         .insert({
-          job_name: data.job_name,
           source: data.source,
-          status,
-        items_processed: offersProcessed + snapshotsProcessed,
-        items_failed: offersFailed + snapshotsFailed,
-        duration_ms: duration,
-        error_summary: errors.length > 0 ? errors.slice(0, 10).join("; ") : null,
-        metadata: data.metadata || {},
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+          log_status: status,
+          items_processed: offersProcessed + snapshotsProcessed,
+          items_failed: offersFailed + snapshotsFailed,
+          error_message: errors.length > 0 ? errors.slice(0, 10).join("; ") : null,
+          metadata: {
+            ...(data.metadata || {}),
+            job_name: data.job_name,
+            duration_ms: duration,
+          },
+        } as Database["public"]["Tables"]["ingestion_logs"]["Insert"]);
     } catch (logError) {
       console.error("[Ingestion] Failed to log job:", logError);
       // Don't fail the request if logging fails

@@ -26,7 +26,7 @@ export async function checkPersistentRateLimit(input: RateLimitInput): Promise<R
       p_endpoint: input.endpoint,
       p_window_start: windowStart,
       p_limit: input.limit,
-    } as any) as { data: Array<{ current_count: number; allowed: boolean; remaining: number }> | null; error: any };
+    });
 
     if (error) {
       console.error("Rate limit RPC failed:", error.message);

@@ -157,12 +157,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ products: [], total: 0 });
     }
 
-    // Calculate deal scores with real historical data
-    // Cast needed because Supabase's generated types don't know the
-    // `offers` PostgREST shape; the local ProductWithOffers interface
-    // keeps the rest type-safe. (File-level eslint-disable covers the
-    // remaining `as any` in this file — full typegen is Phase 5 backlog.)
-    const productsWithScores = (products as any as ProductWithOffers[])
+    // Calculate deal scores with real historical data.
+    // The Supabase join returns a generic shape (offers is an array of
+    // unknown rows). Adapter normalizes each into the narrower PriceView.
+    const rawProducts = products as unknown as ProductWithOffers[];
+    const productsWithScores = rawProducts
       .filter((product) => {
         // Only include products that have at least one in-stock offer
         const offerViews = toPriceViews(product.offers ?? []);

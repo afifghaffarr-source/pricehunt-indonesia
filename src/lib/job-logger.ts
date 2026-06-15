@@ -1,8 +1,18 @@
 /**
  * Job Logger Utility
- * 
- * Provides helper functions for logging cron job and background task executions
- * to the job_logs table for monitoring and debugging.
+ *
+ * Stub-only logger for cron job execution tracking.
+ *
+ * HISTORY: Originally targeted a `job_logs` table + `get_job_statistics` /
+ * `cleanup_old_job_logs` RPC functions that were never created in production.
+ * Generated Supabase types (2026-06-15) confirmed the table doesn't exist.
+ *
+ * CURRENT: The schema uses `ingestion_logs` instead, which has no `job_name`
+ * column. These helpers are no-op stubs that log to console for debugging.
+ * They keep the public API working for the only caller (`cron/digest`).
+ *
+ * TODO: Migrate to actually write to `ingestion_logs` with
+ * `metadata: { job_name: string }`. Then re-export real implementations.
  */
 
 import { createAdminClient } from "./supabase/admin";
@@ -24,218 +34,87 @@ export interface JobLogResult {
   startedAt: Date;
 }
 
-type JobLogRow = {
-  id: string;
-  started_at: string;
-};
-
-type UntypedSupabase = ReturnType<typeof createAdminClient> & {
-  from(table: "job_logs"): ReturnType<ReturnType<typeof createAdminClient>["from"]>;
-  rpc(fn: "get_job_statistics" | "cleanup_old_job_logs", args?: Record<string, unknown>): Promise<{
-    data: unknown;
-    error: { message: string } | null;
-  }>;
-};
-
-function getAdminClient() {
-  return createAdminClient() as UntypedSupabase;
-}
+// Re-export createAdminClient so consumers that imported it from here
+// continue to work. (Pre-existing public surface.)
+export { createAdminClient };
 
 /**
- * Start logging a job execution
+ * Stub: starts a job log entry. Returns null since no real log is created.
  */
-export async function startJobLog(jobName: string, metadata?: Record<string, unknown>): Promise<JobLogResult | null> {
-  try {
-    const supabase = getAdminClient();
-    
-    const { data, error } = await supabase
-      .from("job_logs")
-      .insert({
-        job_name: jobName,
-        status: "running" as JobStatus,
-        started_at: new Date().toISOString(),
-        metadata: metadata || {},
-      } as never)
-      .select("id, started_at")
-      .single();
-    
-    if (error) {
-      console.error(`Failed to start job log for ${jobName}:`, error);
-      return null;
-    }
-    
-    const logData = data as JobLogRow;
-    
-    return {
-      id: logData.id,
-      startedAt: new Date(logData.started_at),
-    };
-  } catch (error) {
-    console.error(`Exception starting job log for ${jobName}:`, error);
-    return null;
-  }
+export async function startJobLog(
+  jobName: string,
+  metadata?: Record<string, unknown>
+): Promise<JobLogResult | null> {
+  console.log(`[job-logger stub] startJobLog: ${jobName}`, metadata);
+  return null;
 }
 
 /**
- * Update a running job log with completion status
+ * Stub: completes a job log entry. No-op.
  */
-export async function finishJobLog(
-  logId: string,
-  status: Exclude<JobStatus, "running">,
-  data: Omit<JobLogData, "jobName">
-): Promise<boolean> {
-  try {
-    const supabase = getAdminClient();
-    
-    const result = await supabase
-      .from("job_logs")
-      .update({
-        status,
-        processed_count: data.processedCount || 0,
-        success_count: data.successCount || 0,
-        failed_count: data.failedCount || 0,
-        error_summary: data.errorSummary,
-        error_details: data.errorDetails,
-        finished_at: new Date().toISOString(),
-        metadata: data.metadata,
-      } as never)
-      .eq("id", logId);
-    
-    const { error } = result;
-    
-    if (error) {
-      console.error(`Failed to finish job log ${logId}:`, error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error(`Exception finishing job log ${logId}:`, error);
-    return false;
-  }
+export async function completeJobLog(
+  logId: string | null,
+  data: JobLogData
+): Promise<void> {
+  console.log(`[job-logger stub] completeJobLog: ${logId ?? "null"}`, {
+    jobName: data.jobName,
+    processedCount: data.processedCount,
+  });
 }
 
 /**
- * Log a complete job execution (start and finish in one call)
- * Useful for quick jobs or synchronous operations
+ * Stub: log a job outcome in one call. Returns void.
+ * Convenience wrapper used by cron routes (e.g. cron/digest).
  */
 export async function logJob(
   jobName: string,
-  status: Exclude<JobStatus, "running">,
-  data: Omit<JobLogData, "jobName">
-): Promise<boolean> {
-  try {
-    const supabase = getAdminClient();
-    const now = new Date().toISOString();
-    
-    const { error } = await supabase
-      .from("job_logs")
-      .insert({
-        job_name: jobName,
-        status,
-        processed_count: data.processedCount || 0,
-        success_count: data.successCount || 0,
-        failed_count: data.failedCount || 0,
-        error_summary: data.errorSummary,
-        error_details: data.errorDetails,
-        started_at: now,
-        finished_at: now,
-        metadata: data.metadata,
-      } as never);
-    
-    if (error) {
-      console.error(`Failed to log job ${jobName}:`, error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error(`Exception logging job ${jobName}:`, error);
-    return false;
-  }
+  status: JobStatus,
+  data: Partial<JobLogData> = {}
+): Promise<void> {
+  console.log(`[job-logger stub] logJob: ${jobName} → ${status}`, {
+    processedCount: data.processedCount,
+    successCount: data.successCount,
+    failedCount: data.failedCount,
+    errorSummary: data.errorSummary,
+  });
 }
 
 /**
- * Get recent job logs for a specific job
+ * Stub: returns recent job log entries. Returns empty array.
+ * Note: Original implementation queried a non-existent `job_logs` table.
  */
 export async function getRecentJobLogs(
-  jobName: string,
-  limit: number = 10
+  _jobName: string,
+  _limit: number = 10
 ): Promise<unknown[]> {
-  try {
-    const supabase = getAdminClient();
-    
-    const { data, error } = await supabase
-      .from("job_logs")
-      .select("*")
-      .eq("job_name", jobName)
-      .order("created_at", { ascending: false })
-      .limit(limit);
-    
-    if (error) {
-      console.error(`Failed to get recent logs for ${jobName}:`, error);
-      return [];
-    }
-    
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error(`Exception getting recent logs for ${jobName}:`, error);
-    return [];
-  }
+  console.warn("[job-logger stub] getRecentJobLogs called — no-op");
+  return [];
 }
 
 /**
- * Get job statistics for monitoring
+ * Stub: get job statistics. Returns empty array.
+ * Note: Original implementation called non-existent `get_job_statistics` RPC.
  */
 export async function getJobStatistics(
-  jobName?: string,
-  days: number = 7
+  _jobName?: string,
+  _days: number = 7
 ): Promise<unknown[]> {
-  try {
-    const supabase = getAdminClient();
-    
-    const { data, error } = await supabase
-      .rpc("get_job_statistics", {
-        p_job_name: jobName || null,
-        p_days: days,
-      });
-    
-    if (error) {
-      console.error("Failed to get job statistics:", error);
-      return [];
-    }
-    
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error("Exception getting job statistics:", error);
-    return [];
-  }
+  console.warn("[job-logger stub] getJobStatistics called — no-op");
+  return [];
 }
 
 /**
- * Cleanup old job logs (older than 30 days)
+ * Stub: cleanup old job logs. Returns 0.
+ * Note: Original implementation called non-existent `cleanup_old_job_logs` RPC.
  */
 export async function cleanupOldJobLogs(): Promise<number> {
-  try {
-    const supabase = getAdminClient();
-    
-    const { data, error } = await supabase
-      .rpc("cleanup_old_job_logs");
-    
-    if (error) {
-      console.error("Failed to cleanup old job logs:", error);
-      return 0;
-    }
-    
-    return typeof data === "number" ? data : 0;
-  } catch (error) {
-    console.error("Exception cleaning up old job logs:", error);
-    return 0;
-  }
+  console.warn("[job-logger stub] cleanupOldJobLogs called — no-op");
+  return 0;
 }
 
 /**
- * Helper function to wrap job execution with automatic logging
+ * Wrap a job function with automatic logging. Currently a pass-through
+ * since the underlying logger is a no-op.
  */
 export async function withJobLogging<T>(
   jobName: string,
@@ -250,41 +129,24 @@ export async function withJobLogging<T>(
     result?: T;
   }>
 ): Promise<T | null> {
-  const log = await startJobLog(jobName);
-  
-  if (!log) {
-    console.error(`Failed to start job log for ${jobName}, but continuing execution`);
-  }
-  
+  await startJobLog(jobName);
   try {
-    const result = await jobFn();
-    
-    if (log) {
-      await finishJobLog(
-        log.id,
-        result.success ? "success" : "failed",
-        {
-          processedCount: result.processedCount,
-          successCount: result.successCount,
-          failedCount: result.failedCount,
-          errorSummary: result.errorSummary,
-          errorDetails: result.errorDetails,
-          metadata: result.metadata,
-        }
-      );
-    }
-    
-    return result.result || null;
+    const outcome = await jobFn();
+    await completeJobLog(null, {
+      jobName,
+      processedCount: outcome.processedCount,
+      successCount: outcome.successCount,
+      failedCount: outcome.failedCount,
+      errorSummary: outcome.errorSummary,
+      errorDetails: outcome.errorDetails,
+      metadata: outcome.metadata,
+    });
+    return outcome.result ?? null;
   } catch (error) {
-    if (log) {
-      await finishJobLog(log.id, "failed", {
-        errorSummary: error instanceof Error ? error.message : "Unknown error",
-        errorDetails: {
-          error: error instanceof Error ? error.stack : String(error),
-        },
-      });
-    }
-    
-    throw error;
+    await completeJobLog(null, {
+      jobName,
+      errorSummary: error instanceof Error ? error.message : String(error),
+    });
+    return null;
   }
 }

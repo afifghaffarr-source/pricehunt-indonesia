@@ -1,70 +1,42 @@
 /**
  * Offers & Price Snapshots Data Model
- * 
- * New normalized schema for multi-seller price tracking.
- * Migration 107 creates these tables.
- * 
- * NOTE: This is foundation for future migration from `prices` table.
- * Current app still uses `prices` - full migration is Phase 7.
+ *
+ * Source of truth: `Database` type in `./types` (auto-generated from Supabase
+ * via `supabase gen types typescript`). Re-export the row shapes here with
+ * narrower enum unions for app-level safety.
+ *
+ * Migration source-of-truth: supabase/migrations/107_normalize_prices_to_offers.sql,
+ * 108_price_snapshots.sql, 124_offers_additive_migration.sql.
  */
 
 import { createClient } from "./client";
 import { createAdminClient } from "./admin";
+import type { Database } from "./types";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+export type OfferRow = Database["public"]["Tables"]["offers"]["Row"];
+export type OfferInsert = Database["public"]["Tables"]["offers"]["Insert"];
+export type OfferUpdate = Database["public"]["Tables"]["offers"]["Update"];
+
+export type PriceSnapshotRow = Database["public"]["Tables"]["price_snapshots"]["Row"];
+export type PriceSnapshotInsert = Database["public"]["Tables"]["price_snapshots"]["Insert"];
 
 export type OfferCondition = "new" | "used" | "refurbished" | "unknown";
 export type StockStatus = "in_stock" | "low_stock" | "out_of_stock" | "unknown";
 
-export interface Offer {
-  id: string;
-  product_id: string;
-  marketplace_id: string;
-  marketplace_product_id: string | null;
-  title: string;  // ACTUAL: required field
-  seller_name: string | null;
-  seller_id: string | null;  // ACTUAL: exists in production
-  seller_rating: number | null;
-  seller_review_count: number | null;
-  seller_location: string | null;  // ACTUAL: seller_location (not location)
-  is_official_store: boolean;
-  condition: OfferCondition;
-  variant: string | null;
-  url: string;
-  current_price: number;
-  original_price: number | null;
-  discount_percentage: number | null;  // ACTUAL: exists, auto-calculated
-  stock_status: StockStatus;
-  shipping_estimate: number | null;
-  shipping_info: string | null;
-  sold_count: number | null;
-  voucher_text: string | null;
-  has_voucher: boolean;
-  has_free_shipping: boolean;
-  image_url: string | null;  // ACTUAL: exists in production
-  category_hint: string | null;  // ACTUAL: exists in production
-  source: string;  // ACTUAL: data source (browser_collector, manual_admin, etc)
-  confidence_score: number;  // ACTUAL: 0-100
-  confidence_label: string;  // ACTUAL: 'sangat dipercaya', 'dipercaya', 'perlu dicek ulang'
-  validation_status: 'pending' | 'verified' | 'flagged' | 'rejected';  // ACTUAL
-  is_active: boolean;  // ACTUAL: soft delete flag
-  last_checked_at: string | null;
-  created_at: string;
-  updated_at: string;
+/**
+ * Legacy `Offer` shape preserved for app code that still uses it.
+ * Subset of generated `OfferRow` with `title` widened to required (was nullable
+ * in 124 — adapter ensures it's always present at write time).
+ */
+export interface Offer extends Omit<OfferRow, "title"> {
+  title: string; // narrowed: always required at the app layer
 }
 
-export interface PriceSnapshot {
-  id: string;
-  offer_id: string;
-  price: number;
-  original_price: number | null;
-  discount_percent: number | null;
-  captured_at: string;
-  source: string;
-  confidence_score: number | null;
-}
+/**
+ * Legacy `PriceSnapshot` shape preserved for app code. Maps generated
+ * `PriceSnapshotRow` field-for-field.
+ */
+export interface PriceSnapshot extends PriceSnapshotRow {}
 
 export interface OfferWithMarketplace extends Offer {
   marketplace: {
@@ -183,11 +155,8 @@ export async function getBestOffer(productId: string): Promise<Offer | null> {
 export async function upsertOffer(offer: Omit<Offer, "id" | "created_at" | "updated_at">): Promise<Offer | null> {
   const supabase = createAdminClient();
 
-  // TODO: supabase-js strict typing rejects upsert() when Database type is
-  // built from a `interface` (vs `type` alias). Once we regenerate types via
-  // `supabase gen types typescript`, this `as any` can be removed.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from("offers") as any)
+  const { data, error } = await supabase
+    .from("offers")
     .upsert({
       ...offer,
       updated_at: new Date().toISOString(),
@@ -203,7 +172,9 @@ export async function upsertOffer(offer: Omit<Offer, "id" | "created_at" | "upda
     return null;
   }
 
-  return data;
+  // `data` is OfferRow (title nullable per schema) — adapter/UI ensures
+  // title is always populated. Cast to the narrower Offer shape.
+  return data as unknown as Offer;
 }
 
 /**
@@ -217,9 +188,8 @@ export async function createPriceSnapshot(
 ): Promise<PriceSnapshot | null> {
   const supabase = createAdminClient();
 
-  // TODO: see upsertOffer comment — remove when types regenerated.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from("price_snapshots") as any)
+  const { data, error } = await supabase
+    .from("price_snapshots")
     .insert({
       ...snapshot,
       captured_at: new Date().toISOString(),
@@ -251,9 +221,8 @@ export async function batchUpsertOffers(offers: Omit<Offer, "id" | "created_at" 
     updated_at: new Date().toISOString(),
   }));
 
-  // TODO: see upsertOffer comment — remove when types regenerated.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from("offers") as any)
+  const { data, error } = await supabase
+    .from("offers")
     .upsert(offersWithTimestamp, {
       onConflict: "product_id,marketplace_id,marketplace_product_id",
       ignoreDuplicates: false,

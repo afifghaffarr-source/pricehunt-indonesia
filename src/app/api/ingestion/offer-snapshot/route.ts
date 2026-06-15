@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/lib/supabase/types";
 import { z } from "zod";
 import { normalizePrice, normalizeMarketplace, normalizeStockStatus, normalizeCondition, normalizeProductTitle } from "@/lib/ingestion/normalizer";
 import { calculateConfidenceScore } from "@/lib/ingestion/confidence";
@@ -96,10 +97,11 @@ async function findOrCreateMarketplace(supabase: ReturnType<typeof createAdminCl
   const normalized = normalizeMarketplace(marketplaceName);
   
   // Try to find existing marketplace (exact match since name is unique)
+  type MarketplaceName = Database["public"]["Enums"]["marketplace_name"];
   const { data: existing, error: findError } = await supabase
     .from("marketplaces")
     .select("id, name")
-    .eq("name", normalized)
+    .eq("name", normalized as MarketplaceName)
     .maybeSingle();
   
   if (existing && !findError) {
@@ -111,25 +113,25 @@ async function findOrCreateMarketplace(supabase: ReturnType<typeof createAdminCl
   }
   
   // Create new marketplace if not found
-   
+
   const { data: created, error } = await supabase
     .from("marketplaces")
     .insert({
-      name: normalized,
+      name: normalized as Database["public"]["Enums"]["marketplace_name"],
       display_name: normalized.charAt(0).toUpperCase() + normalized.slice(1),
       base_url: `https://${normalized}.com`,
       color: "#6B7280", // Default gray color
       is_active: true,
-    } as any)
+    })
     .select("id, name")
     .single();
-  
+
   if (error || !created) {
     throw new Error(`Failed to create marketplace: ${error?.message || "Unknown error"}`);
   }
-  
-  return { 
-    id: (created as { id: string; name: string }).id, 
+
+  return {
+    id: (created as { id: string; name: string }).id,
     name: (created as { id: string; name: string }).name 
   };
 }
@@ -295,7 +297,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
      
     const { data: offer, error: offerError } = await supabase
       .from("offers")
-      .upsert(offerData as any, {
+      .upsert(offerData as Database["public"]["Tables"]["offers"]["Insert"], {
         onConflict: "url",
         ignoreDuplicates: false,
       })
@@ -334,7 +336,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
      
     const { data: snapshot, error: snapshotError } = await supabase
       .from("price_snapshots")
-      .insert(snapshotData as any)
+      .insert(snapshotData as Database["public"]["Tables"]["price_snapshots"]["Insert"])
       .select("id")
       .single();
     
@@ -348,19 +350,19 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
      
     await supabase.from("ingestion_logs").insert({
       source: input.source,
-      job_name: "offer_snapshot_single",
-      status: "success",
-      processed_count: 1,
-      success_count: 1,
-      failed_count: 0,
+      log_status: "success",
+      items_processed: 1,
+      items_created: 1,
+      items_failed: 0,
       started_at: new Date(startTime).toISOString(),
-      finished_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
       metadata: {
+        job_name: "offer_snapshot_single",
         marketplace: marketplace.name,
         product_url: input.product_url,
         duration_ms: duration,
       },
-    } as any);
+    } as Database["public"]["Tables"]["ingestion_logs"]["Insert"]);
     
     // 10. Return success
     return NextResponse.json({

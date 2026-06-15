@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { scrapeAllMarketplaces, generateScrapeReport } from "@/lib/scraper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin-auth";
+import type { Database } from "@/lib/supabase/types";
 
 export async function POST(request: NextRequest) {
   // ✅ SECURITY: Require admin authentication (expensive operation)
@@ -131,8 +132,11 @@ export async function POST(request: NextRequest) {
 
         // Admin client bypasses type checking
         // TODO: Regenerate Supabase types after schema changes
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from("products") as any)
+        await (supabase.from("products") as unknown as {
+          update: (values: Database["public"]["Tables"]["products"]["Update"]) => {
+            eq: (col: string, val: string) => Promise<unknown>;
+          };
+        })
           .update({
             lowest_price: lowest,
             highest_price: highest,
