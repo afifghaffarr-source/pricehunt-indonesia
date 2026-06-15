@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scrapeAllMarketplaces, generateScrapeReport } from "@/lib/scraper";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function POST(request: NextRequest) {
   // ✅ SECURITY: Require admin authentication (expensive operation)
-  const authError = await requireAdmin(request);
-  if (authError) return authError;
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
 
   // ⚠️ DATA TRUST WARNING: This endpoint uses simulated/demo scraper
   // Real price data should come from ingestion API with proper source tracking

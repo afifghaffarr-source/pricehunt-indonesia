@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exportBackup, generateSeedSQL } from "@/lib/backup";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
   // ✅ SECURITY: Require admin authentication
-  const authError = await requireAdmin(request);
-  if (authError) return authError;
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
 
   try {
     const backup = await exportBackup();

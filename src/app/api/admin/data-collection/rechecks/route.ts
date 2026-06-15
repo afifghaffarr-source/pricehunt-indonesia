@@ -4,12 +4,12 @@
  * Lists recheck requests. **Admin only.**
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const guard = await requireAdmin(request);
-  if (guard) return guard;
+  if (!guard.ok) return guard.response;
 
   const { searchParams } = new URL(request.url);
   const requestStatus = searchParams.get("request_status");

@@ -8,12 +8,12 @@
  * - No raw DB error details are returned to the client.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const guard = await requireAdmin(request);
-  if (guard) return guard;
+  if (!guard.ok) return guard.response;
 
   const supabase = await createClient();
   const { data, error } = await supabase

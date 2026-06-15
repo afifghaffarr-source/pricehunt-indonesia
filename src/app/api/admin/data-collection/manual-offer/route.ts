@@ -10,7 +10,7 @@
  * - Body is whitelisted.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/auth";
 import { z } from "@/lib/validation";
@@ -29,7 +29,7 @@ const manualOfferSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const guard = await requireAdmin(request);
-  if (guard) return guard;
+  if (!guard.ok) return guard.response;
 
   let body: unknown;
   try {

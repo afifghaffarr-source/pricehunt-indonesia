@@ -4,7 +4,7 @@
  * Updates a recheck request's status. **Admin only.**
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/auth";
 import { z } from "@/lib/validation";
@@ -20,7 +20,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const guard = await requireAdmin(request);
-  if (guard) return guard;
+  if (!guard.ok) return guard.response;
 
   const { id } = await params;
   if (!/^[0-9a-fA-F-]{8,64}$/.test(id)) {
