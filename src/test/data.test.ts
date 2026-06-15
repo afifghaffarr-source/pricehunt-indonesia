@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockFrom = vi.fn();
 const mockSelect = vi.fn();
 const mockEq = vi.fn();
-const mockIn = vi.fn();
 const mockSingle = vi.fn();
 const mockOrder = vi.fn();
 const mockRange = vi.fn();
@@ -76,10 +75,10 @@ describe("P7: fetchPricesByProductIds", () => {
   it("queries the product_prices_view with the given IDs", async () => {
     // Real Supabase: .in() returns a chainable that also has .eq()
     const terminal = { data: [], error: null };
-    const chain: any = {};
+    const chain: Record<string, unknown> = {};
     chain.in = vi.fn().mockReturnValue(chain);
     chain.eq = vi.fn().mockReturnValue(chain);
-    chain.then = (resolve: any) => resolve(terminal);
+    chain.then = (resolve: (v: typeof terminal) => void) => resolve(terminal);
 
     mockFrom.mockReturnValue({
       select: mockSelect.mockReturnValue(chain),
