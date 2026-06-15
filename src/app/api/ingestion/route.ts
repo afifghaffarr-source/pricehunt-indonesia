@@ -130,7 +130,6 @@ export async function POST(request: NextRequest) {
     if (data.offers && data.offers.length > 0) {
       for (const offer of data.offers) {
         try {
-          // TODO: Regenerate Supabase types after migrations 107+108
           const { error } = await supabase
             .from("offers")
             .upsert({

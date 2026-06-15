@@ -146,11 +146,6 @@ export async function getBestOffer(productId: string): Promise<Offer | null> {
 /**
  * Create or update an offer (upsert)
  * Admin/cron only
- * 
- * NOTE: Type assertion needed because Supabase types haven't been regenerated
- * after migrations 107/108 which created the offers table.
- * Runtime schema is correct (58 ingestion tests pass).
- * TODO: Regenerate types with `supabase gen types typescript`
  */
 export async function upsertOffer(offer: Omit<Offer, "id" | "created_at" | "updated_at">): Promise<Offer | null> {
   const supabase = createAdminClient();

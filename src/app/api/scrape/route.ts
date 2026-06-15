@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
         const avg = Math.round(allPrices.reduce((a, b) => a + b, 0) / allPrices.length);
         const score = Math.round(100 - ((avg - lowest) / avg) * 100);
 
-        // Admin client bypasses type checking
-        // TODO: Regenerate Supabase types after schema changes
+        // Admin client bypasses type checking (defensive cast for the
+        // chained .update().eq() call which supabase-js types as a builder).
         await (supabase.from("products") as unknown as {
           update: (values: Database["public"]["Tables"]["products"]["Update"]) => {
             eq: (col: string, val: string) => Promise<unknown>;
