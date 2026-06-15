@@ -282,6 +282,10 @@ export function priceToOffer(
     validation_status: "pending",
     is_active: true,
     last_checked_at: price.last_checked || null,
+    // A-003 columns (now real in DB):
+    rating: null,
+    review_count: null,
+    currency: "IDR",
   };
 }
 

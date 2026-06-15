@@ -296,6 +296,7 @@ export type Database = {
           confidence_label: string | null
           confidence_score: number | null
           created_at: string
+          currency: string
           current_price: number
           discount_percentage: number | null
           has_free_shipping: boolean
@@ -309,6 +310,8 @@ export type Database = {
           marketplace_product_id: string | null
           original_price: number | null
           product_id: string | null
+          rating: number | null
+          review_count: number | null
           seller_id: string | null
           seller_location: string | null
           seller_name: string | null
@@ -325,12 +328,6 @@ export type Database = {
           validation_status: string
           variant: string | null
           voucher_text: string | null
-          // A-003: 3 columns NOT in live DB yet (migration 124 Part 3a pending user apply)
-          // Added here so app code can reference them safely. Will become "real" after
-          // running supabase/migrations/A-003_OFFERS_MISSING_COLUMNS.sql.
-          rating?: number | null
-          review_count?: number | null
-          currency?: string
         }
         Insert: {
           category_hint?: string | null
@@ -338,6 +335,7 @@ export type Database = {
           confidence_label?: string | null
           confidence_score?: number | null
           created_at?: string
+          currency?: string
           current_price: number
           discount_percentage?: number | null
           has_free_shipping?: boolean
@@ -351,6 +349,8 @@ export type Database = {
           marketplace_product_id?: string | null
           original_price?: number | null
           product_id?: string | null
+          rating?: number | null
+          review_count?: number | null
           seller_id?: string | null
           seller_location?: string | null
           seller_name?: string | null
@@ -367,12 +367,6 @@ export type Database = {
           validation_status?: string
           variant?: string | null
           voucher_text?: string | null
-          // A-003: 3 columns NOT in live DB yet — added here so app code can
-          // reference them. Will become "real" after running
-          // supabase/migrations/A-003_OFFERS_MISSING_COLUMNS.sql.
-          rating?: number | null
-          review_count?: number | null
-          currency?: string
         }
         Update: {
           category_hint?: string | null
@@ -380,6 +374,7 @@ export type Database = {
           confidence_label?: string | null
           confidence_score?: number | null
           created_at?: string
+          currency?: string
           current_price?: number
           discount_percentage?: number | null
           has_free_shipping?: boolean
@@ -393,6 +388,8 @@ export type Database = {
           marketplace_product_id?: string | null
           original_price?: number | null
           product_id?: string | null
+          rating?: number | null
+          review_count?: number | null
           seller_id?: string | null
           seller_location?: string | null
           seller_name?: string | null
@@ -409,10 +406,6 @@ export type Database = {
           validation_status?: string
           variant?: string | null
           voucher_text?: string | null
-          // A-003: same as Row/Insert
-          rating?: number | null
-          review_count?: number | null
-          currency?: string
         }
         Relationships: [
           {
