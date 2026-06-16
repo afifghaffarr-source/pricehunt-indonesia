@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.10 (2026-06-16) — Migration Audit + Reviews System
+
+- **Migration audit report** (`docs/MIGRATION_AUDIT_v1510.md`)
+  - Found 9 tables missing in production due to duplicate version numbers
+    in the migration directory (002, 003, 100, 111, 112, 114, 116, 120)
+  - Supabase CLI does not enforce unique version numbers; manual SQL
+    Editor apply path masked the gap until runtime `PGRST205` errors
+  - Re-ran 4 missing migrations: 002_api_registry, 003_product_reviews,
+    100_job_logs_system, 121_admin_users
+  - 5 new tables: `admin_users`, `api_source_categories`,
+    `api_source_credentials`, `api_source_health_checks`,
+    `api_source_usage_logs`, `api_sources`, `job_logs`,
+    `product_reviews`, `review_helpfulness`
+- **New migration `131_product_reviews_user_profiles_fk.sql`**
+  - Original `003_product_reviews.sql` only created FK to `auth.users`
+  - Reviews API joined `user_profiles!inner(...)` which failed with
+    `PGRST200` (no relationship found in schema cache)
+  - Added explicit FK `product_reviews.user_id → user_profiles.id`
+    (and same for `review_helpfulness`)
+
+### Fixed - v1.5.10 (2026-06-16)
+
+- **`PGRST205` on `/api/products/[id]/reviews`** — table `product_reviews`
+  didn't exist in production. Re-applied migration 003 + added FK.
+  `ReviewsList` now renders the empty state instead of an error banner.
+- **`PGRST200` on reviews join** — added `user_profiles` FK so the
+  PostgREST join works. Verified end-to-end with a real product ID.
+- **`100_job_logs_system.sql` RLS policy** — was using the deprecated
+  `user_profiles.is_admin` (JSONB boolean). Replaced with `EXISTS
+  (SELECT 1 FROM admin_users WHERE user_id = auth.uid() AND revoked_at IS NULL)`.
+- **Recharts `width(-1)/height(-1)` warning** (`PriceHistoryChart`)
+  - Replaced `ResponsiveContainer` with `useResizeObserver` + `useState`
+  - Chart only renders when parent has positive dimensions
+  - Added `min-w-0` to prevent flexbox shrink-to-zero
+- **Removed dead `available: false` short-circuit** in
+  `src/app/api/products/[id]/reviews/route.ts` and
+  `src/components/product/ReviewsList.tsx` — was a temporary graceful
+  fallback for the missing table. The real error path is now exercised.
+
 ### Added - v1.5.9 (2026-06-16) — Performance Audit + Quick Wins
 
 - **`/api/auth/session` endpoint** (`src/app/api/auth/session/route.ts`)

@@ -49,33 +49,6 @@ export async function GET(
       .order("created_at", { ascending: false });
 
     if (error) {
-      // PGRST205 = table does not exist in schema cache. The reviews
-      // migration may not have been applied to this Supabase project
-      // yet. Treat it as "feature not yet available" rather than a
-      // 500 — the client renders the empty state instead of an error
-      // banner.
-      const isMissingTable =
-        error.code === "PGRST205" || /Could not find the table/i.test(error.message ?? "");
-
-      if (isMissingTable) {
-        return NextResponse.json(
-          {
-            reviews: [],
-            stats: {
-              totalReviews: 0,
-              averageRating: 0,
-              ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-            },
-            available: false,
-          },
-          {
-            headers: {
-              "Cache-Control": "no-store, must-revalidate",
-            },
-          }
-        );
-      }
-
       console.error("Error fetching reviews:", error);
       return NextResponse.json(
         { error: "Gagal mengambil ulasan" },

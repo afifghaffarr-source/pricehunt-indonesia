@@ -78,8 +78,8 @@ CREATE POLICY "Allow admin to view all job logs"
   ON job_logs
   FOR SELECT
   USING (
-    auth.uid() IN (
-      SELECT user_id FROM user_profiles WHERE is_admin = true
+    EXISTS (
+      SELECT 1 FROM admin_users WHERE user_id = auth.uid() AND revoked_at IS NULL
     )
   );
 
