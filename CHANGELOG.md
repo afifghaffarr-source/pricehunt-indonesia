@@ -54,6 +54,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     first-load JS dropped ~30-50 KB raw (all gzip ratios)
   - Public API unchanged, so 17 consumer files don't need to change
   - 296/296 tests pass; all routes still 200; verified `<input>` HTML output
+- **React #418 hydration mismatch fixed** (`PushNotificationButton.tsx`)
+  - `useState(() => typeof window !== "undefined" && "serviceWorker" in navigator ...)`
+    returned `false` on server (no `window`) and `true` on client (`window`
+    exists), causing React #418 "server rendered HTML didn't match the
+    client" error on every product page (the button is in the alerts section)
+  - Standard fix: `useState(false)` initial + `useEffect` to detect support
+  - SSR + first client render now both render `null` (early return);
+    useEffect sets `supported = true` after mount, button appears
+  - Verified: dev mode + production build both clean; 0 errors in browser
+    console; 0 hydration warnings in Next.js dev overlay
 
 ### Added - v1.5.9 (2026-06-16) — Performance Audit + Quick Wins
 

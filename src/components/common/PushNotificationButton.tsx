@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Bell, BellOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,12 +20,22 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export function PushNotificationButton({ className }: PushNotificationButtonProps) {
-  const [supported] = useState(() =>
-    typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window
-  );
+  // ✅ HYDRATION FIX (v1.5.10): Initialize with `false` to match SSR.
+  // The previous `useState(() => typeof window !== "undefined" && ...)`
+  // returned `false` on server (no window) and `true` on client (window
+  // exists), causing React #418 hydration mismatch: server rendered
+  // `null` (early return), client first render rendered the button.
+  // Standard fix: use false initial state + useEffect to detect support.
+  const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    setSupported(
+      "serviceWorker" in navigator && "PushManager" in window
+    );
+  }, []);
 
   const checkSubscription = useCallback(async () => {
     if (!supported || checked) return;
