@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.8 (2026-06-16) — Dynamic Open Graph Image Generator
+
+- **4 dynamic Open Graph image generators** (`next/og` `ImageResponse`):
+  - `src/app/opengraph-image.tsx` — homepage branded preview
+  - `src/app/deals/opengraph-image.tsx` — deals page dark-gradient preview
+  - `src/app/product/[slug]/opengraph-image.tsx` — per-product preview
+    showing name, IDR price, marketplace count, Deal Score badge
+  - `src/app/api/og/search/route.tsx` — **dynamic** search preview that
+    reads the user's `?q=` query (opengraph-image file convention does
+    not receive `searchParams`, hence the route handler)
+- **Search page now has dynamic OG** — converted `src/app/search/page.tsx`
+  from static `metadata` to `generateMetadata`. The `?q=` query now
+  appears verbatim in the OG image title and HTML head.
+- **Shared design tokens** — `src/lib/og-tokens.ts` (colors, radii,
+  Indonesian IDR formatter) and `src/lib/og-fonts.ts` (cached Inter font
+  loader from jsDelivr CDN, 400/700/800 weights).
+- **Critical bug fix** — "Diskon 89%" label on product OG was
+  misleading; the value is `dealScore` (0–100 rating), not a discount %.
+  Now reads "Deal Score 89".
+
+### Notes
+
+- All OG images are 1200×630 PNG, ≤150KB, WCAG AA contrast
+- Static optimization would lose dynamic params — `/search` uses a
+  route handler, `/product/[slug]` uses `force-dynamic`
+- Emoji glyphs (🛒, 🔥, ✓) intentionally removed because Satori's
+  dynamic emoji font download fails in this build environment
+- 296 unit + 19 E2E tests still pass; build clean; lint 0 errors
+
 ### Added - v1.5.7 (2026-06-16) — Google Search Console + Schema.org Structured Data
 
 - **Google Search Console verification support** — env-driven

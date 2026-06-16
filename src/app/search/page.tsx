@@ -1,14 +1,56 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SearchPageContent } from "./SearchPageContent";
+import { getAppUrl } from "@/lib/app-url";
 
-export const metadata: Metadata = {
-  title: "Cari Produk",
-  description: "Cari dan bandingkan harga produk dari berbagai marketplace Indonesia.",
-  alternates: {
-    canonical: "/search",
-  },
+type Props = {
+  searchParams: Promise<{ q?: string }>;
 };
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const { q } = (await searchParams) ?? {};
+  const query = q?.trim() ?? "";
+  const ogUrl = `${getAppUrl()}/api/og/search${
+    query ? `?q=${encodeURIComponent(query)}` : ""
+  }`;
+  return {
+    title: query ? `Cari "${query}"` : "Cari Produk",
+    description: query
+      ? `Bandingkan harga ${query} dari 6 marketplace Indonesia. Temukan harga termurah dan deteksi diskon palsu.`
+      : "Cari dan bandingkan harga produk dari berbagai marketplace Indonesia.",
+    alternates: {
+      canonical: "/search",
+    },
+    openGraph: {
+      title: query ? `Cari "${query}" di BijakBeli` : "BijakBeli — Cari Produk",
+      description: query
+        ? `Bandingkan harga ${query} dari 6 marketplace Indonesia.`
+        : "Cari dan bandingkan harga produk dari 6 marketplace Indonesia.",
+      url: `${getAppUrl()}/search${query ? `?q=${encodeURIComponent(query)}` : ""}`,
+      siteName: "BijakBeli.app",
+      locale: "id_ID",
+      type: "website",
+      images: [
+        {
+          url: ogUrl,
+          width: 1200,
+          height: 630,
+          alt: query
+            ? `Hasil pencarian ${query} di BijakBeli`
+            : "BijakBeli — Cari & bandingkan harga",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: query ? `Cari "${query}" di BijakBeli` : "BijakBeli — Cari Produk",
+      description: query
+        ? `Bandingkan harga ${query} dari 6 marketplace.`
+        : "Cari dan bandingkan harga dari 6 marketplace Indonesia.",
+      images: [ogUrl],
+    },
+  };
+}
 
 export default function SearchPage() {
   return (
