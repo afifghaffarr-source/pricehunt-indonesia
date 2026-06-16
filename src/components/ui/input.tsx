@@ -32,11 +32,11 @@ function Input({
 
 // Tiny inline merge (avoids pulling in @base-ui/react/merge-props for a 6-line
 // helper). Behaves like Object.assign but skips undefined values.
-function mergeProps<A, B>(a: A, b: B): A & B {
-  const out: any = { ...a }
-  for (const k in b) {
-    const v = (b as any)[k]
-    if (v !== undefined) out[k] = v
+function mergeProps<A extends object, B extends object>(a: A, b: B): A & B {
+  const out = { ...a } as A & B
+  for (const k of Object.keys(b) as (keyof B)[]) {
+    const v = b[k]
+    if (v !== undefined) Object.assign(out, { [k]: v })
   }
   return out
 }

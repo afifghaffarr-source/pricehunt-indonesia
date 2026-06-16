@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - v1.5.12.1 (2026-06-16) — CI Lint Regression
+
+- **`@typescript-eslint/no-explicit-any` in `src/components/ui/input.tsx`** (3 errors blocking CI #249)
+  - The `mergeProps<A, B>` helper used `any` for the output accumulator and `(b as any)[k]` for the dynamic-key read
+  - Replaced with proper generics: `<A extends object, B extends object>`, `Object.keys(b) as (keyof B)[]`, `Object.assign(out, { [k]: v })`
+  - Same 0-byte bundle impact, same runtime behavior, type-safe
+  - **CI had been failing for 5 commits** since v1.5.10 bundle optimization (`f47d3c1`) introduced these `any` types. All other workflows (E2E, Lighthouse, Vercel deploy) kept working — only the `npm run lint` step blocked.
+
 ### Added - v1.5.12 (2026-06-16) — Lighthouse CI Integration
 
 - **Lighthouse CI runner** (`scripts/lighthouse-ci.mjs`)
