@@ -72,6 +72,9 @@ test-results/
 playwright-report/
 playwright/.cache/
 
+# Lighthouse CI
+lighthouse-reports/
+
 # Python
 __pycache__/
 *.pyc

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.12 (2026-06-16) — Lighthouse CI Integration
+
+- **Lighthouse CI runner** (`scripts/lighthouse-ci.mjs`)
+  - Mobile preset against local `next start` server (412×823, 4G, 4× CPU)
+  - Asserts category scores + Core Web Vitals; exits non-zero on breach
+  - Writes per-URL HTML reports + `summary.json` to `./lighthouse-reports/`
+  - Uses existing `lighthouse` + `chrome-launcher` devDeps (no `@lhci/cli` added)
+- **GitHub Actions workflow** (`.github/workflows/lighthouse.yml`)
+  - Runs on PRs and pushes to master
+  - Builds, starts `next start`, audits 5 public URLs (`/`, `/deals`, `/search`, `/leaderboard`, `/legal/privacy`)
+  - Posts summary table as PR comment, uploads HTML reports as artifact
+  - `concurrency` group cancels in-progress runs on new push
+- **Config** (`lighthouserc.json`)
+  - Single source of truth for thresholds. Tuned for LOCAL `next start` (no CDN/brotli/image-opt).
+  - perf ≥0.50, a11y/bp/seo ≥0.90; LCP ≤6s, CLS ≤0.25, TBT ≤1.5s (error); FCP ≤1.8s, SI ≤3s (warn)
+  - See `docs/LIGHTHOUSE_CI_v1512.md` for full rationale and local-vs-prod gap analysis
+- **npm scripts:** `lhci`, `lhci:report` (also writes JSON), `lhci:advisory` (never fails)
+- **Baseline findings** (local `next start`, 2026-06-16):
+  - All 5 URLs pass current thresholds
+  - **Bug found:** `/leaderboard` CLS 0.194 (fails CWV "Good" ≥0.1) — empty→populated layout shift
+  - **Production is ~10-20 points higher** (Vercel edge cache + brotli + image opt adds ~1-2s of headroom)
+  - Live `/` and `/deals` are in CWV "Good" tier: perf 0.90/0.94, LCP 2.58/2.63s, CLS 0.001/0.000
+
 ### Added - v1.5.11 (2026-06-16) — LCP Optimization
 
 - **Performance audit baseline** (`docs/PERF_BASELINE_v1510.md`)

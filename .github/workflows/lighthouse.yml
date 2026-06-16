@@ -1,0 +1,146 @@
+name: Lighthouse
+
+# Mobile Lighthouse audit against `next start` — guards against performance /
+# accessibility / SEO / best-practices regressions on every PR and push to master.
+# Thresholds live in lighthouserc.json. Runner: scripts/lighthouse-ci.mjs.
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+# Don't fight the main CI on the same node pool — sequential is fine, this
+# is a separate build/start/audit cycle and runs in ~3-5 min.
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    name: Lighthouse mobile audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run build
+
+      - name: Start Next.js server
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          (npm run start -- -p 3000 > /tmp/next-start.log 2>&1 &)
+          # Wait for server to be ready (max 60s)
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null -w '%{http_code}' http://localhost:3000/ | grep -qE '^(2|3|404)'; then
+              echo "Server ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+          tail -n 20 /tmp/next-start.log || true
+
+      - name: Run Lighthouse CI
+        id: lh
+        # `--no-fail` so we always get a report + can comment on PR even if
+        # scores drop. The exit code still drives the workflow status.
+        run: |
+          set +e
+          node scripts/lighthouse-ci.mjs --json
+          EXIT=$?
+          set -e
+          echo "exit_code=$EXIT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: lighthouse-reports/
+          retention-days: 14
+
+      - name: Upload server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-start-log
+          path: /tmp/next-start.log
+          retention-days: 3
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const reportDir = 'lighthouse-reports';
+            if (!fs.existsSync(reportDir)) return;
+            const summary = JSON.parse(fs.readFileSync(path.join(reportDir, 'summary.json'), 'utf8'));
+
+            const scoreCell = (s, t) => {
+              if (s === null || s === undefined) return 'n/a';
+              const emoji = s >= t ? '✅' : '❌';
+              return `${emoji} ${s.toFixed(2)}`;
+            };
+            const ms = (v) => v ? `${Math.round(v)}ms` : 'n/a';
+            const cls = (v) => v !== undefined ? v.toFixed(3) : 'n/a';
+
+            const t = summary.thresholds;
+            const lines = [
+              '## 🔦 Lighthouse Mobile Audit',
+              '',
+              `Thresholds — perf \`${t.performance}\` · a11y \`${t.accessibility}\` · bp \`${t["best-practices"]}\` · seo \`${t.seo}\``,
+              '',
+              '| URL | perf | a11y | bp | seo | FCP | LCP | TBT | CLS |',
+              '|-----|------|------|-----|-----|-----|-----|-----|-----|',
+            ];
+            for (const r of summary.results) {
+              if (r.error) {
+                lines.push(`| \`${r.url}\` | _error: ${r.error.slice(0, 50)}_ | | | | | | | |`);
+                continue;
+              }
+              const path = new URL(r.url).pathname || '/';
+              lines.push(`| \`${path}\` | ${scoreCell(r.scores.performance, t.performance)} | ${scoreCell(r.scores.accessibility, t.accessibility)} | ${scoreCell(r.scores["best-practices"], t["best-practices"])} | ${scoreCell(r.scores.seo, t.seo)} | ${ms(r.vitals.fcp)} | ${ms(r.vitals.lcp)} | ${ms(r.vitals.tbt)} | ${cls(r.vitals.cls)} |`);
+            }
+            lines.push('');
+            lines.push(summary.pass ? '✅ **All URLs pass thresholds.**' : '❌ **Some URLs below threshold — check artifact for full HTML reports.**');
+
+            const body = lines.join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Fail job on threshold breach
+        if: steps.lh.outputs.exit_code != '0' && github.event_name != 'pull_request'
+        run: |
+          echo "::error::Lighthouse audit failed — see artifact for full report"
+          exit 1

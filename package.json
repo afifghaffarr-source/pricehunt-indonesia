@@ -15,7 +15,10 @@
     "test:e2e:install": "playwright install --with-deps chromium",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:migrate:status": "node scripts/db-migrate.mjs --status",
-    "db:migrate:dry": "node scripts/db-migrate.mjs --dry-run"
+    "db:migrate:dry": "node scripts/db-migrate.mjs --dry-run",
+    "lhci": "node scripts/lighthouse-ci.mjs",
+    "lhci:report": "node scripts/lighthouse-ci.mjs --json",
+    "lhci:advisory": "node scripts/lighthouse-ci.mjs --no-fail"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
