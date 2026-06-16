@@ -93,7 +93,6 @@ export function logEvent(input: LogEvent): void {
       event: input.event,
       ...safeMeta(input.fields ?? {}),
     };
-    // eslint-disable-next-line no-console
     console.log(JSON.stringify(payload));
   } catch {
     // Logger MUST NEVER throw.

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 /**
  * POST /api/ingestion/offer-snapshot

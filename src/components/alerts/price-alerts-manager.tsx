@@ -11,9 +11,8 @@ import {
   Plus, 
   Trash2, 
   TrendingDown,
-  DollarSign,
   Package
-} from 'lucide-react';
+} from "lucide-react";
 
 interface PriceAlert {
   id: string;

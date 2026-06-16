@@ -106,7 +106,7 @@ function transformPriceHistory(rows: Record<string, unknown>[]): PriceHistoryPoi
 
   return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
 }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 const _transformPriceHistoryKept = transformPriceHistory;
 
 /**

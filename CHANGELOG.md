@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - v1.5.12.2 (2026-06-16) — Lint Warning Cleanup
+
+- **Removed 27 of 30 lint warnings** (90% reduction). Down from 30 → 3 warnings, 0 errors. Lint step in CI went from 50-60s (with annotations) to clean.
+- **Files cleaned (22 total):**
+  - Unused imports removed: `redirect` (admin/products), `Sparkles` (extension), `ValidationStatusAlert` (product/[slug]), `createClient` + `transformDbProduct` (search), `CardHeader` + `CardTitle` (ai-recommendations), `DollarSign` (alerts), `TrendingUp` (analytics), `HelpCircle` (ConfidenceBadge)
+  - Unused vars/params removed/prefixed: `force` (refresh/trigger), `today` (cron/prices), `period` + `searchParams` (analytics), `productName` → `_productName` (ValidationStatusAlert), `productId` → `_productId` (price-conflict), `hoursSinceLastCrawl` (refresh-priority), `request` → `_request` (analytics)
+  - Unused types removed: `PriceUpsertData` (api/scrape), `escapeArray` function (lib/backup)
+  - Stale `eslint-disable` directives removed: `api/deals/route.ts`, `api/ingestion/offer-snapshot/route.ts`, `lib/log.ts`, `lib/rate-limit.ts`, `lib/supabase/data.ts`
+  - **Dead code removed in `src/proxy.ts`:** `PUBLIC_PATHS` (lines 31-41), `RATE_LIMIT_HEADERS` (lines 43-49), `generateCSRFToken` function (lines 84-89) — all 3 defined but never referenced. Abandoned features from CSRF/proxy layer that were never wired up.
+- **Remaining 3 warnings** (intentionally not fixed — would need code changes):
+  - `src/components/ai/ai-recommendations.tsx:38` useEffect missing dep `loadRecommendations`
+  - `src/components/ai/ai-recommendations.tsx:148` `<img>` should be `next/image`
+  - `src/components/analytics/analytics-dashboard.tsx:41` useEffect missing dep `loadAnalytics`
+
 ### Fixed - v1.5.12.1 (2026-06-16) — CI Lint Regression
 
 - **`@typescript-eslint/no-explicit-any` in `src/components/ui/input.tsx`** (3 errors blocking CI #249)

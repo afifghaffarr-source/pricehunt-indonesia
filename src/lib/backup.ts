@@ -42,13 +42,6 @@ function escapeJsonb(value: unknown): string {
   return escapeSQLString(JSON.stringify(value));
 }
 
-function escapeArray(value: unknown): string {
-  if (value === null || value === undefined) return "NULL";
-  if (!Array.isArray(value)) return escapeSQLString(value);
-  const escaped = value.map(v => escapeSQLString(v)).join(",");
-  return `ARRAY[${escaped}]`;
-}
-
 // ============================================================================
 // Types
 // ============================================================================

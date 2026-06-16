@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
 
     // ✅ Use admin client to bypass RLS for system operations
     const supabase = createAdminClient();
-    const today = new Date().toISOString().split("T")[0];
 
     // ✅ PERFORMANCE FIX: Fetch all data in 2 queries instead of 1,500+
     const { data: products } = await supabase
