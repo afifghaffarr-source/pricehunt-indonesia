@@ -126,7 +126,10 @@ describe("Migration 130 — DB unique constraint applied", () => {
   // and queries the linked project's pg_constraint.
   const token = process.env.SUPABASE_ACCESS_TOKEN;
 
-  it.skipIf(!token)("offers_product_marketplace_unique exists in live DB", () => {
+  it.skipIf(!token)(
+    "offers_product_marketplace_unique exists in live DB",
+    { timeout: 20_000 },
+    () => {
     const r = spawnSync(
       "npx",
       [
@@ -144,17 +147,24 @@ describe("Migration 130 — DB unique constraint applied", () => {
     expect(r.stdout).toContain("offers_url_key"); // existing constraint preserved
   });
 
-  it.skipIf(!token)("offers count is 173 (208 - 35 dedup, +9 orphans kept)", () => {
-    const r = spawnSync(
-      "npx",
-      ["supabase", "db", "query", "--linked", "SELECT COUNT(*) AS offers_count FROM public.offers;"],
-      { cwd: PROJECT_ROOT, encoding: "utf-8", env: { ...process.env, SUPABASE_ACCESS_TOKEN: token } },
-    );
-    expect(r.status).toBe(0);
-    expect(r.stdout).toMatch(/offers_count[\s\S]*?173/);
-  });
+  it.skipIf(!token)(
+    "offers count is 173 (208 - 35 dedup, +9 orphans kept)",
+    { timeout: 20_000 },
+    () => {
+      const r = spawnSync(
+        "npx",
+        ["supabase", "db", "query", "--linked", "SELECT COUNT(*) AS offers_count FROM public.offers;"],
+        { cwd: PROJECT_ROOT, encoding: "utf-8", env: { ...process.env, SUPABASE_ACCESS_TOKEN: token } },
+      );
+      expect(r.status).toBe(0);
+      expect(r.stdout).toMatch(/offers_count[\s\S]*?173/);
+    },
+  );
 
-  it.skipIf(!token)("no duplicate (product_id, marketplace_id) pairs remain", () => {
+  it.skipIf(!token)(
+    "no duplicate (product_id, marketplace_id) pairs remain",
+    { timeout: 20_000 },
+    () => {
     const r = spawnSync(
       "npx",
       [

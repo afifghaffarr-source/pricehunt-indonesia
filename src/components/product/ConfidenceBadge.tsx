@@ -28,7 +28,9 @@ export function ConfidenceBadge({ label, score, className }: ConfidenceBadgeProp
       icon: AlertCircle,
       text: "Perlu Verifikasi",
       variant: "outline" as const,
-      className: "border-amber-500 text-amber-600",
+      // amber-700 (≈#b45309) gives ~4.5:1+ on white/light-blue row bg;
+      // amber-600 (#d97706) was failing WCAG 2.1 AA at 12px.
+      className: "border-amber-500 text-amber-700",
     },
   };
 

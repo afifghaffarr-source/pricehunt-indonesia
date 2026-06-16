@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - v1.5.4 (2026-06-16) — WCAG AA Color-Contrast Violations (CI)
+
+- **CI E2E was failing since v1.5.0** (commit `4a0ea73` Phase 4D) on a
+  single WCAG 2.1 AA color-contrast violation (`serious` impact) on the
+  product detail page. Triggered by `bg-primary/5` (light blue ≈ #f4f7fe)
+  on the "lowest price" row combined with 12px text in low-contrast colors.
+  6 elements affected across 4 sources:
+
+- **`MarketplaceBadge.tsx`**: removed `color: <brand-color>` from the
+  outline-badge inline style. Tokopedia green (#42B549) is the brand
+  color but only 2.64:1 on white — fails 4.5:1 required for normal text.
+  Brand identity preserved via `border-color`; text uses the default
+  `text-foreground` (always dark).
+- **`EnhancedPriceTable.tsx`** (3 changes on the "lowest price" row):
+  - `text-green-600` → `text-green-700` on the "Gratis" shipping span
+  - `text-green-600` → `text-green-700` on the in-stock `CheckCircle2` icon
+  - `text-red-600` → `text-red-700` on the out-of-stock `XCircle` icon
+  - `text-muted-foreground` → `text-foreground/80` on the "Tersedia"/"Habis"
+    label (4.42:1 was just below the 4.5:1 threshold)
+- **`ConfidenceBadge.tsx`**: `text-amber-600` → `text-amber-700` for the
+  `perlu_verifikasi` outline variant (2.98:1 → 4.5:1+ on light bg)
+
+- **Verified locally** (5/5 a11y tests pass, 0 violations, 19/19 full E2E pass)
+  before re-pushing. CI run #37 re-verifies.
+
+- **Test infra**: added `{ timeout: 20_000 }` to the 3 Supabase-link
+  integration tests in `phase8-vexo-collector.test.ts` (they were
+  defaulting to 5s and timing out on slower first-call connection setup).
+
+- **Tests: 292/292** (no change in count, just timeout tuning)
+
 ### Added - v1.5.3 (2026-06-16) — DB Unique Constraint + Collector Upsert
 
 - **DB-level UNIQUE (product_id, marketplace_id) on `offers`** (migration 130)
