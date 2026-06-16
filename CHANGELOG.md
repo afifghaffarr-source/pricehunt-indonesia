@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.11 (2026-06-16) — LCP Optimization
+
+- **Performance audit baseline** (`docs/PERF_BASELINE_v1510.md`)
+  - Custom Chrome DevTools Protocol script (`scripts/audit-perf.mjs` + `audit-perf-cold.mjs`) for mobile Lighthouse-style metrics
+  - Captures FCP, LCP, CLS, TBT, TTFB, DOM, load, plus per-resource byte breakdown
+  - Mobile emulation: 360x640, DPR 2.625, 4G (10Mbps/40ms), 4x CPU throttle
+  - **Surprise finding:** LCP avg 0.8-1.4s and TBT 0-148ms across all pages — **already in CWV "Good" tier** (thresholds LCP ≤2.5s, TBT ≤200ms). The "LCP 3.9s" / "TBT 630ms" figure in earlier summaries was outdated.
+
+- **LCP fix on product pages** (`src/components/common/VexoImageFallback.tsx`)
+  - The product hero image is the LCP element. Previously it waited for the VexoAPI waterfall (marketplace → images → picsum fallback) inside `useEffect` before the `<Image>` mounted. With VexoAPI always 503ing, this cost 100-300ms of dead time on every product page load.
+  - Now compute the deterministic `picsum.photos` URL **synchronously** from the product name in the initial render so the `<Image>` mounts immediately with a real src.
+  - The `useEffect` still upgrades to a real marketplace image when VexoAPI succeeds — but the LCP path no longer depends on it.
+  - **Measured impact (cold cache, mobile):**
+    - Product page LCP: 1310ms → 981ms (**-329ms, -25%**)
+    - Search page LCP: 1395ms → 1183ms (**-212ms, -15%**)
+    - Home page LCP: 759ms → 683ms (**-76ms, -10%**)
+
 ### Added - v1.5.10 (2026-06-16) — Migration Audit + Reviews System
 
 - **Migration audit report** (`docs/MIGRATION_AUDIT_v1510.md`)
