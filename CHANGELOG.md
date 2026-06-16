@@ -45,6 +45,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `src/app/api/products/[id]/reviews/route.ts` and
   `src/components/product/ReviewsList.tsx` — was a temporary graceful
   fallback for the missing table. The real error path is now exercised.
+- **53KB unused-JS chunk removed** (`src/components/ui/input.tsx`)
+  - `@base-ui/react/input` is a 1-line wrapper around `Field.Control`
+    that pulled in 53KB of form/validation code transitively
+  - Rewrote `Input` to use `useRender` (same pattern as `Badge.tsx`),
+    wrapping a native `<input>` with our className
+  - 53KB chunk (`43fbv80stluft.js` in prior build) is gone; per-route
+    first-load JS dropped ~30-50 KB raw (all gzip ratios)
+  - Public API unchanged, so 17 consumer files don't need to change
+  - 296/296 tests pass; all routes still 200; verified `<input>` HTML output
 
 ### Added - v1.5.9 (2026-06-16) — Performance Audit + Quick Wins
 
