@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.3 (2026-06-16) — DB Unique Constraint + Collector Upsert
+
+- **DB-level UNIQUE (product_id, marketplace_id) on `offers`** (migration 130)
+  - Pre-state: 208 offers, 16 duplicate `(product_id, marketplace_id)` combos
+    with 35 extra rows accumulating from repeated ingestion runs
+  - Migration dedups (keeps most-recently-updated row per pair), then adds
+    the new unique constraint
+  - Cascade side-effect: 134 `price_snapshots` deleted (~7.4% of 1,812 total)
+    — all from the same scrape session as the kept offer, so no data loss
+    in practice
+  - **9 orphan offers** (null `product_id`) untouched — the constraint uses
+    Postgres default `NULLS DISTINCT`, so they coexist naturally
+  - Post-state: 173 offers, 164 unique `(product_id, marketplace_id)` pairs,
+    1,678 price_snapshots, 2 unique constraints on `offers`:
+    - `offers_url_key` (existing, UNIQUE url)
+    - `offers_product_marketplace_unique` (new, UNIQUE product_id + marketplace_id)
+
+- **Phase 8 collector now does real upserts** (`collectors/phase8_vexo_collector.py`)
+  - New `upsert_offer(secret, product_slug, marketplace, url, title, price)`
+    function POSTs to `/api/ingestion/offer-snapshot` (existing endpoint,
+    auth-gated via `INGESTION_SECRET`)
+  - The endpoint handles product matching, confidence scoring, and offer
+    upsert; the new DB constraint is a schema-layer safety net
+  - `main()` loop wires the upsert (was: no-op with a TODO comment)
+  - **Bug fix**: removed duplicate `is_mock_url()` definition (the second
+    copy was shadowed by Python's "last definition wins" rule, leaving
+    dead code)
+
+- **10 new tests** in `src/test/phase8-vexo-collector.test.ts`:
+  - Collector file parses + `upsert_offer` importable as a callable
+  - `upsert_offer` returns `(False, "skipped", {reason: "no_price"})` when price is None
+  - `upsert_offer` returns `(False, "exception", ...)` when API is unreachable
+  - URL filter helpers (`is_mock_url`, `is_marketplace_match`, `is_skip_url`)
+    cover placeholder detection, domain validation, and ad-redirect filtering
+  - **Integration tests** (skipped without `SUPABASE_ACCESS_TOKEN`): verify
+    the constraint exists, `offers` count is 173, and no duplicate pairs remain
+
+- **Tests: 292/292** (was 282, +10)
+
 ### Fixed - v1.5.2 (2026-06-16) — VexoAPI Marketplace Mock Guard
 
 - **Refuse to serve VexoAPI mock data to users**

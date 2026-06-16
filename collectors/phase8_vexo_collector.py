@@ -156,12 +156,48 @@ def http_post_no_redirect(url: str, body: dict, secret: str, timeout: int = 60) 
             return e.code, {"raw": body_bytes.decode(errors="replace")[:500]}
 
 
-def is_mock_url(url: str) -> bool:
-    """Return True if the URL looks like the placeholder pattern we want to replace."""
-    for pattern in MOCK_URL_PATTERNS:
-        if re.search(pattern, url):
-            return True
-    return False
+def upsert_offer(
+    secret: str,
+    product_slug: str,
+    marketplace: str,
+    url: str,
+    title: str = "",
+    price: int | None = None,
+    timeout: int = 30,
+) -> tuple[bool, str, dict]:
+    """
+    POST a single offer snapshot to the ingestion API.
+
+    The API (POST /api/ingestion/offer-snapshot) handles:
+      - Product matching (by title)
+      - Confidence scoring
+      - Upsert into `offers` table (onConflict: "url")
+      - price_snapshots insert
+
+    The DB-level UNIQUE (product_id, marketplace_id) constraint (migration 130)
+    backs this up at the schema layer — even if the URL changes, the (product,
+    marketplace) pair can only have one offer row.
+
+    Returns:
+        (success, status_code_str, body_dict)
+    """
+    if price is None:
+        return (False, "skipped", {"reason": "no_price"})
+    body = {
+        "marketplace": marketplace,
+        "product_url": url,
+        "title": title or product_slug,
+        "price": price,
+        "source": "phase8_vexo_collector",
+    }
+    endpoint = API_BASE + INGESTION_PATH
+    try:
+        status, resp_body = http_post_no_redirect(endpoint, body, secret, timeout=timeout)
+    except Exception as e:
+        return (False, "exception", {"error": f"{type(e).__name__}: {e}"})
+
+    ok = status == 200 and bool(resp_body.get("success"))
+    return (ok, str(status), resp_body)
 
 
 def search_product(secret: str, product_name: str, marketplaces: list[str], max_per: int = 1) -> list[dict]:
@@ -251,12 +287,21 @@ def main():
 
             # Upsert to DB via ingestion API (only if not dry-run)
             if not args.dry_run and r.get("price_idr"):
-                # NOTE: Ingestion API needs a full OfferRow. We only have a
-                # URL + price. For now, log a TODO — full DB write is a
-                # separate ingestion flow. The URL replacement is what
-                # matters most for SEO + UX, and the script's primary
-                # value is finding REAL URLs.
-                pass
+                # The ingestion API upserts into `offers` (onConflict: "url")
+                # and the DB-level UNIQUE (product_id, marketplace_id) constraint
+                # (migration 130) backs this up at the schema layer.
+                ok, status, body = upsert_offer(
+                    secret=secret,
+                    product_slug=slug,
+                    marketplace=r["marketplace"],
+                    url=url,
+                    title=r.get("title", ""),
+                    price=r.get("price_idr"),
+                )
+                if ok:
+                    print(f"    ✓ upsert OK (offer_id={body.get('offer_id', '?')[:8]}..)")
+                else:
+                    print(f"    ✗ upsert FAILED: {status} {str(body)[:120]}", file=sys.stderr)
         time.sleep(1)  # Rate limit politeness
 
     print()
