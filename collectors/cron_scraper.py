@@ -25,10 +25,10 @@ from config import get_config
 import requests
 
 # Config
-SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL', 'https://siwmmzzhfzfndfmbbyvj.supabase.co')
+SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL', 'https://oklaxwjoyttpwgxhphko.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 INGESTION_SECRET = os.getenv('INGESTION_SECRET', '')
-API_URL = os.getenv('NEXT_PUBLIC_API_URL', 'https://www.bijakbeli.app')
+API_URL = os.getenv('NEXT_PUBLIC_API_URL', 'https://www.bijakbeli.web.id')
 BATCH_SIZE = 20  # Process 20 URLs per cron run
 DELAY_BETWEEN = 3  # Seconds between requests
 

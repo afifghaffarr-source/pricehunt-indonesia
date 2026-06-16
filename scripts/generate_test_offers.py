@@ -12,7 +12,7 @@ import sys
 from typing import List, Dict
 
 # API Configuration
-API_URL = "https://www.bijakbeli.app/api/ingestion/offer-snapshot"
+API_URL = "https://www.bijakbeli.web.id/api/ingestion/offer-snapshot"
 INGESTION_SECRET = os.getenv("INGESTION_SECRET")
 
 if not INGESTION_SECRET:

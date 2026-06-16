@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 class MarketplaceScraper:
     """Base scraper for Indonesian marketplaces."""
     
-    INGESTION_API = "https://www.bijakbeli.app/api/ingestion/offer-snapshot"
+    INGESTION_API = "https://www.bijakbeli.web.id/api/ingestion/offer-snapshot"
     
     def __init__(self, headless: bool = True, slow_mo: int = 100):
         """

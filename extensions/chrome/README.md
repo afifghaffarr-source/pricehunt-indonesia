@@ -190,7 +190,7 @@ X-Ingestion-Secret: your-secret-key
 ### **"Failed" error?**
 
 ✅ Check Ingestion Secret is correct
-✅ Check API URL: `https://www.bijakbeli.app`
+✅ Check API URL: `https://www.bijakbeli.web.id`
 ✅ Open browser console (F12) for detailed error
 ✅ Verify BijakBeli API is running
 

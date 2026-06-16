@@ -19,7 +19,7 @@ npm run test:e2e
 npm run test:e2e:headed
 
 # Run against a specific URL (e.g. preview deployment)
-PLAYWRIGHT_BASE_URL=https://staging.bijakbeli.app npm run test:e2e
+PLAYWRIGHT_BASE_URL=https://staging.bijakbeli.web.id npm run test:e2e
 ```
 
 ## What we test

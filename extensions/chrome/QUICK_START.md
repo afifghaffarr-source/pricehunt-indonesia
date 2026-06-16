@@ -88,7 +88,7 @@ INGESTION_SECRET=your-secret-key-here-abc123xyz
 1. **Click extension icon** 📦 in Chrome toolbar
 
 2. **Enter configuration:**
-   - **API URL**: `https://www.bijakbeli.app` (already filled)
+   - **API URL**: `https://www.bijakbeli.web.id` (already filled)
    - **Ingestion Secret**: Paste secret from Step 2
 
 3. **Click "Save Configuration"**
@@ -130,12 +130,12 @@ INGESTION_SECRET=your-secret-key-here-abc123xyz
 ### **In Database:**
 ```bash
 # Check via API
-curl https://www.bijakbeli.app/api/products | jq '.products[] | {name, url: .prices[0].url}'
+curl https://www.bijakbeli.web.id/api/products | jq '.products[] | {name, url: .prices[0].url}'
 ```
 
 ### **In Browser:**
 ```
-https://www.bijakbeli.app/
+https://www.bijakbeli.web.id/
 ```
 
 Products now have **real Tokopedia URLs**! 🎉

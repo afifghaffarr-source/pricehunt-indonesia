@@ -66,8 +66,8 @@ function mockVexoResponse(body: unknown, ok = true, status = 200) {
 
 function makeRequest(name = "iPhone 15 Pro Max") {
   const url = name
-    ? `https://bijakbeli.app/api/vexo/marketplace?name=${encodeURIComponent(name)}`
-    : "https://bijakbeli.app/api/vexo/marketplace";
+    ? `https://www.bijakbeli.web.id/api/vexo/marketplace?name=${encodeURIComponent(name)}`
+    : "https://www.bijakbeli.web.id/api/vexo/marketplace";
   // Use the URL constructor + spread to give the route handler the
   // `nextUrl` getter it expects on NextRequest.
   const req = new Request(url) as unknown as import("next/server").NextRequest;

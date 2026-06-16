@@ -17,7 +17,7 @@ BijakBeli helps Indonesian shoppers make smarter purchase decisions by:
 - **Recommending buy/wait timing** based on deal scores & price trends
 - **Validating data trust** with confidence scoring (browser collector + AI verification)
 
-**Live:** [bijakbeli.app](https://www.bijakbeli.app) | **Repo:** [GitHub](https://github.com/afifghaffarr-source/pricehunt-indonesia)
+**Live:** [bijakbeli.web.id](https://www.bijakbeli.web.id) | **Repo:** [GitHub](https://github.com/afifghaffarr-source/pricehunt-indonesia)
 
 ---
 
@@ -124,7 +124,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # App URL
-NEXT_PUBLIC_APP_URL=https://www.bijakbeli.app
+NEXT_PUBLIC_APP_URL=https://www.bijakbeli.web.id
 ```
 
 ### **Optional (Recommended)**
@@ -287,7 +287,7 @@ Key tables:
 - Auto-sync to BijakBeli database
 - Confidence scoring (85% browser-sourced data)
 
-**Download:** [bijakbeli.app/extension](https://www.bijakbeli.app/extension)
+**Download:** [bijakbeli.web.id/extension](https://www.bijakbeli.web.id/extension)
 
 **Setup Guide:** [BETA_QUICK_START.md](BETA_QUICK_START.md)
 
@@ -351,7 +351,7 @@ git push origin master
 **⚠️ Important:**
 - Never run `vercel --prod` manually (causes double deployment)
 - Vercel Git integration handles deployment automatically
-- Wait 2-3 minutes after push, then verify at https://www.bijakbeli.app
+- Wait 2-3 minutes after push, then verify at https://www.bijakbeli.web.id
 
 ---
 

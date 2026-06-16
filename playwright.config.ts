@@ -8,7 +8,7 @@ import { defineConfig, devices } from "@playwright/test";
  * the app isn't already running.
  *
  * Override base URL for staging/production runs:
- *   PLAYWRIGHT_BASE_URL=https://staging.bijakbeli.app npx playwright test
+ *   PLAYWRIGHT_BASE_URL=https://staging.bijakbeli.web.id npx playwright test
  */
 const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3000);
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;

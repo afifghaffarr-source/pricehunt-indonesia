@@ -24,7 +24,7 @@
 
 ### 1. Homepage Load Test
 ```
-URL: https://www.bijakbeli.app/
+URL: https://www.bijakbeli.web.id/
 Status: 200 OK
 Load Time: 1.008s
 Title: BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat
@@ -34,7 +34,7 @@ BijakBeli instances: 2 (acceptable, dynamic content)
 
 ### 2. API Health Check
 ```
-Endpoint: https://www.bijakbeli.app/api/health
+Endpoint: https://www.bijakbeli.web.id/api/health
 Response: {
   "status": "healthy",
   "timestamp": "2026-06-11T22:19:03.087Z",
@@ -45,8 +45,8 @@ Response: {
 
 ### 3. Authentication Pages
 ```
-Login: https://www.bijakbeli.app/auth/login → 200 OK
-Register: https://www.bijakbeli.app/auth/register → 200 OK
+Login: https://www.bijakbeli.web.id/auth/login → 200 OK
+Register: https://www.bijakbeli.web.id/auth/register → 200 OK
 ```
 **Result:** ✅ PASSED
 

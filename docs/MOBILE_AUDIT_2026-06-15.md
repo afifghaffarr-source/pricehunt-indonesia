@@ -51,7 +51,7 @@ apps/mobile/
 
 ### Gap 2: No API client module
 - **Expected:** `lib/api.ts` per README line 60-62
-- **Reality:** Inline `fetch()` in `index.tsx:6-16` with hardcoded URL `https://www.bijakbeli.app/api`
+- **Reality:** Inline `fetch()` in `index.tsx:6-16` with hardcoded URL `https://www.bijakbeli.web.id/api`
 - **Impact:** No env switching (dev/staging/prod), no auth header injection, no error handling, no timeout.
 
 ### Gap 3: No env config

@@ -85,7 +85,7 @@ head -4 urls.txt | tail -2 > test_urls.txt
 
 **Verify:**
 ```bash
-curl https://www.bijakbeli.app/api/products/sony-wh1000xm5 | jq '.prices[0].url'
+curl https://www.bijakbeli.web.id/api/products/sony-wh1000xm5 | jq '.prices[0].url'
 ```
 
 ## ⚠️ Important Notes

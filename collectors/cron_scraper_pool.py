@@ -51,10 +51,10 @@ os.environ['DISPLAY'] = os.environ.get('DISPLAY', ':99')
 from camofox_scraper import CamofoxScraperPool, CamofoxError
 
 # Config
-SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL', 'https://siwmmzzhfzfndfmbbyvj.supabase.co')
+SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL', 'https://oklaxwjoyttpwgxhphko.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 INGESTION_SECRET = os.getenv('INGESTION_SECRET', '')
-API_URL = os.getenv('NEXT_PUBLIC_API_URL', 'https://www.bijakbeli.app')
+API_URL = os.getenv('NEXT_PUBLIC_API_URL', 'https://www.bijakbeli.web.id')
 DEFAULT_BATCH_SIZE = 20
 DEFAULT_CONCURRENT = 4  # 4 tabs ≈ 400MB, safe for 4GB VPS
 

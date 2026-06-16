@@ -38,6 +38,12 @@ export const metadata: Metadata = {
     "bandingkan harga",
   ],
   authors: [{ name: "BijakBeli.app" }],
+  // Explicit canonical template — child pages inherit the path automatically.
+  // Forces every page to declare www.bijakbeli.web.id as the canonical URL,
+  // regardless of which host the request hit (apex, www, or Vercel fallback).
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "id_ID",

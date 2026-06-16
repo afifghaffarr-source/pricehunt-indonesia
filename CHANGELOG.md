@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - v1.5.6 (2026-06-16) — Canonical Domain: bijakbeli.web.id + SEO Hardening
+
+- **Domain consolidation: `www.bijakbeli.web.id` is now the canonical host**
+  for both SEO (single canonical URL across `<link rel="canonical">`,
+  `og:url`, sitemap, robots) and routing (308 permanent redirects from
+  every other host).
+- **`next.config.ts` host-based redirects** — 308 permanent:
+  - `bijakbeli.web.id` (apex)            → `https://www.bijakbeli.web.id`
+  - any `pricehunt-indonesia-*.vercel.app` deployment URL → `https://www.bijakbeli.web.id`
+  - `bijakbeli-app.vercel.app` (the old `DEFAULT_APP_URL`) → `https://www.bijakbeli.web.id`
+  Vercel preview deployments for this project also match (any
+  `pricehunt-indonesia-…-owner.vercel.app` hash variant).
+- **Explicit `<link rel="canonical">`** in the root layout via
+  `alternates.canonical: '/'`. Next.js automatically resolves the canonical
+  to `${metadataBase}${path}` for every child page, so all routes
+  (homepage, /search, /product/*, etc.) now point at `www.bijakbeli.web.id`
+  regardless of which host the request hit.
+- **Deleted `public/robots.txt`** (static, stale `Sitemap:` line pointing
+  at dead `www.bijakbeli.app`). The dynamic `src/app/robots.ts` is now
+  the single source of truth, generated from `getAppUrl()`. Added the
+  `host:` field for cross-host consolidation and explicit AI-crawler
+  rules (GPTBot, PerplexityBot) so they keep public-catalog access open
+  but stay out of `/api`, `/admin`, `/dashboard`, `/settings`.
+- **Sitemap bug fix**: `is_active` filter was silently failing because
+  the column doesn't exist on `products` (Postgres error 42703 was
+  caught and the route returned only the 4 static pages, hiding all
+  product pages from crawlers). Removed the filter; sitemap now lists
+  all 64 products.
+- **`getAppUrl()` updated**: `DEFAULT_APP_URL` is now
+  `https://www.bijakbeli.web.id` (was the Vercel deployment URL).
+  Updated every hardcoded fallback URL across the codebase:
+  - `src/proxy.ts` (CORS allow-list default)
+  - `src/app/product/[slug]/page.tsx` (social share URL)
+  - `src/test/api-vexo-marketplace.test.ts` (test fixture)
+  - All collector scripts (`collectors/*.py`)
+  - All notification scripts (`check-alerts.js`, `deliver-price-alerts.mjs`,
+    `price-alert-report.js`, `test-trigger-simulation.js`)
+  - Chrome extension (`extensions/chrome/popup.{js,html}`,
+    `background.js`, `manifest.json` host_permissions) and
+    `extension/popup.js`, `extension/manifest.json`
+  - All docs (README, BETA_QUICK_START, CHECKLIST, DOMAIN_SETUP,
+    DEPLOYMENT_GUIDE, SECURITY_AUDIT_PLAN, TEST_REPORT, all docs/* and
+    tools/* READMEs)
+  - All `.env*.example` templates
+- **Bonus fix — stale Supabase fallback URL**: `collectors/cron_scraper.py`
+  and `collectors/cron_scraper_pool.py` had a hardcoded fallback to a
+  different Supabase project (`siwmmzzhfzfndfmbbyvj.supabase.co`) that
+  would have been used if `NEXT_PUBLIC_SUPABASE_URL` was unset, sending
+  scraped data to the wrong database. Updated to the canonical
+  `oklaxwjoyttpwgxhphko.supabase.co`.
+- **Lint/Typecheck/Build**: clean. 299/299 unit tests, 19/19 E2E.
+- **Vercel env action required**: update `NEXT_PUBLIC_APP_URL` in the
+  Vercel project dashboard to `https://www.bijakbeli.web.id` so the
+  build picks up the canonical URL at compile time (NEXT_PUBLIC_*
+  is inlined into the client bundle). The `next.config.ts` redirects
+  work regardless of this env, but `og:url`, sitemap, and robots
+  won't update until the env is changed and the project is redeployed.
+
 ### Changed - v1.5.5 (2026-06-16) — Smarter Product Matching + Constraint Alignment
 
 - **`offer-snapshot` route now uses `matcher.ts`** for product matching

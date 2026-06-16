@@ -33,7 +33,7 @@ python queue_collector.py
 INGESTION_SECRET=***  # Same secret as ingestion API
 
 # Optional
-NEXT_PUBLIC_APP_URL=https://bijakbeli.app  # Default
+NEXT_PUBLIC_APP_URL=https://www.bijakbeli.web.id  # Default
 ```
 
 ## How It Works

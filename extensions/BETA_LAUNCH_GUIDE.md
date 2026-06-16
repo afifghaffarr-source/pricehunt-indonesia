@@ -83,7 +83,7 @@ tar -xzf bijakbeli-extension-v2.0.0-beta.tar.gz
 1. **Click extension icon** 📦 in toolbar
 
 2. **Enter settings:**
-   - **API URL:** `https://www.bijakbeli.app` (pre-filled)
+   - **API URL:** `https://www.bijakbeli.web.id` (pre-filled)
    - **Ingestion Secret:** `[BETA_TESTERS_GET_THIS_FROM_ADMIN]`
 
 3. **Click "Save Configuration"**

@@ -59,7 +59,7 @@
 
 **Login:** https://www.name.com/account/domain
 
-**Select domain:** `bijakbeli.app`
+**Select domain:** `bijakbeli.web.id`
 
 **Add these DNS records:**
 
@@ -87,7 +87,7 @@ CNAME Record:
 2. Select project: `pricehunt-indonesia`
 3. Settings → Domains
 4. Click "Add Domain"
-5. Enter: `bijakbeli.app`
+5. Enter: `bijakbeli.web.id`
 6. Wait for Vercel to verify DNS
 7. SSL certificate will be issued automatically
 
@@ -101,7 +101,7 @@ In Vercel Dashboard → Settings → Environment Variables:
 
 ```
 Variable: NEXT_PUBLIC_APP_URL
-Value: https://bijakbeli.app
+Value: https://www.bijakbeli.web.id
 Environment: Production
 ```
 
@@ -112,7 +112,7 @@ Environment: Production
 ### Step 4: Set Primary Domain (1 minute)
 
 In Vercel Domains settings:
-1. Click ⋯ menu next to `bijakbeli.app`
+1. Click ⋯ menu next to `bijakbeli.web.id`
 2. Select "Set as Primary Domain"
 3. Old URL will auto-redirect
 
@@ -123,7 +123,7 @@ In Vercel Domains settings:
 ### Step 5: Wait for DNS Propagation (5-30 minutes)
 
 **Check propagation:**
-- https://dnschecker.org/#A/bijakbeli.app
+- https://dnschecker.org/#A/bijakbeli.web.id
 - Must be green globally before domain works
 
 **Status:** ⏳ Not started
@@ -134,8 +134,8 @@ In Vercel Domains settings:
 
 **Test commands:**
 ```bash
-curl -I https://bijakbeli.app
-curl -s https://bijakbeli.app | grep "BijakBeli"
+curl -I https://www.bijakbeli.web.id
+curl -s https://www.bijakbeli.web.id | grep "BijakBeli"
 ```
 
 **Expected:**
@@ -233,7 +233,7 @@ curl -s https://bijakbeli.app | grep "BijakBeli"
 **From now:**
 - DNS configuration: 10 minutes (user action)
 - DNS propagation: 5-30 minutes (automatic)
-- **Total:** 15-40 minutes until bijakbeli.app is LIVE!
+- **Total:** 15-40 minutes until bijakbeli.web.id is LIVE!
 
 ---
 
@@ -244,7 +244,7 @@ curl -s https://bijakbeli.app | grep "BijakBeli"
 - [x] All tests passing
 - [x] Production deployment successful
 - [x] New branding visible in production
-- [ ] Custom domain (bijakbeli.app) live
+- [ ] Custom domain (bijakbeli.web.id) live
 - [ ] SSL certificate issued
 - [ ] Primary domain set
 
@@ -257,7 +257,7 @@ curl -s https://bijakbeli.app | grep "BijakBeli"
 **Check deployment:**
 ```bash
 curl -I https://pricehunt-indonesia.vercel.app
-curl -I https://bijakbeli.app  # After DNS
+curl -I https://www.bijakbeli.web.id  # After DNS
 ```
 
 **Check tests:**
@@ -274,8 +274,8 @@ npx vercel --prod --yes --token=$VERCEL_TOKEN
 
 **Check DNS propagation:**
 ```bash
-dig bijakbeli.app
-nslookup bijakbeli.app
+dig bijakbeli.web.id
+nslookup bijakbeli.web.id
 ```
 
 ---
@@ -293,13 +293,13 @@ nslookup bijakbeli.app
 - ⏳ DNS configuration at name.com (10 minutes of user action)
 
 **After DNS configured:**
-- 🚀 bijakbeli.app will be LIVE automatically!
+- 🚀 bijakbeli.web.id will be LIVE automatically!
 - 🎯 Professional branding complete
 - 💪 Ready to scale
 
 ---
 
 **Current Production URL:** https://pricehunt-indonesia.vercel.app (with BijakBeli branding)  
-**Target Production URL:** https://bijakbeli.app (pending DNS)
+**Target Production URL:** https://www.bijakbeli.web.id
 
 **Status:** Ready for launch! 🚀

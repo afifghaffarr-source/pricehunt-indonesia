@@ -55,7 +55,7 @@ review_count  | integer                  |
 
 ### Step 3: Verify app
 
-1. Open https://bijakbeli.app — homepage should load
+1. Open https://www.bijakbeli.web.id — homepage should load
 2. Open product detail — should not show "undefined" for rating
 3. Admin dashboard → Data Collection → Offers — new columns visible
 

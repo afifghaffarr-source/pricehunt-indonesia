@@ -61,7 +61,7 @@ GROUP BY category;
 
 ### Via API:
 ```bash
-curl https://www.bijakbeli.app/api/search?q=iphone&limit=5
+curl https://www.bijakbeli.web.id/api/search?q=iphone&limit=5
 ```
 
 ---

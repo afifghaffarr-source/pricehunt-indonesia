@@ -88,7 +88,7 @@ async function generateBeautifulReport() {
       report += `   🎯 Target: ${formatPrice(target)}\n`;
       report += `   💰 Current: ${formatPrice(current)}\n`;
       report += `   💸 Savings: ${formatPrice(savings)} (${pct}% below target!)\n`;
-      report += `   🛒 https://bijakbeli.app/product/${product.slug}\n\n`;
+      report += `   🛒 https://www.bijakbeli.web.id/product/${product.slug}\n\n`;
     });
     
     report += `✅ **Action Taken:**\n`;

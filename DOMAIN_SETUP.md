@@ -4,15 +4,16 @@
 
 ### Step 1: Get Vercel DNS Settings
 1. Go to Vercel Dashboard: https://vercel.com/dashboard
-2. Select project: `pricehunt-indonesia` (will rename later)
+2. Select project: `pricehunt-indonesia` (the Vercel project name; the display
+   alias is `bijakbeli-app`)
 3. Go to Settings → Domains
 4. Click "Add Domain"
-5. Enter: `bijakbeli.app`
+5. Enter: `bijakbeli.web.id` and `www.bijakbeli.web.id` (apex + www)
 6. Vercel will show you DNS records to add
 
 ### Step 2: Configure at name.com
 1. Login to name.com: https://www.name.com/account/domain
-2. Find domain: `bijakbeli.app`
+2. Find domain: `bijakbeli.web.id`
 3. Go to DNS Settings
 4. Add these records (from Vercel):
 
@@ -34,7 +35,7 @@ TTL: Automatic
 
 ### Step 3: Wait for DNS Propagation
 - Usually takes 5-30 minutes
-- Check status: https://dnschecker.org/#A/bijakbeli.app
+- Check status: https://dnschecker.org/#A/bijakbeli.web.id
 
 ### Step 4: Verify in Vercel
 - Vercel will auto-detect when DNS is ready
@@ -43,16 +44,16 @@ TTL: Automatic
 
 ### Step 5: Set as Primary Domain (Optional)
 - In Vercel Settings → Domains
-- Click ⋯ next to bijakbeli.app
+- Click ⋯ next to `bijakbeli.web.id` and `www.bijakbeli.web.id`
 - Select "Set as Primary Domain"
-- Old domain (pricehunt-indonesia.vercel.app) will redirect
+- Old Vercel deployment URLs (e.g. `pricehunt-indonesia-*.vercel.app`) are 301-redirected to the canonical host via `next.config.ts`.
 
 ## Environment Variables to Update
 
 In Vercel Dashboard → Settings → Environment Variables:
 
 ```
-NEXT_PUBLIC_APP_URL=https://bijakbeli.app
+NEXT_PUBLIC_APP_URL=https://www.bijakbeli.web.id
 ```
 
 Redeploy after changing environment variables.
@@ -74,11 +75,11 @@ npx vercel --prod --yes --token=$VERCEL_TOKEN
 **Check deployment:**
 ```bash
 curl -I https://pricehunt-indonesia.vercel.app
-curl -I https://bijakbeli.app  # After DNS configured
+curl -I https://www.bijakbeli.web.id  # After DNS configured
 ```
 
 **Update environment variable:**
 ```bash
 npx vercel env add NEXT_PUBLIC_APP_URL production
-# Enter: https://bijakbeli.app
+# Enter: https://www.bijakbeli.web.id
 ```

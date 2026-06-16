@@ -53,7 +53,7 @@ Setelah redeploy selesai, test:
 
 ```bash
 # Test API (should return success: true)
-curl https://bijakbeli-app.vercel.app/api/admin/data-collection/offers?limit=1
+curl https://www.bijakbeli.web.id/api/admin/data-collection/offers?limit=1
 ```
 
 Kalau masih error, cek:

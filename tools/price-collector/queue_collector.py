@@ -21,7 +21,7 @@ from api_client import IngestionClient
 # Load environment
 load_dotenv()
 
-API_BASE = os.getenv("NEXT_PUBLIC_APP_URL", "https://www.bijakbeli.app")
+API_BASE = os.getenv("NEXT_PUBLIC_APP_URL", "https://www.bijakbeli.web.id")
 INGESTION_SECRET = os.getenv("INGESTION_SECRET")
 
 if not INGESTION_SECRET:

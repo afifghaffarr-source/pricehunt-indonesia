@@ -10,8 +10,8 @@ For each product in the BACKFILL list, this script:
   4. Optionally writes a `price_snapshots` row if a price was extracted
 
 Auth: uses INGESTION_SECRET as bearer for both:
-  - Production: https://bijakbeli.app/api/internal/vexo-search  (search)
-  - Production: https://bijakbeli.app/api/ingestion/offer-snapshot (upsert)
+  - Production: https://www.bijakbeli.web.id/api/internal/vexo-search  (search)
+  - Production: https://www.bijakbeli.web.id/api/ingestion/offer-snapshot (upsert)
 
 Usage:
   python3 phase8_vexo_collector.py [--dry-run] [--products slug1,slug2,...]
@@ -32,7 +32,7 @@ import urllib.error
 import urllib.request
 import urllib.parse
 
-API_BASE = os.environ.get("BIJAKBELI_API", "https://www.bijakbeli.app")
+API_BASE = os.environ.get("BIJAKBELI_API", "https://www.bijakbeli.web.id")
 INGESTION_PATH = "/api/ingestion/offer-snapshot"
 VEXO_SEARCH_PATH = "/api/internal/vexo-search"
 

@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_APP_URL || 'https://bijakbeli.app',
+  process.env.NEXT_PUBLIC_APP_URL || 'https://www.bijakbeli.web.id',
   'http://localhost:3000', // Development
   'http://localhost:3001', // Alternative dev port
 ];

@@ -12,8 +12,8 @@
     "https://tokopedia.com/*",
     "https://shopee.co.id/*",
     "https://www.bukalapak.com/*",
-    "https://www.bijakbeli.app/*",
-    "https://bijakbeli.app/*"
+    "https://www.bijakbeli.web.id/*",
+    "https://www.bijakbeli.web.id/*"
   ],
   "background": {
     "service_worker": "background.js"

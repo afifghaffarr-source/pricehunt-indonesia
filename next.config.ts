@@ -90,6 +90,36 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "recharts", "framer-motion"],
   },
+  // Consolidate all hosts onto the canonical www.bijakbeli.web.id.
+  // - apex (bijakbeli.web.id)            → www
+  // - any Vercel deployment of the project → www
+  // - legacy DEFAULT_APP_URL alias       → www
+  // The Vercel host regex matches any preview URL for this project
+  // (e.g. pricehunt-indonesia-<hash>-<owner>.vercel.app).
+  async redirects() {
+    const canonicalHost = "www.bijakbeli.web.id";
+    const vercelHostPattern =
+      "(pricehunt-indonesia[^.]*\\.vercel\\.app|bijakbeli-app\\.vercel\\.app)";
+
+    return [
+      // Apex domain → www (308 permanent)
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "bijakbeli.web.id" }],
+        destination: `https://${canonicalHost}/:path*`,
+        permanent: true,
+      },
+      // Vercel project deployment URL → www (308 permanent).
+      // Covers both the explicit `bijakbeli-app` alias and the
+      // auto-generated `pricehunt-indonesia-<hash>-<owner>.vercel.app`.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: vercelHostPattern }],
+        destination: `https://${canonicalHost}/:path*`,
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

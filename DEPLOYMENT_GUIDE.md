@@ -134,7 +134,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...  # NEVER commit this!
 
 # === APP CONFIG ===
-NEXT_PUBLIC_APP_URL=https://bijakbeli-app.vercel.app
+NEXT_PUBLIC_APP_URL=https://www.bijakbeli.web.id
 NODE_ENV=production
 
 # === OPENAI (untuk AI Advisor) ===
@@ -197,7 +197,7 @@ web-push generate-vapid-keys
    - **IMPORTANT**: Mark sensitive keys (SERVICE_ROLE_KEY, API keys) as "Sensitive"
 6. Click "Deploy"
 7. Wait 2-5 minutes
-8. Get your production URL: `https://bijakbeli-app.vercel.app`
+8. Get your production URL: `https://www.bijakbeli.web.id`
 
 #### Option B: Vercel CLI (Alternative)
 
@@ -221,13 +221,13 @@ vercel --prod
 #### Step 6.1: Test Health Endpoints
 ```bash
 # Test app health
-curl https://bijakbeli-app.vercel.app/api/health
+curl https://www.bijakbeli.web.id/api/health
 
 # Expected response:
 # {"status":"healthy","timestamp":"...","environment":"production"}
 
 # Test database health
-curl https://bijakbeli-app.vercel.app/api/health/db
+curl https://www.bijakbeli.web.id/api/health/db
 
 # Expected response:
 # {"status":"healthy","database":"connected","responseTime":45,"timestamp":"..."}
@@ -235,11 +235,11 @@ curl https://bijakbeli-app.vercel.app/api/health/db
 
 #### Step 6.2: Test Core Pages
 Visit these URLs manually:
-- [ ] Homepage: https://bijakbeli-app.vercel.app
-- [ ] Search: https://bijakbeli-app.vercel.app/search
-- [ ] Deals: https://bijakbeli-app.vercel.app/deals
-- [ ] Sitemap: https://bijakbeli-app.vercel.app/sitemap.xml
-- [ ] Robots: https://bijakbeli-app.vercel.app/robots.txt
+- [ ] Homepage: https://www.bijakbeli.web.id
+- [ ] Search: https://www.bijakbeli.web.id/search
+- [ ] Deals: https://www.bijakbeli.web.id/deals
+- [ ] Sitemap: https://www.bijakbeli.web.id/sitemap.xml
+- [ ] Robots: https://www.bijakbeli.web.id/robots.txt
 
 #### Step 6.3: Test Authentication
 - [ ] Register new user
@@ -294,9 +294,9 @@ After deploy, Vercel will automatically run crons. Check logs:
 
 #### Step 8.1: Google Search Console
 1. Go to [https://search.google.com/search-console](https://search.google.com/search-console)
-2. Add property: `https://bijakbeli-app.vercel.app`
+2. Add property: `https://www.bijakbeli.web.id`
 3. Verify ownership (Vercel DNS method recommended)
-4. Submit sitemap: `https://bijakbeli-app.vercel.app/sitemap.xml`
+4. Submit sitemap: `https://www.bijakbeli.web.id/sitemap.xml`
 
 #### Step 8.2: Supabase Auth Email Templates (Optional)
 1. Supabase Dashboard > Authentication > Email Templates
@@ -425,7 +425,7 @@ npm run type-check
 **Solution**:
 1. Supabase Dashboard > Authentication > Settings
 2. Enable Email provider
-3. Configure Site URL: `https://bijakbeli-app.vercel.app`
+3. Configure Site URL: `https://www.bijakbeli.web.id`
 4. Add redirect URLs for auth callbacks
 
 ---

@@ -153,13 +153,13 @@ async function checkAlerts() {
           message += `├ ✅ Target reached!\n`;
         }
         
-        message += `└ 🛒 Buy now: https://bijakbeli.app/product/${product.slug}\n\n`;
+        message += `└ 🛒 Buy now: https://www.bijakbeli.web.id/product/${product.slug}\n\n`;
         
         alertIdsToMark.push(alert.id);
       });
 
       message += `\n⏰ *Act fast!* Prices can change anytime.\n`;
-      message += `📱 Manage your alerts: https://bijakbeli.app/settings/notifications\n\n`;
+      message += `📱 Manage your alerts: https://www.bijakbeli.web.id/settings/notifications\n\n`;
       message += `_BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat_ 🎯`;
 
       console.log(`📤 Message prepared (${message.length} chars)`);

@@ -21,7 +21,7 @@ async function handleAPICall(payload) {
   
   // Get API config from storage
   const config = await chrome.storage.sync.get(['apiUrl', 'ingestionSecret']);
-  const apiUrl = config.apiUrl || 'https://www.bijakbeli.app';
+  const apiUrl = config.apiUrl || 'https://www.bijakbeli.web.id';
   const secret = config.ingestionSecret;
   
   if (!secret) {

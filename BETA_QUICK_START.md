@@ -37,7 +37,7 @@ Butuh waktu:
 
 Gratis & aman. Data anonymous. Mau bantu test?
 
-Link: https://www.bijakbeli.app/extension
+Link: https://www.bijakbeli.web.id/extension
 
 Kalau tertarik reply "Mau coba" nanti aku guide step by step! 🚀
 ```
@@ -153,7 +153,7 @@ tar -xzf bijakbeli-extension-v2.0.2-beta.tar.gz
 **Solution:**
 1. Check console error message
 2. Verify ingestion secret in popup config
-3. Test API: `curl https://www.bijakbeli.app/api/health`
+3. Test API: `curl https://www.bijakbeli.web.id/api/health`
 
 ### "Data not showing on website"
 **Solution:**
@@ -227,7 +227,7 @@ Keep going! Target: 50 products
 
 ### Extension
 - **Package:** `/home/ubuntu/projects/bijakbeli-app/extensions/bijakbeli-extension-v2.0.2-beta.tar.gz`
-- **Download URL:** https://www.bijakbeli.app/extension
+- **Download URL:** https://www.bijakbeli.web.id/extension
 - **Source:** `/home/ubuntu/projects/bijakbeli-app/extensions/chrome/`
 
 ### Monitoring
@@ -248,8 +248,8 @@ Keep going! Target: 50 products
 
 ## 🔗 QUICK LINKS
 
-- **Extension Download:** https://www.bijakbeli.app/extension
-- **Website:** https://www.bijakbeli.app
+- **Extension Download:** https://www.bijakbeli.web.id/extension
+- **Website:** https://www.bijakbeli.web.id
 - **Supabase Dashboard:** https://supabase.com/dashboard/project/oklaxwjoyttpwgxhphko
 - **GitHub Repo:** https://github.com/afifghaffarr-source/pricehunt-indonesia
 - **Vercel Dashboard:** https://vercel.com/afif-s-projects5/pricehunt-indonesia

@@ -219,7 +219,7 @@ async function seedProduction() {
   console.log('📊 Summary:')
   console.log(`   - ${products.length} products`)
   console.log(`   - ${insertedOffers.length} offers`)
-  console.log('\n🌐 Check: https://bijakbeli-app.vercel.app/api/products')
+  console.log('\n🌐 Check: https://www.bijakbeli.web.id/api/products')
 }
 
 seedProduction().catch(console.error)

@@ -124,11 +124,11 @@ load_dotenv(Path(__file__).parent.parent / '.env.local')
 
 **Finding:**
 ```python
-requests.post('https://www.bijakbeli.app/api/ingestion/offer-snapshot', ...)
+requests.post('https://www.bijakbeli.web.id/api/ingestion/offer-snapshot', ...)
 ```
 
 **Why Partially False Positive:**
-- ✅ bijakbeli.app is OUR OWN API (legitimate)
+- ✅ www.bijakbeli.web.id is OUR OWN API (legitimate)
 - ✅ Tokopedia.com scraping is legitimate (authorized)
 - ⚠️ Test files should use localhost/mock endpoints
 

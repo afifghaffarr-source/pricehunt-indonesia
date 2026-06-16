@@ -18,7 +18,7 @@ This collector operates with full transparency:
 
 ## Status: ✅ CONFIGURED & READY
 
-**Production API:** https://bijakbeli-app.vercel.app  
+**Production API:** https://www.bijakbeli.web.id  
 **Authentication:** INGESTION_SECRET configured in Vercel + local .env  
 **Last tested:** 2026-06-11 (API connection successful)
 
