@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.7 (2026-06-16) — Google Search Console + Schema.org Structured Data
+
+- **Google Search Console verification support** — env-driven
+  - `src/app/layout.tsx`: `verification.google` driven by
+    `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`
+  - User sets the env var in Vercel, redeploy, then clicks Verify in
+    GSC. Zero code change needed after env is set.
+- **JSON-LD structured data** (`src/lib/seo.tsx`, server-rendered):
+  - `Organization` schema on homepage (brand info, logo, founding date,
+    areaServed, knowsAbout)
+  - `WebSite` schema on homepage with `SearchAction` pointing at
+    `/search?q={search_term_string}` — enables Google's sitelinks
+    searchbox
+  - `Product` schema on product detail pages with `AggregateOffer` and
+    per-marketplace `Offer` entries (sorted cheapest first). Includes
+    price, currency (IDR), availability, URL, seller, shipping, and
+    `priceValidUntil` 30 days out
+  - `BreadcrumbList` on product pages (Beranda > Category > Product)
+- **Env var placeholders** in `.env.local.example`,
+  `.env.production.local.example`, and `tools/price-collector/QUEUE_COLLECTOR.md`
+- **New doc**: `docs/GOOGLE_SEARCH_CONSOLE.md` — step-by-step guide
+  for adding the property, verifying, submitting sitemap, requesting
+  indexing, and monitoring performance
+
 ### Changed - v1.5.6 (2026-06-16) — Canonical Domain: bijakbeli.web.id + SEO Hardening
 
 - **Domain consolidation: `www.bijakbeli.web.id` is now the canonical host**

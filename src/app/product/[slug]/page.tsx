@@ -30,6 +30,7 @@ import { DataTransparencyDisclaimer } from "@/components/product/DataTransparenc
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { JsonLd, productJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import {
   ArrowLeft,
   TrendingDown,
@@ -152,7 +153,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const shouldShowFakeDiscountAlert = discount > 10 && product.highestPrice > product.lowestPrice;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+    <>
+      <JsonLd data={productJsonLd(product, product.prices)} key="product" />
+      <JsonLd data={breadcrumbJsonLd(product)} key="breadcrumb" />
+      <div className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
       <Link href="/search" className={buttonVariants({ variant: "ghost" }) + " mb-4"}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Kembali
@@ -522,6 +526,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -34,6 +34,9 @@ INGESTION_SECRET=***  # Same secret as ingestion API
 
 # Optional
 NEXT_PUBLIC_APP_URL=https://www.bijakbeli.web.id  # Default
+
+# Google Search Console (HTML tag verification)
+#NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=your-gsc-verification-code
 ```
 
 ## How It Works

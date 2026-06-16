@@ -24,6 +24,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Metadata } from "next";
+import { JsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -42,7 +43,10 @@ export default async function HomePage() {
   const trendingProducts = allProducts.slice(0, 4);
 
   return (
-    <div>
+    <>
+      <JsonLd data={organizationJsonLd()} key="organization" />
+      <JsonLd data={websiteJsonLd()} key="website" />
+      <div>
       <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50 via-background to-background dark:from-emerald-950/20">
         {/* Animated gradient orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -585,6 +589,7 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

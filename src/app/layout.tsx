@@ -38,6 +38,12 @@ export const metadata: Metadata = {
     "bandingkan harga",
   ],
   authors: [{ name: "BijakBeli.app" }],
+  // Google Search Console verification. Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+  // in the Vercel project env (and .env.local) to enable. The code is rendered
+  // as <meta name="google-site-verification" content="…"> in <head>.
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
   // Explicit canonical template — child pages inherit the path automatically.
   // Forces every page to declare www.bijakbeli.web.id as the canonical URL,
   // regardless of which host the request hit (apex, www, or Vercel fallback).
