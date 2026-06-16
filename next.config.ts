@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -134,4 +135,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Only wrap with Sentry when DSN is configured.
+// Sentry is a no-op without DSN, but the wrapper adds bundle size — skip when unused.
+const sentryEnabled = Boolean(
+  process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN
+);
+
+export default sentryEnabled
+  ? withSentryConfig(nextConfig, {
+      silent: !isProduction,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      widenClientFileUpload: true,
+      disableLogger: true,
+    })
+  : nextConfig;

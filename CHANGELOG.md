@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - v1.5.13 (2026-06-17) — Audit Phase A Quick Wins
+
+- **0 lint warnings, 0 errors** — final 3 warnings from v1.5.12.2 fixed via proper useCallback + next/image:
+  - `src/components/ai/ai-recommendations.tsx:38` — wrapped `loadRecommendations` in `useCallback([productId])`, added to useEffect deps
+  - `src/components/ai/ai-recommendations.tsx:148` — replaced `<img>` with `<Image fill sizes="..." unoptimized>` (parent is `relative aspect-square`)
+  - `src/components/analytics/analytics-dashboard.tsx:41` — wrapped `loadAnalytics` in `useCallback([period])`, added to useEffect deps
+- **Taste-skill compliance restored** — removed em-dash from `README.md:3` tagline (replaced `—` with `-`)
+- **Sentry error tracking scaffolding** (`@sentry/nextjs@^10.58.0`):
+  - `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` (all guard on DSN presence)
+  - `next.config.ts` wrapped in `withSentryConfig()` **only when DSN is set** (no bundle bloat when unused)
+  - `.env.local.example` documents `NEXT_PUBLIC_SENTRY_DSN` + `SENTRY_AUTH_TOKEN`
+  - **Activation requires user**: create free Sentry project, set DSN in Vercel env (see `docs/MONITORING.md`)
+- **Auto-review routing** — `CODEOWNERS` file with critical-area paths (auth, admin, ingestion, supabase, deploy)
+- **Developer documentation** — 3 new docs:
+  - `CONTRIBUTING.md` — how to contribute, code style (TypeScript strict, no `any` new, no em-dash, etc.)
+  - `SECURITY.md` — vulnerability reporting, security architecture summary, known limitations
+  - `docs/OPERATIONS.md` — incident response, deploy process, cron runbook, disaster recovery
+  - `docs/MONITORING.md` — current monitoring stack, Sentry setup steps, alert thresholds
+
+### Notes
+- **Vercel deployment protection** ("Wait for CI to pass") still needs to be enabled in Vercel Dashboard → Settings → Git → Deployment Protection. Documented in `docs/OPERATIONS.md` § Deploy Process. **Critical action for user to prevent CI-red-but-Vercel-READY pattern (skill #98).**
+- **`local-database.types.ts` consolidation confirmed intentional** — deleted in commit `2d99834` (proper Supabase typegen completed). Skill #48 should be updated to reflect current state (single canonical `types.ts`).
+
+### Files Changed
+- `src/components/ai/ai-recommendations.tsx` (useCallback, Image)
+- `src/components/analytics/analytics-dashboard.tsx` (useCallback)
+- `README.md` (em-dash → hyphen)
+- `next.config.ts` (Sentry wrapper, conditional)
+- `package.json` + `package-lock.json` (`@sentry/nextjs` added)
+- `sentry.client.config.ts` (new)
+- `sentry.server.config.ts` (new)
+- `sentry.edge.config.ts` (new)
+- `CODEOWNERS` (new)
+- `CONTRIBUTING.md` (new)
+- `SECURITY.md` (new)
+- `docs/OPERATIONS.md` (new)
+- `docs/MONITORING.md` (new)
+- `.env.local.example` (Sentry vars documented)
+
+### Previous
+
 ### Fixed - v1.5.12.2 (2026-06-16) — Lint Warning Cleanup
 
 - **Removed 27 of 30 lint warnings** (90% reduction). Down from 30 → 3 warnings, 0 errors. Lint step in CI went from 50-60s (with annotations) to clean.

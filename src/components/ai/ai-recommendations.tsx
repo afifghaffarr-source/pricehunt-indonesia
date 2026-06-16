@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Sparkles, 
-  TrendingUp, 
-  Package, 
+import {
+  Sparkles,
+  TrendingUp,
+  Package,
   ExternalLink,
   RefreshCw,
   ThumbsUp,
@@ -33,20 +34,16 @@ export function AIRecommendations({ productId }: { productId?: string }) {
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>({});
 
-  useEffect(() => {
-    loadRecommendations();
-  }, [productId]);
-
-  const loadRecommendations = async () => {
+  const loadRecommendations = useCallback(async () => {
     setLoading(true);
     try {
-      const url = productId 
+      const url = productId
         ? `/api/recommendations?product_id=${productId}`
         : '/api/recommendations';
-      
+
       const response = await fetch(url);
       const result = await response.json();
-      
+
       if (result.success) {
         setRecommendations(result.data);
       }
@@ -55,7 +52,11 @@ export function AIRecommendations({ productId }: { productId?: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
+
+  useEffect(() => {
+    loadRecommendations();
+  }, [loadRecommendations]);
 
   const submitFeedback = async (recId: string, type: 'up' | 'down') => {
     setFeedback(prev => ({ ...prev, [recId]: type }));
@@ -145,10 +146,13 @@ export function AIRecommendations({ productId }: { productId?: string }) {
               {/* Product Image */}
               <div className="relative aspect-square mb-4 bg-muted rounded-lg overflow-hidden">
                 {rec.product_image ? (
-                  <img
+                  <Image
                     src={rec.product_image}
                     alt={rec.product_name}
-                    className="object-cover w-full h-full"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">

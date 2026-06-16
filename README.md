@@ -1,6 +1,6 @@
 # 🛒 BijakBeli.app
 
-**Beli yang Tepat, di Waktu yang Tepat** — Smart price comparison platform untuk marketplace Indonesia dengan AI-powered insights dan trust-based data validation.
+**Beli yang Tepat, di Waktu yang Tepat** - Smart price comparison platform untuk marketplace Indonesia dengan AI-powered insights dan trust-based data validation.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
