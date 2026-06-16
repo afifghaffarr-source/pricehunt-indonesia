@@ -126,7 +126,8 @@ export function PriceComparisonPreview({
                     className={`mt-2 flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                       isCheapest
                         ? "bg-green-700 text-white hover:bg-green-800"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        : // text-foreground/80 on bg-muted passes WCAG AA (4.5+)
+                          "bg-muted text-foreground/80 hover:bg-muted/80"
                     }`}
                   >
                     Buka toko

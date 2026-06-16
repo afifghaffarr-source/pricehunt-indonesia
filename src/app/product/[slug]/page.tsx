@@ -41,7 +41,9 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export const revalidate = 0; // Disabled during testing - re-enable later
+// Keep page dynamic (per-product data) but revalidate aggressively so
+// Next.js renders metadata into <head> instead of streaming into the body.
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,

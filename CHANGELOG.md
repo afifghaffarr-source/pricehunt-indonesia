@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.9 (2026-06-16) — Performance Audit + Quick Wins
+
+- **`/api/auth/session` endpoint** (`src/app/api/auth/session/route.ts`)
+  - Returns `{ user: null }` or `{ user: { id, email, is_admin } }`
+  - Replaces the 404 that the Header component was logging on every
+    page load. Client components can now check sign-in state without
+    a 404 console error.
+- **Performance audit report** (`docs/PERFORMANCE_AUDIT.md`)
+  - Lighthouse 13 mobile scores: home 83/98/96/100, product 69/97/96/92
+  - Documents CWV, current state, fixes applied this release, and
+    action items for v1.5.10
+  - Reproduction commands included
+
+### Fixed - v1.5.9 (2026-06-16)
+
+- **Color contrast on product page** — "Buka toko" link buttons in
+  `PriceComparisonPreview` used `#737373` on `#f5f5f5` (4.34:1, fails
+  WCAG AA for 12px text). Changed to `text-foreground/80` (passes 4.5:1).
+- **Heading order violation on homepage** — footer had `<h4>` labels
+  (Marketplace, Kategori, Tentang) that streamed into the DOM *before*
+  the `<h1>` in the main content, breaking heading-order rule. Changed
+  to `<h2>` so the order is logical.
+- **Meta description streamed into `<body>`** — Next.js with
+  `revalidate = 0` was streaming `generateMetadata` output via the RSC
+  payload (in body) instead of into the initial `<head>`, making
+  Lighthouse (and some crawlers) miss the description. Changed to
+  `revalidate = 60` so the description is in `<head>` for both crawlers
+  and audits.
+
+### Notes
+
+- 296 unit + 19 E2E pass, typecheck clean, lint 0 errors
+- v1.5.10 backlog: reduce product page TBT/LCP (target 200ms / 2.5s),
+  fix React #418 hydration mismatch, audit 53KB unused-JS chunk
+
 ### Added - v1.5.8 (2026-06-16) — Dynamic Open Graph Image Generator
 
 - **4 dynamic Open Graph image generators** (`next/og` `ImageResponse`):
