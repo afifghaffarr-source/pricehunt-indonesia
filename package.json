@@ -57,14 +57,17 @@
     "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^6.0.2",
     "axe-core": "^4.12.1",
+    "chrome-launcher": "^1.2.1",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "jsdom": "^29.1.1",
+    "lighthouse": "^12.8.2",
     "pg": "^8.21.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "ws": "^8.21.0"
   },
   "ignoreScripts": [
     "sharp",
