@@ -44,6 +44,9 @@ export function ReviewsList({ productId, currentUserId }: ReviewsListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
+  // `false` when the server reports the reviews table is missing.
+  // We hide the section entirely instead of showing a permanent error.
+  const [available, setAvailable] = useState(true);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -53,6 +56,13 @@ export function ReviewsList({ productId, currentUserId }: ReviewsListProps) {
 
         if (!response.ok) {
           setError(data.error || "Gagal memuat ulasan");
+          return;
+        }
+
+        // Server signals "feature not deployed" via available:false.
+        // We silently skip rendering rather than alarming the user.
+        if (data.available === false) {
+          setAvailable(false);
           return;
         }
 
@@ -76,6 +86,11 @@ export function ReviewsList({ productId, currentUserId }: ReviewsListProps) {
 
       if (!response.ok) {
         setError(data.error || "Gagal memuat ulasan");
+        return;
+      }
+
+      if (data.available === false) {
+        setAvailable(false);
         return;
       }
 
@@ -127,6 +142,12 @@ export function ReviewsList({ productId, currentUserId }: ReviewsListProps) {
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     );
+  }
+
+  // Reviews table isn't deployed yet on this Supabase project — render
+  // nothing rather than a permanent error banner.
+  if (!available) {
+    return null;
   }
 
   return (
