@@ -4,6 +4,8 @@ import { ForgotPasswordForm } from "./ForgotPasswordForm";
 export const metadata = {
   title: "Lupa Password - BijakBeli.app",
   description: "Reset password akun Anda",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/auth/forgot-password" },
 };
 
 export default function ForgotPasswordPage() {

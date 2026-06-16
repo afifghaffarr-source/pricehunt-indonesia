@@ -5,6 +5,9 @@ import { CompareContent } from "./CompareContent";
 export const metadata: Metadata = {
   title: "Bandingkan Produk",
   description: "Bandingkan harga dan spesifikasi produk secara berdampingan.",
+  alternates: {
+    canonical: "/compare",
+  },
 };
 
 export default function ComparePage() {

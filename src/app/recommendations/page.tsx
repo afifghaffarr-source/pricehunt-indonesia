@@ -4,6 +4,9 @@ import { AIRecommendations } from '@/components/ai/ai-recommendations';
 export const metadata: Metadata = {
   title: 'Rekomendasi AI - BijakBeli',
   description: 'Rekomendasi produk berdasarkan preferensi Anda',
+  alternates: {
+    canonical: '/recommendations',
+  },
 };
 
 export default function RecommendationsPage() {

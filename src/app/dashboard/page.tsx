@@ -15,6 +15,13 @@ import {
 import Link from "next/link";
 import { formatRupiah } from "@/lib/utils";
 import { logout } from "@/app/actions/auth";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard Saya - BijakBeli.app",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/dashboard" },
+};
 
 export default async function DashboardPage() {
   const user = await requireAuth();

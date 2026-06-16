@@ -51,6 +51,9 @@ export async function generateMetadata({
   return {
     title: product.name,
     description: `Bandingkan harga ${product.name} dari ${product.prices.filter((p) => p.inStock).length} marketplace. Harga mulai ${formatRupiah(product.lowestPrice)}.`,
+    alternates: {
+      canonical: `/product/${slug}`,
+    },
   };
 }
 

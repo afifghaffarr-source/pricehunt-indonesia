@@ -16,6 +16,9 @@ import Link from "next/link";
 export const metadata = {
   title: "Chrome Extension - BijakBeli.app",
   description: "Download ekstensi Chrome BijakBeli untuk mengumpulkan data produk dengan satu klik dari Tokopedia, Shopee, dan Bukalapak.",
+  alternates: {
+    canonical: "/extension",
+  },
 };
 
 export default function ExtensionPage() {

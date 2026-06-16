@@ -5,6 +5,9 @@ import { SearchPageContent } from "./SearchPageContent";
 export const metadata: Metadata = {
   title: "Cari Produk",
   description: "Cari dan bandingkan harga produk dari berbagai marketplace Indonesia.",
+  alternates: {
+    canonical: "/search",
+  },
 };
 
 export default function SearchPage() {

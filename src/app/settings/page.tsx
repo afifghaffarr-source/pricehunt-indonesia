@@ -12,6 +12,8 @@ import { DataExportSection } from "./DataExportSection";
 export const metadata: Metadata = {
   title: "Pengaturan",
   description: "Kelola profil dan pengaturan akun Anda.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/settings" },
 };
 
 export default async function SettingsPage() {

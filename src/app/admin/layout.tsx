@@ -4,6 +4,12 @@
  * is protected even if individual pages forget to add their own check.
  */
 import { requireAdminForPage } from "./_lib/guard";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Admin - BijakBeli.app",
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({
   children,

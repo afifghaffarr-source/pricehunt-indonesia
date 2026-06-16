@@ -10,6 +10,8 @@ import { formatRupiah } from "@/lib/utils";
 export const metadata = {
   title: "Pantau Harga - BijakBeli.app",
   description: "Pantau harga produk favorit dan dapatkan notifikasi saat harga turun.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/dashboard/alerts" },
 };
 
 export default async function AlertsPage() {

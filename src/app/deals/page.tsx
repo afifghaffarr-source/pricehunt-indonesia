@@ -11,6 +11,9 @@ import { calculateDealScore } from "@/lib/deal-score";
 export const metadata = {
   title: "Promo Pintar - BijakBeli.app",
   description: "Temukan produk dengan deal terbaik, harga termurah, dan rekomendasi pintar.",
+  alternates: {
+    canonical: "/deals",
+  },
 };
 
 export default async function DealsPage() {

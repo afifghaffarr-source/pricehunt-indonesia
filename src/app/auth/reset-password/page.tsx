@@ -4,6 +4,8 @@ import { ResetPasswordForm } from "./ResetPasswordForm";
 export const metadata = {
   title: "Reset Password - BijakBeli.app",
   description: "Buat password baru untuk akun Anda",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/auth/reset-password" },
 };
 
 export default function ResetPasswordPage() {

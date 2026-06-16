@@ -7,6 +7,9 @@ import { Trophy, Medal, Award } from "lucide-react";
 export const metadata: Metadata = {
   title: "Leaderboard",
   description: "Lihat peringkat pengguna BijakBeli berdasarkan poin aktivitas.",
+  alternates: {
+    canonical: "/leaderboard",
+  },
 };
 
 export const revalidate = 60;
