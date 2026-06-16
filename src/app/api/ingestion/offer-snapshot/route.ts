@@ -15,6 +15,7 @@ import type { Database } from "@/lib/supabase/types";
 import { z } from "zod";
 import { normalizePrice, normalizeMarketplace, normalizeStockStatus, normalizeCondition, normalizeProductTitle } from "@/lib/ingestion/normalizer";
 import { calculateConfidenceScore } from "@/lib/ingestion/confidence";
+import { findBestProductMatch } from "@/lib/ingestion/matcher";
 
 // Validation schema - matches Python collector output
 const OfferSnapshotSchema = z.object({
@@ -137,31 +138,66 @@ async function findOrCreateMarketplace(supabase: ReturnType<typeof createAdminCl
 }
 
 /**
- * Try to match product by title and marketplace
+ * Match offer to a product using the smarter matcher module
+ *
+ * Replaces the previous crude `ilike %name%` approach (TODO line 148).
+ * Now uses `findBestProductMatch()` from `lib/ingestion/matcher.ts`
+ * which checks:
+ *   - Negative keywords (replica, used, KW, etc.) — immediate reject
+ *   - Title similarity (Jaccard + containment)
+ *   - Variant compatibility (storage, color, model)
+ *   - Price sanity vs existing offers avg
+ *   - Cross-check vs existing offer titles
+ *
+ * For 64 products we fetch all (small set). When product catalog grows
+ * past ~500, add a category pre-filter to bound the candidate set.
  */
 async function findProductByTitle(
-  supabase: ReturnType<typeof createAdminClient>, 
+  supabase: ReturnType<typeof createAdminClient>,
   title: string,
-  marketplaceId: string
+  price: number,
+  marketplace: string,
+  variant: string | null = null,
+  condition: string = "new"
 ): Promise<string | null> {
-  // Simple title-based matching
-  // TODO: Use matcher.ts for smarter matching
-  
-  const normalized = normalizeProductTitle(title);
-  
-  const { data, error } = await supabase
+  const { data: products, error } = await supabase
     .from("products")
-    .select("id, name")
-    .ilike("name", `%${normalized.slice(0, 30)}%`)
-    .limit(1)
-    .maybeSingle();
-  
-  if (error || !data) {
+    .select("id, name, category")
+    .limit(200);
+
+  if (error || !products || products.length === 0) {
     return null;
   }
-  
-  // Type assertion: we know the structure from our select
-  return (data as { id: string; name: string }).id;
+
+  const { bestMatch } = findBestProductMatch(
+    {
+      title,
+      price,
+      marketplace,
+      variant,
+      condition: condition as "new" | "used" | "refurbished",
+    },
+    products.map((p) => ({
+      id: p.id,
+      title: p.name,
+      brand: null,
+      category: p.category,
+    }))
+  );
+
+  if (!bestMatch) {
+    return null;
+  }
+
+  // Surface warnings for low-confidence matches (helps the next caller
+  // decide whether to fix the title or accept the match).
+  if (bestMatch.result.warnings.length > 0) {
+    console.log(
+      `[OfferSnapshot] Match for "${title}": score=${bestMatch.result.score} (${bestMatch.result.confidence}) | ${bestMatch.result.warnings.join("; ")}`
+    );
+  }
+
+  return bestMatch.productId;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<OfferSnapshotResponse>> {
@@ -232,9 +268,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
     const supabase = createAdminClient();
     const marketplace = await findOrCreateMarketplace(supabase, input.marketplace);
     
-    // 5. Try to match existing product
-    const productId = await findProductByTitle(supabase, input.title, marketplace.id);
-    
+    // 5. Try to match existing product using the smarter matcher
+    const productId = await findProductByTitle(
+      supabase,
+      input.title,
+      normalizedPrice,
+      marketplace.name,
+      input.variant ?? null,
+      normalizedCondition
+    );
+
     if (!productId) {
       warnings.push("Could not match to existing product. Offer will be saved without product_id.");
     }
@@ -298,7 +341,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
     const { data: offer, error: offerError } = await supabase
       .from("offers")
       .upsert(offerData as Database["public"]["Tables"]["offers"]["Insert"], {
-        onConflict: "url",
+        // Use the (product_id, marketplace_id) constraint added in v1.5.3.
+        // The previous "url" target allowed multiple rows for the same
+        // (product, marketplace) pair when URLs differed, which is exactly
+        // what the new UNIQUE constraint prevents. Aligning the upsert with
+        // the constraint gives 1 canonical offer per (product, marketplace).
+        onConflict: "product_id,marketplace_id",
         ignoreDuplicates: false,
       })
       .select("id")

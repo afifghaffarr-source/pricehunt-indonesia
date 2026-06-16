@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - v1.5.5 (2026-06-16) — Smarter Product Matching + Constraint Alignment
+
+- **`offer-snapshot` route now uses `matcher.ts`** for product matching
+  (TODO line 148 — closed). The old `ilike %name%` approach was replaced
+  with `findBestProductMatch()` which considers:
+  - **Negative keywords** (replica, used, KW, etc.) — immediate reject
+  - **Title similarity** (Jaccard + containment)
+  - **Variant compatibility** (storage, color, model)
+  - **Price sanity** vs existing offers avg
+  - **Cross-check** vs existing offer titles
+  The route fetches all products (64 today, small set), runs the matcher,
+  and uses the best match. When product catalog grows past ~500, add a
+  category pre-filter to bound candidates.
+- **`offer-snapshot` upsert `onConflict` changed** from `"url"` to
+  `"product_id,marketplace_id"` to align with the v1.5.3 UNIQUE constraint.
+  1 canonical offer per (product, marketplace) — 2 different URLs for the
+  same pair now overwrite (was: silently create dupes, then get rejected
+  by the constraint at insert time).
+- **`push-notifications` cleans up expired subscriptions** (TODO line 90
+  — closed). When web-push returns 404 (gone) or 410 (expired), the
+  user profile's `preferences.push_subscription` JSONB field is set to
+  `null` and `push_enabled` flipped to `false`, so we don't keep retrying
+  a dead subscription on every notification. The user can re-subscribe
+  from `/settings/notifications`. Other preferences (theme, language,
+  price alerts) are preserved.
+
+- **7 new tests**:
+  - `api-offer-snapshot.test.ts` (3 tests): matcher called with offer+candidates,
+    no-match path, upsert onConflict value
+  - `push-notifications.test.ts` (4 tests): cleanup on 404, cleanup on 410,
+    no cleanup on transient errors (500/network), other preferences preserved
+
+- **Tests: 299/299** (was 292, +7)
+- **E2E: 19/19** pass on production build
+- **Lint/Typecheck/Build**: clean
+
 ### Fixed - v1.5.4 (2026-06-16) — WCAG AA Color-Contrast Violations (CI)
 
 - **CI E2E was failing since v1.5.0** (commit `4a0ea73` Phase 4D) on a
