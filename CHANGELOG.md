@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Refactored - v1.5.19 to v1.5.21 (2026-06-17) — Audit Phase D Type-Safety Backlog Closure
+
+**v1.5.21 — Phase 5 `any` cleanup in production code**
+- All 8 `any` usages across 5 production files replaced with proper Supabase-generated `Database["public"]["Tables"][...]["Row"]` types
+- All 5 `eslint-disable @typescript-eslint/no-explicit-any` comments removed from production code
+- 5 stale `Phase 5` comments cleaned up from `rate-limit.ts` + `deals/route.ts` + 3 route headers
+- **Per-file changes:**
+  - `src/app/api/refresh/trigger/route.ts` — `any` → `CrawlTargetRow`/`CrawlTargetInsert`. upsert() now includes `url: target.url` to match Insert signature (no-op at runtime, just typing)
+  - `src/app/api/refresh/queue/route.ts` — `any` → `CrawlTargetQueueItem` (Pick<> of select columns, since `.select()` infers a narrower type than full Row)
+  - `src/app/api/refresh/calculate-priorities/route.ts` — `any` → `CrawlTargetWithJoins` (Pick + explicit join shape). Added `extractJoinName()` helper for Supabase polymorphic FK embed (object | array | null). Pattern: `as unknown as CrawlTargetWithJoins[]` because Supabase types have `Relationships: []` for `crawl_targets` — join works at runtime via PostgREST but TS doesn't know
+  - `src/app/api/analytics/route.ts` — removed explicit `: any` annotations. Let TypeScript infer from `.select('category')` and `.select('marketplace_id')` — both narrow to `Pick<Row, ...>[]` automatically
+  - `src/app/search/SearchPageContent.tsx` — new `src/lib/search-api-types.ts` with `ApiProductSearchResult` + `ApiMarketplacePriceSearchResult`. API returns both camelCase & snake_case for backward compat — type makes it explicit
+- **Out of scope (test files only):** `api-deals.test.ts`, `rate-limit.test.ts`, `api-admin-auth.test.ts` keep `eslint-disable` + `as any` for `vi.mock()` casts. Touching them = refactor every mock setup; per-file disable is the right call
+
+**v1.5.20 — E2E test fixes (CI run 27658653826)**
+- 2 unrelated root causes, 5 failing E2E tests fixed
+- `tests/e2e/signup.spec.ts` (3 tests) — label/button regexes updated to match current form text ('Nama Lengkap', 'Buat Akun'). Comment added pinning which form strings the tests target, so future form updates know to update tests
+- `tests/e2e/price-alert.spec.ts` (2 tests) — added `await page.waitForURL(/\/product\//, { timeout: 15_000 })` after click(). Click() returns before Next.js client router completes RSC fetch + DOM swap, so canonical read returned stale SEARCH page canonical. Failed all 3 retries consistently on slow CI runners
+- Local: 27/27 E2E pass in 1.3m (was 22/27 with 5 fail in 3.2m). Lint clean, typecheck clean, 460 unit tests pass
+
+**v1.5.19 — CI lint fix for products.ts**
+- `src/lib/supabase/products.ts:60` `any` → `{ name: string } | { name: string }[] | null` (Supabase polymorphic FK embed on `marketplaces(name)`)
+- Removed redundant `as string` cast on line 67 that only existed because of the `any`
+- Lint clean, typecheck clean, 460 unit tests pass (28 files, 29.9s)
+
+### Aggregate Phase D Impact
+- **Type safety:** 0 `any` + 0 `eslint-disable @typescript-eslint/no-explicit-any` in `src/app` + `src/lib` (production code only — test files keep their disables for `vi.mock()` casts)
+- **E2E stability:** 27/27 pass in ~1.2m (was flaky 22-25/27 in 3+ minutes)
+- **All quality gates green:** lint 0, typecheck clean, 460 unit + 27 E2E tests pass, Lighthouse CI green
+- **Audit complete:** Phases A (v1.5.13) + B (v1.5.14) + C (v1.5.15-18) + D (v1.5.19-21) all closed. Project maturity 9.0/10 (up from 7.5/10)
+
+### Files Changed
+- `src/app/api/refresh/trigger/route.ts` (types)
+- `src/app/api/refresh/queue/route.ts` (types)
+- `src/app/api/refresh/calculate-priorities/route.ts` (types + helper)
+- `src/app/api/analytics/route.ts` (types)
+- `src/app/search/SearchPageContent.tsx` (types)
+- `src/lib/search-api-types.ts` (new)
+- `tests/e2e/signup.spec.ts` (regex update)
+- `tests/e2e/price-alert.spec.ts` (waitForURL after click)
+- `src/lib/supabase/products.ts` (lint fix)
+
 ### Refactored - v1.5.15 to v1.5.18 (2026-06-17) — Audit Phase C Code Quality
 
 **v1.5.15 (C1) — Product page refactor**
