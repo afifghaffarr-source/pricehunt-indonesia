@@ -39,6 +39,10 @@ test.describe("Price alert form", () => {
     const firstProductLink = page.locator('a[href^="/product/"]').first();
     await firstProductLink.waitFor({ state: "visible", timeout: 10_000 });
     await firstProductLink.click();
+    // Wait for navigation to complete before asserting on the new page.
+    // Without this, the test races against the Next.js client router
+    // and reads stale DOM from /search.
+    await page.waitForURL(/\/product\//, { timeout: 15_000 });
 
     // Main product name should be in an h1
     const h1 = page.locator("h1").first();
@@ -52,6 +56,10 @@ test.describe("Price alert form", () => {
     const firstProductLink = page.locator('a[href^="/product/"]').first();
     await firstProductLink.waitFor({ state: "visible", timeout: 10_000 });
     await firstProductLink.click();
+    // Wait for navigation. Without this, the canonical read below
+    // returns the /search canonical (stale) instead of the product
+    // page canonical. See CI run 27658653826 for the original bug.
+    await page.waitForURL(/\/product\//, { timeout: 15_000 });
 
     const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
     expect(canonical).toBeTruthy();
