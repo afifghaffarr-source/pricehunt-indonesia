@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.21] - 2026-06-17 — Phase D Type-Safety Backlog Closure (cumulative catch-up for v1.5.12 → v1.5.21)
+
+> **Note:** This release collapses the v1.5.12, 12.1, 12.2, 13, 14, 15, 16, 17, 18, 19, 20, and 21 changes that accumulated in `[Unreleased]` without being individually tagged. Internal version headers below preserve the original release identity for each sub-section.
+
 ### Refactored - v1.5.19 to v1.5.21 (2026-06-17) — Audit Phase D Type-Safety Backlog Closure
 
 **v1.5.21 — Phase 5 `any` cleanup in production code**
