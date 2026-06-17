@@ -43,9 +43,14 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await getProductBySlugFromDB(slug);
   if (!product) return { title: "Produk Tidak Ditemukan" };
+  // BUG-03: compute live lowest from in-stock offers so the meta description
+  // matches what the page actually renders (don't trust the stale stored
+  // product.lowestPrice column).
+  const liveLowest = product.prices.filter((p) => p.inStock);
+  const liveLowestPrice = liveLowest.length > 0 ? Math.min(...liveLowest.map((p) => p.price)) : product.lowestPrice;
   return {
     title: product.name,
-    description: `Bandingkan harga ${product.name} dari ${product.prices.filter((p) => p.inStock).length} marketplace. Harga mulai ${formatRupiah(product.lowestPrice)}.`,
+    description: `Bandingkan harga ${product.name} dari ${product.prices.filter((p) => p.inStock).length} marketplace. Harga mulai ${formatRupiah(liveLowestPrice)}.`,
     alternates: {
       canonical: `/product/${slug}`,
     },
@@ -61,7 +66,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
   }
 
   // If product has no prices at all, show not found
-  // (product exists in DB but has no offers - stale data)
+  // (product exists in DB but has no offers - stale data).
+  // The stored product.lowestPrice column is acceptable for this guard — it
+  // is NOT used for display; we recompute live values below.
   if (product.lowestPrice === 0 && product.prices.length === 0) {
     notFound();
   }
@@ -83,8 +90,17 @@ export default async function ProductDetailPage({ params }: PageProps) {
     userAlerts = alerts;
   }
 
-  const discount = getDiscountPercent(product.lowestPrice, product.highestPrice);
+  // LIVE price stats — computed from in-stock offers in product.prices.
+  // BUG-03 fix: product.lowestPrice and product.highestPrice are stored on
+  // the products row and can drift from the live product_prices_view (the
+  // source the table + "Termurah di X" badge read from). Reading from the
+  // live array here keeps hero/decision/chart/table in lockstep.
   const inStockPrices = product.prices.filter((p) => p.inStock);
+  const liveLowestPrice =
+    inStockPrices.length > 0 ? Math.min(...inStockPrices.map((p) => p.price)) : 0;
+  const liveHighestPrice =
+    inStockPrices.length > 0 ? Math.max(...inStockPrices.map((p) => p.price)) : 0;
+  const discount = getDiscountPercent(liveLowestPrice, liveHighestPrice);
   const cheapestMarketplace = [...inStockPrices].sort((a, b) => a.price - b.price)[0];
   // Use the cheapest in-stock offer's official-store flag for the buy/wait
   // recommendation. Falls back to false only if no in-stock offers exist.
@@ -103,7 +119,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     }));
 
   // Show fake discount alert if there's a significant discount
-  const shouldShowFakeDiscountAlert = discount > 10 && product.highestPrice > product.lowestPrice;
+  const shouldShowFakeDiscountAlert = discount > 10 && liveHighestPrice > liveLowestPrice;
 
   return (
     <>
@@ -133,6 +149,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <ProductHero
           product={product}
           discount={discount}
+          liveLowestPrice={liveLowestPrice}
+          liveHighestPrice={liveHighestPrice}
           cheapestMarketplace={cheapestMarketplace}
           isWishlisted={isWishlisted}
         />
@@ -143,8 +161,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
           {/* 1. DECISION CARD */}
           <section id="decision" className="scroll-mt-20">
             <BuyOrWaitDecision
-              currentPrice={product.lowestPrice}
-              originalPrice={discount > 5 ? product.highestPrice : undefined}
+              currentPrice={liveLowestPrice}
+              originalPrice={discount > 5 ? liveHighestPrice : undefined}
               lowestHistoricalPrice={priceStats.lowestHistoricalPrice}
               median30Day={priceStats.median30Day}
               median90Day={priceStats.median90Day}
@@ -164,7 +182,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               inStock: p.inStock,
               isOfficialStore: p.isOfficialStore ?? false,
             }))}
-            lowestPrice={product.lowestPrice}
+            lowestPrice={liveLowestPrice}
           />
 
           {/* 3. PRICE COMPARISON PREVIEW */}
@@ -175,15 +193,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
               url: p.url,
               inStock: p.inStock,
             }))}
-            lowestPrice={product.lowestPrice}
-            highestPrice={product.highestPrice}
+            lowestPrice={liveLowestPrice}
+            highestPrice={liveHighestPrice}
           />
 
           {/* 4. FAKE DISCOUNT ALERT (conditional) */}
           {shouldShowFakeDiscountAlert && (
             <FakeDiscountAlert
-              currentPrice={product.lowestPrice}
-              originalPrice={product.highestPrice}
+              currentPrice={liveLowestPrice}
+              originalPrice={liveHighestPrice}
               lowestHistoricalPrice={priceStats.lowestHistoricalPrice}
               median30Day={priceStats.median30Day}
               median90Day={priceStats.median90Day}
@@ -194,8 +212,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
           {/* 5. DEAL VERDICT */}
           <VexoDealVerdict
             productName={product.name}
-            lowestPrice={product.lowestPrice}
-            highestPrice={product.highestPrice}
+            lowestPrice={liveLowestPrice}
+            highestPrice={liveHighestPrice}
             dealScore={product.dealScore}
             marketplaceCount={product.prices.filter((p) => p.inStock).length}
             aiVerdict={product.aiVerdict}
@@ -207,7 +225,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             offers={offers}
             productId={product.id}
             productName={product.name}
-            lowestPrice={product.lowestPrice}
+            lowestPrice={liveLowestPrice}
           />
 
           {/* 7. TOTAL COST CALCULATOR */}
@@ -226,7 +244,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <section id="alerts" className="scroll-mt-20">
             <PriceAlertForm
               productId={product.id}
-              currentLowestPrice={product.lowestPrice}
+              currentLowestPrice={liveLowestPrice}
               initialAlerts={userAlerts}
             />
 
@@ -294,7 +312,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 <h4 className="mb-3 text-sm font-semibold">Bagikan produk ini</h4>
                 <SocialShare
                   url={`${process.env.NEXT_PUBLIC_APP_URL || "https://www.bijakbeli.web.id"}/product/${slug}`}
-                  title={`${product.name} - mulai ${formatRupiah(product.lowestPrice)}`}
+                  title={`${product.name} - mulai ${formatRupiah(liveLowestPrice)}`}
                 />
               </div>
             </div>

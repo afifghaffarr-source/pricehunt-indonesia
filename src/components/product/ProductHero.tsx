@@ -12,6 +12,13 @@ import type { Product, Marketplace } from "@/lib/types";
 interface ProductHeroProps {
   product: Product;
   discount: number;
+  /** LIVE in-stock lowest price (already computed in page.tsx). BUG-03 fix:
+   *  don't trust product.lowestPrice — that column can drift from the
+   *  product_prices_view that the table and "Termurah di X" badge read. */
+  liveLowestPrice: number;
+  /** LIVE in-stock highest price (cross-marketplace range, not a strikethrough
+   *  reference). Used for the line-through next to the live lowest. */
+  liveHighestPrice: number;
   cheapestMarketplace?: { marketplace: Marketplace; price: number; inStock: boolean };
   isWishlisted: boolean;
 }
@@ -25,7 +32,14 @@ interface ProductHeroProps {
  * Extracted from src/app/product/[slug]/page.tsx to reduce page complexity
  * (was lines 174-250 of a 533-line page).
  */
-export function ProductHero({ product, discount, cheapestMarketplace, isWishlisted }: ProductHeroProps) {
+export function ProductHero({
+  product,
+  discount,
+  liveLowestPrice,
+  liveHighestPrice,
+  cheapestMarketplace,
+  isWishlisted,
+}: ProductHeroProps) {
   const inStockPrices = product.prices.filter((p) => p.inStock);
 
   return (
@@ -69,11 +83,11 @@ export function ProductHero({ product, discount, cheapestMarketplace, isWishlist
         <div className="mt-4 rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 p-4 backdrop-blur-sm">
           <div className="flex items-baseline gap-3">
             <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-3xl font-bold text-transparent">
-              {formatRupiah(product.lowestPrice)}
+              {formatRupiah(liveLowestPrice)}
             </span>
             {discount > 5 && (
               <span className="text-lg text-muted-foreground/70 line-through">
-                {formatRupiah(product.highestPrice)}
+                {formatRupiah(liveHighestPrice)}
               </span>
             )}
           </div>
