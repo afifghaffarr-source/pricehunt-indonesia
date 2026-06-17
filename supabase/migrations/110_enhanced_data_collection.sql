@@ -51,7 +51,11 @@ CREATE TABLE IF NOT EXISTS crawl_targets (
 );
 
 -- Indexes for targeted refresh scheduler
-CREATE INDEX IF NOT EXISTS idx_crawl_targets_next_crawl_at ON crawl_targets(next_crawl_at) WHERE status = 'queued';
+-- FIXED (audit 2026-06-17): column is `crawl_status`, not `status`. The
+-- original predicate `WHERE status = 'queued'` errored on a fresh database
+-- with "column status does not exist" because the table only has
+-- `crawl_status` (see line 40-41 above).
+CREATE INDEX IF NOT EXISTS idx_crawl_targets_next_crawl_at ON crawl_targets(next_crawl_at) WHERE crawl_status = 'queued';
 CREATE INDEX IF NOT EXISTS idx_crawl_targets_priority_score ON crawl_targets(priority_score DESC);
 CREATE INDEX IF NOT EXISTS idx_crawl_targets_status ON crawl_targets(crawl_status);
 CREATE INDEX IF NOT EXISTS idx_crawl_targets_product_id ON crawl_targets(product_id);

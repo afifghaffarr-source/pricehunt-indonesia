@@ -150,48 +150,62 @@ export async function getProductBySlugFromDB(slug: string): Promise<Product | nu
 /**
  * Search products with prices using the union view.
  * P7: same migration as `getProductsFromDB`.
+ * P9 (audit 2026-06-17): returns `{ products, total }` so callers can
+ * paginate with an accurate count. `total` is the count of products
+ * matching the same DB-level filter (query + category) — independent
+ * of the page slice. Uses a cheap head-only count query.
  */
 export async function searchProductsFromDB(
   query: string,
   category?: string,
   limit = 50,
   offset = 0
-): Promise<Product[]> {
-  if (!hasSupabaseEnv()) return [];
+): Promise<{ products: Product[]; total: number }> {
+  if (!hasSupabaseEnv()) return { products: [], total: 0 };
 
   const supabase = await createClient();
 
-  let queryBuilder = supabase
-    .from("products")
-    .select("*");
-
-  if (query) {
+  // Build the search filter once so the count + data queries stay in sync.
+  const orFilter = (() => {
+    if (!query) return null;
     const escapedQuery = escapeILIKEPattern(query);
-    queryBuilder = queryBuilder.or(
-      `name.ilike.%${escapedQuery}%,category.ilike.%${escapedQuery}%,description.ilike.%${escapedQuery}%`
-    );
-  }
+    return `name.ilike.%${escapedQuery}%,category.ilike.%${escapedQuery}%,description.ilike.%${escapedQuery}%`;
+  })();
 
-  if (category) {
-    queryBuilder = queryBuilder.eq("category", category);
-  }
+  // Count query (head-only, no row payload) — runs the SAME filter as the
+  // data query so `total` is the true search match count.
+  let countBuilder = supabase
+    .from("products")
+    .select("*", { count: "exact", head: true });
+  if (orFilter) countBuilder = countBuilder.or(orFilter);
+  if (category) countBuilder = countBuilder.eq("category", category);
+  const { count: totalRaw } = await countBuilder;
+  const total = totalRaw ?? 0;
 
-  queryBuilder = queryBuilder
+  // Data query with proper DB-level range pagination.
+  let dataBuilder = supabase.from("products").select("*");
+  if (orFilter) dataBuilder = dataBuilder.or(orFilter);
+  if (category) dataBuilder = dataBuilder.eq("category", category);
+  dataBuilder = dataBuilder
     .order("deal_score", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  const { data: products, error } = await queryBuilder;
-  if (error || !products || products.length === 0) return [];
+  const { data: products, error } = await dataBuilder;
+  if (error || !products || products.length === 0) {
+    return { products: [], total };
+  }
 
   const productIds = products.map((p) => p.id as string);
   const pricesByProduct = await fetchPricesByProductIds(productIds);
 
-  return products.map((p) => {
+  const result = products.map((p) => {
     const product = transformProduct(p);
     const prices = pricesByProduct[p.id as string] || [];
     product.prices = transformPrices(prices);
     return product;
   });
+
+  return { products: result, total };
 }
 
 /**
