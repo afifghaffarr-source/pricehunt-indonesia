@@ -84,9 +84,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
   }
 
   const discount = getDiscountPercent(product.lowestPrice, product.highestPrice);
-  const cheapestMarketplace = product.prices
-    .filter((p) => p.inStock)
-    .sort((a, b) => a.price - b.price)[0];
+  const inStockPrices = product.prices.filter((p) => p.inStock);
+  const cheapestMarketplace = [...inStockPrices].sort((a, b) => a.price - b.price)[0];
+  // Use the cheapest in-stock offer's official-store flag for the buy/wait
+  // recommendation. Falls back to false only if no in-stock offers exist.
+  const isOfficialStoreOnCheapest = cheapestMarketplace?.isOfficialStore ?? false;
 
   // Price statistics for buy/wait decision and fake discount detection
   const priceStats = calculatePriceStats({ priceHistory: product.priceHistory });
@@ -140,6 +142,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
               lowestHistoricalPrice={priceStats.lowestHistoricalPrice}
               median30Day={priceStats.median30Day}
               median90Day={priceStats.median90Day}
+              sellerRating={cheapestMarketplace?.sellerRating}
+              sellerReviewCount={cheapestMarketplace?.sellerReviewCount}
+              isOfficialStore={isOfficialStoreOnCheapest}
               stockStatus={product.prices.some((p) => p.inStock) ? "in_stock" : "out_of_stock"}
             />
           </section>
@@ -151,7 +156,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               price: p.price,
               url: p.url,
               inStock: p.inStock,
-              isOfficialStore: false,
+              isOfficialStore: p.isOfficialStore ?? false,
             }))}
             lowestPrice={product.lowestPrice}
           />

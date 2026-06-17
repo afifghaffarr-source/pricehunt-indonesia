@@ -12,9 +12,11 @@ export interface MarketplacePrice {
   url: string;
   seller: string;
   sellerRating: number;
+  sellerReviewCount?: number;
   inStock: boolean;
   shippingCost: number;
   lastUpdated: string;
+  isOfficialStore?: boolean;
 }
 
 export interface PriceHistoryPoint {

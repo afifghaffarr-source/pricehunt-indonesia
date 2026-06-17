@@ -86,9 +86,11 @@ export function transformPrices(rows: Record<string, unknown>[]): MarketplacePri
     url: (row.url as string) || "",
     seller: (row.seller_name as string) || "",
     sellerRating: Number(row.seller_rating) || 0,
+    sellerReviewCount: Number(row.seller_review_count) || undefined,
     inStock: row.stock_status !== "out_of_stock",
     shippingCost: (row.shipping_estimate as number) || 0,
     lastUpdated: (row.last_checked_at as string) || new Date().toISOString(),
+    isOfficialStore: Boolean(row.is_official_store),
   }));
 }
 
