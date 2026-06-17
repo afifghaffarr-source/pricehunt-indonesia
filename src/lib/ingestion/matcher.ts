@@ -412,27 +412,40 @@ export function matchOfferToProduct(input: MatchInput): MatchResult {
   // ============================================================================
   // FINAL DECISION
   // ============================================================================
-  
+
+  return finalizeMatchResult(score, reasons, warnings, flags);
+}
+
+/**
+ * Clamp score, determine confidence, decide isMatch, append final reason.
+ * Pure function — extracted for testability.
+ */
+export function finalizeMatchResult(
+  rawScore: number,
+  reasons: string[],
+  warnings: string[],
+  flags: MatchFlag[]
+): MatchResult {
   // Clamp score
-  score = Math.max(0, Math.min(100, score));
-  
+  const score = Math.max(0, Math.min(100, rawScore));
+
   // Determine confidence
   let confidence: "high" | "medium" | "low" | "reject";
   if (score >= 75) confidence = "high";
   else if (score >= 50) confidence = "medium";
   else if (score >= 30) confidence = "low";
   else confidence = "reject";
-  
+
   // Determine if match (must be > 50, not >= to avoid edge cases)
   const isMatch = score > 50 && confidence !== "reject";
-  
+
   // Add final reason
   if (isMatch) {
     reasons.push(`Match score: ${score}/100`);
   } else {
     reasons.push(`Rejected: score terlalu rendah (${score}/100)`);
   }
-  
+
   return {
     isMatch,
     score,
