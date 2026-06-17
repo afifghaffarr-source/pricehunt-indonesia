@@ -115,11 +115,17 @@ export default async function ProductDetailPage({ params }: PageProps) {
           Kembali
         </Link>
 
-        {/* Trust Signals - Build confidence immediately */}
+        {/* Trust Signals - Build confidence immediately. v1.5.24: pass real
+            lastUpdated from MAX(prices[].lastUpdated) instead of hardcoded
+            undefined. The bar now renders nothing if no real data exists. */}
         <TrustSignalsBar
           marketplaceCount={product.prices.filter((p) => p.inStock).length}
-          lastUpdated={undefined}
+          lastUpdated={inStockPrices.reduce<string | undefined>(
+            (max, p) => (!max || p.lastUpdated > max ? p.lastUpdated : max),
+            undefined,
+          )}
           trackerCount={undefined}
+          autoCheckFrequency="1 hari"
           className="mb-6"
         />
 

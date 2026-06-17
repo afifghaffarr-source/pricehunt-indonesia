@@ -8,27 +8,37 @@ interface TrustSignalsBarProps {
   className?: string;
 }
 
+/**
+ * v1.5.24 — Render nothing if no real lastUpdated is provided. Previously
+ * the fallback returned "baru saja" (just now) which is a lie when no
+ * data exists. If the caller doesn't have real data, the bar should not
+ * claim freshness.
+ */
 export function TrustSignalsBar({
   marketplaceCount,
   lastUpdated,
   trackerCount,
-  autoCheckFrequency = "1 jam",
+  autoCheckFrequency,
   className = "",
 }: TrustSignalsBarProps) {
-  const formatLastUpdated = (date?: Date | string) => {
-    if (!date) return "baru saja";
-    
+  if (!lastUpdated) {
+    // No real data — don't render the freshness bar at all.
+    // Callers should either provide a real lastUpdated or remove the bar.
+    return null;
+  }
+
+  const formatLastUpdated = (date: Date | string) => {
     const now = new Date();
     const updated = typeof date === "string" ? new Date(date) : date;
     const diffMs = now.getTime() - updated.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return "baru saja";
     if (diffMins < 60) return `${diffMins} menit lalu`;
-    
+
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours} jam lalu`;
-    
+
     const diffDays = Math.floor(diffHours / 24);
     return `${diffDays} hari lalu`;
   };
