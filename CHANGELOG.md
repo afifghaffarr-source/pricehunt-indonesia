@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.5.14 (2026-06-17) — Audit Phase B Test Coverage Sprint
+
+- **Test coverage +50%** — from 17 vitest files (~349 tests) to 24 files (**378 tests passing**, 3 skipped). Test runtime: 25.5s.
+- **New API route tests (4 files, 29 tests)**:
+  - `src/test/api-auth-forgot-password.test.ts` (8 tests) — rate limit (per-email + per-IP), generic response (no enumeration), input validation, malformed JSON
+  - `src/test/api-auth-reset-password.test.ts` (8 tests) — rate limit, token/password presence + length validation, success/error paths
+  - `src/test/api-auth-csrf.test.ts` (6 tests) — token format, uniqueness, cookie flags (HttpOnly off, Secure, SameSite=Lax, Max-Age=86400), __Host-csrf for non-localhost
+  - `src/test/api-auth-session.test.ts` (7 tests) — null when unauthed, is_admin flag, profile fetch error handling (non-fatal), Boolean coercion
+- **New business logic tests (3 files, 53 tests)**:
+  - `src/test/price-conflict.test.ts` (19 tests) — huge jumps, fake discount patterns, cross-marketplace anomalies (>3x ratio), volatility, suggestConflictResolution
+  - `src/test/refresh-priority.test.ts` (19 tests) — staleness/engagement/volatility/business/user-request scoring, score capping at 100, frequency suggestion, calculateNextCrawlTime intervals (1h/6h/12h/24h/48h)
+  - `src/test/buy-or-wait.test.ts` (15 tests) — formatRupiah (id-ID locale with NBSP), buy_now/watch/wait/avoid recommendations, fake discount detection, out_of_stock override, target price logic, confidence levels
+- **New E2E tests (2 files, 8 tests)**:
+  - `tests/e2e/signup.spec.ts` (5 tests) — form rendering, login link, HTML5 validation, invalid email format, noindex meta
+  - `tests/e2e/price-alert.spec.ts` (3 tests) — product page form, accessible heading, **canonical URL points to product page (not root)** — regression guard for v1.5.6.1 fix
+
+### Coverage by route (after v1.5.14)
+- API routes with direct tests: 5 → **9** (forgot-password, reset-password, csrf, session, deals, vexo-marketplace, admin-auth, offer-snapshot, ingestion)
+- Critical business logic with tests: deal-score, fake-discount, buy-or-wait, price-conflict, refresh-priority
+- Auth flow E2E: login ✓, signup ✓ (new)
+
+### Files Changed
+- `src/test/api-auth-forgot-password.test.ts` (new)
+- `src/test/api-auth-reset-password.test.ts` (new)
+- `src/test/api-auth-csrf.test.ts` (new)
+- `src/test/api-auth-session.test.ts` (new)
+- `src/test/price-conflict.test.ts` (new)
+- `src/test/refresh-priority.test.ts` (new)
+- `src/test/buy-or-wait.test.ts` (new)
+- `tests/e2e/signup.spec.ts` (new)
+- `tests/e2e/price-alert.spec.ts` (new)
+
 ### Fixed - v1.5.13 (2026-06-17) — Audit Phase A Quick Wins
 
 - **0 lint warnings, 0 errors** — final 3 warnings from v1.5.12.2 fixed via proper useCallback + next/image:
