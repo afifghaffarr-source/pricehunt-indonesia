@@ -1,0 +1,57 @@
+# Codecov configuration for BijakBeli
+# =====================================
+#
+# This file configures how Codecov.io interprets coverage reports
+# uploaded from CI. To activate:
+#   1. Sign up at https://codecov.io (free for public repos)
+#   2. Link your GitHub repo (afifghaffarr-source/pricehunt-indonesia)
+#   3. Codecov auto-detects coverage reports from CI artifacts
+#   4. Optional: set CODECOV_TOKEN in Vercel env for private repos
+#
+# Reference: https://docs.codecov.com/docs/codecovyml-reference
+
+codecov:
+  # Require CI to pass before reporting coverage
+  require_ci_to_pass: true
+  # Notify on patch-level coverage changes (every PR)
+  notify:
+    after_n_builds: 1
+    wait_for_ci: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...90"
+
+  status:
+    project:
+      default:
+        # Soft target — don't fail the project status if below 70%
+        # Tighten once team commits to coverage goals
+        target: 70%
+        threshold: 5%
+        if_ci_failed: error
+        only_pulls: false
+    patch:
+      default:
+        # New code should have at least 60% coverage
+        target: 60%
+        threshold: 5%
+
+# Don't post a comment on every commit; only on PRs
+comment:
+  behavior: new
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# Ignore these paths from coverage analysis
+ignore:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "src/test/**"
+  - "src/types/**"
+  - "scripts/**"
+  - "collectors/**"
+  - "extension/**"
+  - "docs/**"
