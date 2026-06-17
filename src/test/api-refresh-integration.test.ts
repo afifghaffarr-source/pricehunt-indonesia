@@ -44,8 +44,23 @@ const MOCK_CRAWL_TARGETS = [
 // Each method returns the chain itself (thenable), so all chain operations
 // work AND the chain can be awaited. Mimics how the real Supabase client
 // behaves (chain ops + await at the end).
-function makeChainable(rows: typeof MOCK_CRAWL_TARGETS) {
-  const chain: any = {
+// Recursive type: every method returns the chain (awaitable proxy).
+// `then` makes the chain itself thenable so `await chain` works.
+type MockChain = {
+  select: ReturnType<typeof vi.fn>;
+  eq: ReturnType<typeof vi.fn>;
+  or: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
+  limit: ReturnType<typeof vi.fn>;
+  single: ReturnType<typeof vi.fn>;
+  upsert: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  in: ReturnType<typeof vi.fn>;
+  then: (resolve: (val: { data: typeof MOCK_CRAWL_TARGETS; error: null }) => void) => unknown;
+};
+
+function makeChainable(rows: typeof MOCK_CRAWL_TARGETS): MockChain {
+  const chain: MockChain = {
     select: vi.fn(),
     eq: vi.fn(),
     or: vi.fn(),
