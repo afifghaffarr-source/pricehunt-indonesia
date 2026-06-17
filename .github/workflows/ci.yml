@@ -30,9 +30,27 @@ jobs:
       - name: Run typecheck
         run: npm run typecheck
 
+      - name: Check migration versions
+        # Enforces audit plan B2.1: no new duplicate version numbers
+        # in supabase/migrations/. See scripts/check-migration-versions.mjs.
+        run: npm run check:migrations
+
       - name: Run tests
         run: npm test
-      
+
+      - name: Run coverage
+        # Surfaces coverage in CI logs. Soft thresholds (0%) — no PR
+        # failure on coverage regressions yet. Tighten once the team
+        # commits to coverage goals.
+        run: npm run test:coverage
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
       - name: Build
         run: npm run build
         env:
