@@ -1,7 +1,33 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/lib/supabase/types";
+
+/**
+ * Row shape for `crawl_targets`. See refresh/trigger for the full
+ * type-safety rationale. Keeping the alias local to this file so each
+ * route stays self-contained.
+ */
+type CrawlTargetRow = Database["public"]["Tables"]["crawl_targets"]["Row"];
+
+/**
+ * Subset type for the `GET /api/refresh/queue` select. Mirrors the
+ * `.select(...)` columns on line ~57. `select()` infers a narrower
+ * type than the full Row, so we use `Pick<>` to align the callback
+ * parameter with what Supabase actually returns.
+ */
+type CrawlTargetQueueItem = Pick<
+  CrawlTargetRow,
+  | "id"
+  | "url"
+  | "domain"
+  | "marketplace_id"
+  | "product_id"
+  | "priority_score"
+  | "last_crawled_at"
+  | "next_crawl_at"
+  | "crawl_status"
+  | "source"
+>;
 
 /**
  * GET /api/refresh/queue
@@ -16,8 +42,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Auth: Requires INGESTION_SECRET header for security
  */
 export async function GET(request: Request) {
-// Pre-existing refresh queue typing (Phase 5). replace `any` usages with proper types.
-
   try {
     // Verify authorization (same secret as ingestion API)
     const authHeader = request.headers.get("Authorization");
@@ -90,7 +114,7 @@ export async function GET(request: Request) {
         success: true,
         data: {
           queue_length: targets?.length || 0,
-          targets: (targets || []).map((t: any) => ({
+          targets: (targets || []).map((t: CrawlTargetQueueItem) => ({
             id: t.id,
             url: t.url,
             domain: t.domain,

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 "use client";
 
 import { useSearchParams } from "next/navigation";
@@ -13,6 +11,7 @@ import { SectionHeading } from "@/components/common/SectionHeading";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
 import type { Product } from "@/lib/types";
 import type { BijakBeliDiscoveredProduct } from "@/lib/vexo/types";
+import type { ApiProductSearchResult, ApiMarketplacePriceSearchResult } from "@/lib/search-api-types";
 import {
   Select,
   SelectContent,
@@ -29,8 +28,6 @@ const categories = [
 ];
 
 export function SearchPageContent() {
-// Pre-existing Vexo/Supabase response typing (Phase 5). replace `any` usages with proper types.
-
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || "";
@@ -69,8 +66,8 @@ export function SearchPageContent() {
         }
 
         // Transform API response to Product type
-        const result: Product[] = (data.results || []).map((p: any) => {
-          const prices = (p.prices || []).map((pr: any) => ({
+        const result: Product[] = (data.results || []).map((p: ApiProductSearchResult) => {
+          const prices = (p.prices || []).map((pr: ApiMarketplacePriceSearchResult) => ({
             marketplace: pr.marketplace || pr.marketplaces?.name || "tokopedia",
             price: pr.price,
             url: pr.url,

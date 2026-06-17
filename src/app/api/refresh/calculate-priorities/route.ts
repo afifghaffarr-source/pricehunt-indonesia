@@ -1,7 +1,34 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/lib/supabase/types";
+
+/**
+ * Row shape used by the calculate-priorities handler. Joins the
+ * `marketplaces` and `products` tables for human-readable names.
+ * Supabase returns these as either a single object or an array
+ * depending on the FK relationship, so both shapes are allowed.
+ */
+type CrawlTargetWithJoins = Pick<
+  Database["public"]["Tables"]["crawl_targets"]["Row"],
+  "id" | "url" | "marketplace_id" | "product_id" | "last_crawled_at" | "crawl_status" | "priority_score"
+> & {
+  marketplaces: { name: string } | { name: string }[] | null;
+  products: { name: string } | { name: string }[] | null;
+};
+
+/**
+ * Supabase FK embeds return either a single object, an array of
+ * objects, or null. This helper extracts the `name` from whichever
+ * shape comes back, defaulting to "Unknown" when nothing usable is
+ * present.
+ */
+function extractJoinName(
+  value: { name: string } | { name: string }[] | null | undefined
+): string {
+  if (!value) return "Unknown";
+  if (Array.isArray(value)) return value[0]?.name || "Unknown";
+  return value.name || "Unknown";
+}
 
 /**
  * POST /api/refresh/calculate-priorities
@@ -43,8 +70,14 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Fetch all active crawl targets
-    const { data: targets, error } = await supabase
+    // Fetch all active crawl targets. The Supabase generated types
+    // don't list relationships for `crawl_targets` (Relationships: []
+    // in src/lib/supabase/types.ts), so PostgREST can resolve the
+    // `marketplaces(name)` and `products(name)` joins at runtime but
+    // TS doesn't know the shape. We cast to `CrawlTargetWithJoins[]`
+    // immediately after the query — this is the cleanest way to get
+    // a typed callback downstream without needing a full type regen.
+    const { data: rawTargets, error } = await supabase
       .from("crawl_targets")
       .select(`
         id,
@@ -67,6 +100,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const targets = (rawTargets ?? []) as unknown as CrawlTargetWithJoins[];
+
     if (!targets || targets.length === 0) {
       return NextResponse.json(
         {
@@ -84,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate priorities for each target
-    const priorities = targets.map((target: any) => {
+    const priorities = targets.map((target: CrawlTargetWithJoins) => {
       const hoursSinceLastCheck = target.last_crawled_at
         ? (Date.now() - new Date(target.last_crawled_at).getTime()) / (1000 * 60 * 60)
         : 999; // Never crawled = very high priority
@@ -115,8 +150,8 @@ export async function POST(request: NextRequest) {
       return {
         target_id: target.id,
         url: target.url,
-        product_name: target.products?.name || "Unknown",
-        marketplace: target.marketplaces?.name || "Unknown",
+        product_name: extractJoinName(target.products),
+        marketplace: extractJoinName(target.marketplaces),
         priority_score: calculatedScore,
         current_status: target.crawl_status,
         hours_since_last_check: Math.round(hoursSinceLastCheck * 10) / 10,
@@ -173,7 +208,5 @@ export async function POST(request: NextRequest) {
  * Get current priority queue (read-only)
  */
 export async function GET(request: NextRequest) {
-// Pre-existing refresh priority typing (Phase 5). replace `any` usages with proper types.
-
   return POST(request);
 }

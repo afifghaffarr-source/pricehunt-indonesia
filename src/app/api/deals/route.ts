@@ -37,8 +37,6 @@ interface ProductWithOffers {
  * - category: filter by category
  */
 export async function GET(request: NextRequest) {
-// Pre-existing deals query typing (Phase 5). replace `any` usages with proper types.
-
   try {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get('limit') || '24'), 100);

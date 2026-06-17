@@ -1,14 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(_request: NextRequest) {
-// Pre-existing analytics response typing (Phase 5). replace `any` usages with proper types.
-
   try {
     const supabase = createAdminClient();
-    
+
     // Get total products
     const { count: totalProducts } = await supabase
       .from('products')
@@ -28,7 +24,7 @@ export async function GET(_request: NextRequest) {
 
     const categoryCounts: Record<string, number> = {};
     if (products) {
-      products.forEach((p: any) => {
+      products.forEach((p) => {
         const cat = p.category || 'Umum';
         categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
       });
@@ -48,7 +44,7 @@ export async function GET(_request: NextRequest) {
 
     const marketplaceCounts: Record<string, number> = {};
     if (offers) {
-      offers.forEach((o: any) => {
+      offers.forEach((o) => {
         const mp = o.marketplace_id;
         marketplaceCounts[mp] = (marketplaceCounts[mp] || 0) + 1;
       });
