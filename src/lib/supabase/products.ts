@@ -57,14 +57,17 @@ export async function getProductOffers(productId: string): Promise<Array<{
 
   return offers.map((offer) => {
     // Handle marketplace data (could be array or object depending on Supabase schema)
-    const marketplaceData: any = offer.marketplaces;
+    const marketplaceData = offer.marketplaces as
+      | { name: string }
+      | { name: string }[]
+      | null;
     const marketplaceName = Array.isArray(marketplaceData)
       ? marketplaceData[0]?.name
       : marketplaceData?.name;
 
     return {
       id: offer.id,
-      marketplace: (marketplaceName as string) || "unknown",
+      marketplace: marketplaceName || "unknown",
       url: offer.url,
       current_price: offer.current_price,
       seller_name: offer.seller_name,
