@@ -106,6 +106,20 @@ vercel rollback
 - Personal phone notifications for critical failures
 - Weekly review: Saturday morning, 30 menit
 
+## Phase 5 Refresh Cron (Optional, user-scheduled)
+
+For active price refresh, schedule `tools/refresh_cron.py` via crontab:
+
+```bash
+# Install sample schedule (every 30min priority calc + 6h stale sweep)
+crontab crontab.sample
+
+# Verify
+crontab -l
+```
+
+See `crontab.sample` for full schedule, env vars, and cost-conscious notes. Per user preference (lean automation), this is **optional** — the 3 API routes are deployed and functional; the user can schedule the Python script when ready. See `docs/PHASE_5_PROGRESS.md` for full Phase 5 status.
+
 ## Disaster Recovery
 
 ### Worst Case: Total Loss
