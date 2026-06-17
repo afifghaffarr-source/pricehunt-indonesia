@@ -61,7 +61,7 @@ BijakBeli helps Indonesian shoppers make smarter purchase decisions by:
 | Total offers | 165 |
 | Matched offers | 157 (95%) |
 | Tests passing | 487 |
-| Migrations | 120 |
+| Migrations | 45 |
 
 ---
 
@@ -188,7 +188,7 @@ bijakbeli-app/
 │   ├── image_populator_ddg.py      # DuckDuckGo fallback
 │   └── use_picsum_images.py        # picsum.photos fallback
 ├── supabase/
-│   └── migrations/       # Database schema (120 migrations)
+│   └── migrations/       # Database schema (45 migration files; 35 unique version numbers — 8 intentional duplicate-version files reconciled in v1.5.10 audit)
 ├── tests/                # Vitest + Playwright (460 unit + 27 E2E = 487 passing)
 └── BETA_QUICK_START.md   # Extension beta testing guide
 ```
