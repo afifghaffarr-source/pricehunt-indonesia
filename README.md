@@ -4,7 +4,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
-[![Tests](https://img.shields.io/badge/tests-231%20passing-success.svg)](https://github.com/afifghaffarr-source/pricehunt-indonesia)
+[![Tests](https://img.shields.io/badge/tests-487%20passing-success.svg)](https://github.com/afifghaffarr-source/pricehunt-indonesia)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ---
@@ -60,7 +60,7 @@ BijakBeli helps Indonesian shoppers make smarter purchase decisions by:
 | With prices | 64/64 (100%) |
 | Total offers | 165 |
 | Matched offers | 157 (95%) |
-| Tests passing | 231 |
+| Tests passing | 487 |
 | Migrations | 120 |
 
 ---
@@ -76,7 +76,7 @@ BijakBeli helps Indonesian shoppers make smarter purchase decisions by:
 | **Auth** | Supabase Auth |
 | **AI** | VexoAPI (product discovery, image search, marketplace data) |
 | **Charts** | Recharts |
-| **Testing** | Vitest (231 tests passing) |
+| **Testing** | Vitest + Playwright (460 unit + 27 E2E = 487 passing) |
 | **Deployment** | Vercel (auto-deploy from Git) |
 | **Collector** | Chrome Extension + Python scripts |
 
@@ -189,7 +189,7 @@ bijakbeli-app/
 │   └── use_picsum_images.py        # picsum.photos fallback
 ├── supabase/
 │   └── migrations/       # Database schema (120 migrations)
-├── tests/                # Vitest tests (231 passing)
+├── tests/                # Vitest + Playwright (460 unit + 27 E2E = 487 passing)
 └── BETA_QUICK_START.md   # Extension beta testing guide
 ```
 
@@ -240,7 +240,7 @@ npm run test:watch  # watch mode
 npm run test -- --coverage
 ```
 
-**Test Stats:** 231 tests passing, 85%+ coverage. CI runs lint → typecheck → test → build dan **gagal memblokir** jika salah satu step gagal (lihat `.github/workflows/ci.yml`).
+**Test Stats:** 487 tests passing (460 unit + 27 E2E), 85%+ coverage. CI runs lint → typecheck → test → build dan **gagal memblokir** jika salah satu step gagal (lihat `.github/workflows/ci.yml`).
 
 ## ⏰ **Cron Jobs**
 
@@ -371,7 +371,7 @@ git push origin master
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open Pull Request
 
-**Tests required:** All PRs must pass 231 existing tests
+**Tests required:** All PRs must pass 487 existing tests
 
 ---
 
