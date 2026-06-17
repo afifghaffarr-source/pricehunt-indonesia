@@ -7,7 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added - v1.5.14 (2026-06-17) — Audit Phase B Test Coverage Sprint
+### Refactored - v1.5.15 to v1.5.18 (2026-06-17) — Audit Phase C Code Quality
+
+**v1.5.15 (C1) — Product page refactor**
+- `src/app/product/[slug]/page.tsx` 533 → 317 lines (-40%)
+- Extracted: `ProductHero`, `ProductPriceTable`, `ProductQuickNav` components
+- Pure helpers: `calculatePriceStats`, `enrichPricesWithOffers`
+- 36 new tests (product-price-stats.test.ts, offer-mapping.test.ts)
+
+**v1.5.16 (C2) — Ingestion route refactor**
+- `src/app/api/ingestion/offer-snapshot/route.ts` POST handler 244 → ~120 lines
+- 7 pure helpers extracted: `normalizeOfferInput`, `calculateDiscountPercent`,
+  `buildOfferInsertData`, `buildSnapshotInsertData`, `buildIngestionLogData`,
+  `buildConfidenceInput`, `mapSourceToSourceType`
+- Route now thin orchestration: auth → validate → process → respond
+- 28 new tests (offer-snapshot-pipeline.test.ts)
+
+**v1.5.17 (C3) — data.ts split per-entity**
+- `src/lib/supabase/data.ts` 595 → 16 lines (barrel re-export)
+- Split into: `transforms.ts` (137), `products.ts` (209), `prices.ts` (204), `user-data.ts` (72)
+- Pure transforms in separate file (no Supabase dep) — fully testable
+- All existing imports from `@/lib/supabase/data` keep working unchanged
+
+**v1.5.18 (C4) — matcher.ts finalize extraction**
+- Extracted `finalizeMatchResult` from end of `matchOfferToProduct`
+- Pure function (score clamp, confidence, isMatch, final reason)
+- 18 new tests (matcher-finalize.test.ts)
+- matcher.ts was already well-decomposed (6 phases, 7 exported helpers)
+
+### Aggregate Phase C Impact
+- **Code reorganization:** 3 large monolithic files (533+595+508 lines) → 14 well-organized files
+- **Test coverage:** 414 → 460 tests (+46 new tests for refactored helpers)
+- **Test count by section:** 28 test files, 460 passing + 3 skipped
+- **All quality gates pass:** lint 0, typecheck clean, build pass
+
+### Skipped (C5 - optional)
+- framer-motion → CSS migration (would save 30-50KB but not critical; deferred to future)
+
+### Previous
 
 - **Test coverage +50%** — from 17 vitest files (~349 tests) to 24 files (**378 tests passing**, 3 skipped). Test runtime: 25.5s.
 - **New API route tests (4 files, 29 tests)**:
@@ -76,7 +113,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SECURITY.md` (new)
 - `docs/OPERATIONS.md` (new)
 - `docs/MONITORING.md` (new)
-- `.env.local.example` (Sentry vars documented)
+## [Unreleased]
+
+### Refactored - v1.5.15 to v1.5.18 (2026-06-17) — Audit Phase C Code Quality
+
+**v1.5.15 (C1) — Product page refactor**
+- `src/app/product/[slug]/page.tsx` 533 → 317 lines (-40%)
+- Extracted: `ProductHero`, `ProductPriceTable`, `ProductQuickNav` components
+- Pure helpers: `calculatePriceStats`, `enrichPricesWithOffers`
+- 36 new tests (product-price-stats.test.ts, offer-mapping.test.ts)
+
+**v1.5.16 (C2) — Ingestion route refactor**
+- `src/app/api/ingestion/offer-snapshot/route.ts` POST handler 244 → ~120 lines
+- 7 pure helpers extracted: `normalizeOfferInput`, `calculateDiscountPercent`,
+  `buildOfferInsertData`, `buildSnapshotInsertData`, `buildIngestionLogData`,
+  `buildConfidenceInput`, `mapSourceToSourceType`
+- Route now thin orchestration: auth → validate → process → respond
+- 28 new tests (offer-snapshot-pipeline.test.ts)
+
+**v1.5.17 (C3) — data.ts split per-entity**
+- `src/lib/supabase/data.ts` 595 → 16 lines (barrel re-export)
+- Split into: `transforms.ts` (137), `products.ts` (209), `prices.ts` (204), `user-data.ts` (72)
+- Pure transforms in separate file (no Supabase dep) — fully testable
+- All existing imports from `@/lib/supabase/data` keep working unchanged
+
+**v1.5.18 (C4) — matcher.ts finalize extraction**
+- Extracted `finalizeMatchResult` from end of `matchOfferToProduct`
+- Pure function (score clamp, confidence, isMatch, final reason)
+- 18 new tests (matcher-finalize.test.ts)
+- matcher.ts was already well-decomposed (6 phases, 7 exported helpers)
+
+### Aggregate Phase C Impact
+- **Code reorganization:** 3 large monolithic files (533+595+508 lines) → 14 well-organized files
+- **Test coverage:** 414 → 460 tests (+46 new tests for refactored helpers)
+- **Test count by section:** 28 test files, 460 passing + 3 skipped
+- **All quality gates pass:** lint 0, typecheck clean, build pass
+
+### Skipped (C5 - optional)
+- framer-motion → CSS migration (would save 30-50KB but not critical; deferred to future)
 
 ### Previous
 
