@@ -149,3 +149,66 @@ If rollback is needed:
 
 - [ ] Engineer of record: _____________  Date: _______
 - [ ] Reviewer: _____________  Date: _______
+
+---
+
+## 11. Audit findings (2026-06-17)
+
+Schema and code audit discovered significant drift between the migration
+files in this repo and the live prod database. Anyone running through
+this checklist should know the recent context.
+
+### What was found
+
+- **Migration 108 was never fully applied to prod.** The
+  `price_conflicts` table was missing 8 columns. The admin conflict
+  resolution page was 100% broken in prod (the empty table hid the bug).
+- **21 columns existed in prod that no migration declared.** Likely
+  hand-applied via the Supabase Dashboard. Affected tables:
+  `price_conflicts` (9), `price_reports` (5), `recheck_requests` (4),
+  `crawl_targets` (3).
+- **`recheck_requests` had 3 column renames between migration 110 and
+  prod** (`priority` → `priority_score`, `completed_at` → `processed_at`,
+  `result` → `result_message`). Code was already aligned with prod;
+  only the migration files were stale.
+- **The PostgREST embed `offer:offers(...)` on `price_conflicts`
+  became ambiguous** after migration 133 added a second FK to `offers`
+  (`keep_offer_id`). The conflicts list returned HTTP 300 with
+  `PGRST201 "Could not embed because more than one relationship"`.
+
+### What was applied
+
+| Migration | Purpose | Status |
+|---|---|---|
+| 133 | Add `keep_offer_id` to `price_conflicts` | applied |
+| 134 | Repair 8 missing columns on `price_conflicts` (table was empty so NOT NULL + FK applied cleanly) | applied |
+| 135 | Add 21 prod-only columns to 4 tables so a fresh DB setup matches prod | applied |
+| Route fix `f4d340f` | Disambiguate the `offer:offers` embed with `!price_conflicts_offer_id_fkey` | deployed |
+
+### Pre-deploy check additions
+
+Before running this checklist, verify the migrations above have been
+applied to the target environment. If you are spinning up a **fresh**
+prod (not an existing one), the migration order is:
+`001_…132_ → 133 → 134 → 135 → 136+`. Skipping any of 133/134/135
+re-introduces the audit's findings.
+
+### Code audit state
+
+- All 5 security-critical issues (P1–P5) confirmed fixed in v1.5.27
+- P6 (report-price enum mismatch) fixed
+- P7 (conflict resolution) — route + migrations 133/134/135 + embed fix
+- P8 (product notFound) — already correct
+- P9 (search pagination) — fixed, locked in by new test
+  `src/test/search-pagination.test.ts`
+- P10–P17, P19 — confirmed fixed in earlier work
+- P14 (destructive migrations) — documented in migration 123
+- P18 (env vars, broad) — URL helper standardised; full audit not done
+- P20 (type safety, residual) — 1 `any`, 7 `as any`, 3 `@ts-ignore` remain
+- P21 (docs) — addressed by `docs/architecture.md` etc. landing pages
+
+### Tests
+
+- Unit: 496 passing, 3 skipped, 0 failing
+- Coverage thresholds are soft (set to 0 in `vitest.config.ts`).
+  Tighten when the team commits to coverage goals.
