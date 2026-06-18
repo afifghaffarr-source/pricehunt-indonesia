@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         status,
         detected_at,
         resolved_at,
-        offer:offers(
+        offer:offers!price_conflicts_offer_id_fkey(
           id,
           title,
           current_price,
