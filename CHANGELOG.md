@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.22] - 2026-06-22 — P20 (Type-Safety Residual) Closure
+
+### Changed
+
+**Type-safety residual cleanup — P20 audit item closed**
+- Widened `TrustSignalsBar` prop type `lastUpdated?: Date | string` → `Date | string | null`. The runtime already handled null defensively (component returns null when `!lastUpdated`); making the type honest about what it accepts removes the need for the `null as any` cast in `src/test/freshness-claim-regression.test.tsx`
+- Removed the only remaining `as any` in test code + the inline `eslint-disable @typescript-eslint/no-explicit-any` comment. Test now passes `lastUpdated={null}` directly. Test comment rewritten to explain the defensive contract ("callers may pass null even though the prop is optional; the component must not crash and must not claim freshness it doesn't have")
+
+### Audit state
+- **P20 closed.** Zero `: any`, zero `as any`, zero `@ts-ignore` / `@ts-expect-error` in `src/app`, `src/lib`, `src/components`, and `src/test`
+- `scripts/**` retains its own `any` usage but is **intentionally excluded** from `tsconfig.json` (`exclude: ["scripts/**/*.ts", ...]`) and `eslint.config.mjs` (`globalIgnores(["scripts/**", ...])`). Operational tooling, out of CI scope. Not part of P20
+- v1.5.21 already cleaned production code; this release finishes the test file
+
+### Tests
+- All gates green: `npm run lint` 0 errors, `npm run typecheck` clean, `npm run test` 496/496 pass (3 skipped), `npm run build` exit 0
+
+### Files Changed
+- `src/components/product/TrustSignalsBar.tsx` (prop type widened + JSDoc)
+- `src/test/freshness-claim-regression.test.tsx` (cast removed, comment rewritten)
+- `docs/PRODUCTION_CHECKLIST.md` (P20 status updated)
+
 ## [1.5.21] - 2026-06-17 — Phase D Type-Safety Backlog Closure (cumulative catch-up for v1.5.12 → v1.5.21)
 
 > **Note:** This release collapses the v1.5.12, 12.1, 12.2, 13, 14, 15, 16, 17, 18, 19, 20, and 21 changes that accumulated in `[Unreleased]` without being individually tagged. Internal version headers below preserve the original release identity for each sub-section.

@@ -33,11 +33,11 @@ describe("BUG-06: lying freshness claim regression guard", () => {
     });
 
     it("renders nothing when lastUpdated is null", () => {
-      // Cast to any because null isn't a valid prop per the interface, but
-      // some callers may pass null accidentally.
+      // Defensive contract: callers (especially ones that pass nullable DB
+      // values) may pass null even though the prop is optional. The component
+      // must not crash and must not claim freshness it doesn't have.
       const html = renderToStaticMarkup(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        <TrustSignalsBar marketplaceCount={6} lastUpdated={null as any} />,
+        <TrustSignalsBar marketplaceCount={6} lastUpdated={null} />,
       );
       expect(html).toBe("");
     });

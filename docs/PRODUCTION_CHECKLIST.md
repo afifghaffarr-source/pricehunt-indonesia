@@ -204,7 +204,15 @@ re-introduces the audit's findings.
 - P10–P17, P19 — confirmed fixed in earlier work
 - P14 (destructive migrations) — documented in migration 123
 - P18 (env vars, broad) — URL helper standardised; full audit not done
-- P20 (type safety, residual) — 1 `any`, 7 `as any`, 3 `@ts-ignore` remain
+- **P20 (type safety, residual) — CLOSED in v1.5.22.** Zero `: any` / `as any`
+  / `@ts-ignore` in `src/app` + `src/lib` + `src/components` + `src/test`.
+  (Production code was already clean since v1.5.21; the remaining 1 `as any`
+  in `src/test/freshness-claim-regression.test.tsx` was a deliberate defensive
+  contract test for null. Fixed by widening the `TrustSignalsBar` prop type
+  to `lastUpdated?: Date | string | null` so the type is honest about what
+  the runtime accepts.) Scripts under `scripts/` are intentionally excluded
+  from tsconfig and eslint (operational tooling, out of CI scope); they
+  retain their own `any` usage and are not part of this P20 closure.
 - P21 (docs) — addressed by `docs/architecture.md` etc. landing pages
 
 ### Tests

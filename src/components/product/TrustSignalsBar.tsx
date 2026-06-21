@@ -2,7 +2,12 @@ import { Clock, Database, Users, RefreshCw } from "lucide-react";
 
 interface TrustSignalsBarProps {
   marketplaceCount: number;
-  lastUpdated?: Date | string;
+  /**
+   * Most recent update timestamp across all marketplaces. Accepts `null`
+   * for callers that may pass a nullable DB value; the component handles
+   * null / undefined / empty string the same way (renders nothing).
+   */
+  lastUpdated?: Date | string | null;
   trackerCount?: number;
   autoCheckFrequency?: string;
   className?: string;
