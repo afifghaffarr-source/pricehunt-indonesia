@@ -161,114 +161,48 @@ function checkCsrf(
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// CSP + nonce
-// ---------------------------------------------------------------------------
-//
-// We generate a fresh nonce per request and (1) set it as a request header
-// so downstream server components can attach it to their own inline
-// <script>/<style> tags, and (2) bake it into the Content-Security-Policy
-// response header. Next.js also reads `x-nonce` from the incoming request
-// and applies it to framework-emitted inline scripts/styles automatically.
-//
-// We pair the nonce with `'strict-dynamic'` so scripts loaded via a trusted
-// (nonced) initial script can transitively load further scripts without
-// needing an explicit allowlist — the modern CSP pattern that lets us drop
-// `'unsafe-inline'` and `'unsafe-eval'` from production script-src.
-
-function generateNonce(): string {
-  // Base64 so the value survives header transport without quoting issues.
-  return Buffer.from(crypto.randomUUID()).toString("base64");
-}
-
-function buildCsp(nonce: string, isProduction: boolean): string {
-  // In dev, Webpack/Turbopack HMR needs `'unsafe-eval'`. In prod, drop it.
-  const scriptSrc = isProduction
-    ? `'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://vercel.live`
-    : `'self' 'nonce-${nonce}' 'unsafe-eval' 'strict-dynamic' https://va.vercel-scripts.com https://vercel.live`;
-
-  // Drop `'unsafe-inline'` from style-src — Tailwind/Emotion emit hashed or
-  // nonced inline styles in the App Router. If a third-party style snippet
-  // ever needs to bypass, switch to a per-call nonce, not a global opt-out.
-  const styleSrc = `'self' 'nonce-${nonce}' https://fonts.googleapis.com`;
-
-  const directives = [
-    "default-src 'self'",
-    `script-src ${scriptSrc}`,
-    `style-src ${styleSrc}`,
-    // Image sources — broad allowlist for marketplace product photos plus
-    // data: URLs for SVG placeholders / base64 thumbs. blob: needed for
-    // Next/Image placeholder generation.
-    "img-src 'self' https://placehold.co https://images.unsplash.com https://picsum.photos https://fastly.picsum.photos https://images.tokopedia.net https://p16-images-sign-sg.tokopedia-static.net https://p19-images-sign-sg.tokopedia-static.net https://cf.shopee.co.id https://s-cf-id.shopeesz.com https://s.bukalapak.com https://www.static-src.com https://img.lazcdn.com https://i5.walmartimages.com https://p16-oec-sg.tiktokcdn.com data: blob:",
-    "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com",
-    // connect-src covers fetch/XHR/WebSocket. Supabase REST + Realtime
-    // (wss://). Vercel Analytics + Live.
-    "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com wss://*.supabase.co https://vercel.live",
-    "frame-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-    // Only meaningful over HTTPS — local dev is HTTP.
-    ...(isProduction ? ["upgrade-insecure-requests"] : []),
-  ];
-  return directives.join("; ");
-}
-
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const origin = request.headers.get("origin");
   const method = request.method;
-  const isProduction = process.env.NODE_ENV === "production";
 
-  // Per-request nonce — applied to ALL responses (pages + API) so inline
-  // scripts/styles work consistently. The nonce also leaks through the
-  // `x-nonce` request header so server components can attach it to any
-  // custom inline `<script nonce={...}>` they emit (e.g. JSON-LD in
-  // src/lib/seo.tsx).
-  const nonce = generateNonce();
-  const csp = buildCsp(nonce, isProduction);
-
-  // Forward the nonce on the *request* so server components can read it
-  // via `headers()` from `next/headers`. The `response.headers` below
-  // sets the CSP for the browser.
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
-
-  // CORS preflight: respond immediately. CSP still set so OPTIONS
-  // responses carry the header too.
+  // Handle CORS preflight requests
   if (method === "OPTIONS") {
-    const preflight = new NextResponse(null, { status: 204 });
-    preflight.headers.set("Content-Security-Policy", csp);
-    return addCorsHeaders(preflight, origin);
+    const response = new NextResponse(null, { status: 204 });
+    return addCorsHeaders(response, origin);
   }
 
-  let response = NextResponse.next({ request: { headers: requestHeaders } });
-  response.headers.set("Content-Security-Policy", csp);
+  // Only apply to API routes
+  if (!pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
 
-  // API-specific logic: CORS, CSRF, API security headers.
-  if (pathname.startsWith("/api/")) {
-    response = addCorsHeaders(response, origin);
+  // Create response
+  let response = NextResponse.next();
 
-    if (!SAFE_METHODS.has(method)) {
-      const requiresCSRF = CSRF_PROTECTED_PATHS.some((path) =>
-        pathname.startsWith(path),
-      );
-      if (requiresCSRF) {
-        const denied = checkCsrf(request, pathname);
-        if (denied) return denied;
-      }
+  // Add CORS headers
+  response = addCorsHeaders(response, origin);
+
+  // CSRF Protection for state-changing methods
+  if (!SAFE_METHODS.has(method)) {
+    // Check if this path requires CSRF protection
+    const requiresCSRF = CSRF_PROTECTED_PATHS.some((path) =>
+      pathname.startsWith(path),
+    );
+
+    if (requiresCSRF) {
+      const denied = checkCsrf(request, pathname);
+      if (denied) return denied;
     }
-
-    // API-side hardening headers. The page-side equivalents live in
-    // next.config.ts (HSTS, COOP/COEP/CORP, Permissions-Policy, etc.).
-    response.headers.set("X-Content-Type-Options", "nosniff");
-    response.headers.set("X-Frame-Options", "DENY");
-    response.headers.set("X-XSS-Protection", "1; mode=block");
-    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   }
 
-  // Request ID for distributed tracing — applied to every response so
-  // Vercel logs / Sentry can correlate page + API requests in one trace.
+  // Add security headers
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  // Add request ID for tracing
   const requestId = crypto.randomUUID();
   response.headers.set("X-Request-ID", requestId);
 
@@ -276,10 +210,43 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Run proxy on all routes except static assets that don't need CSP /
-  // request ID / nonce. The function itself branches on path to decide
-  // whether to apply API-specific (CORS/CSRF) logic.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+    "/api/:path*",
   ],
 };
+
+// ---------------------------------------------------------------------------
+// CSP nonce pipeline — ARCHITECTURAL DESIGN REQUIRED BEFORE ENABLING
+// ---------------------------------------------------------------------------
+//
+// We previously wired up per-request CSP nonces here + in next.config.ts.
+// It worked end-to-end on dynamically-rendered pages (homepage `/` got
+// nonces applied to every framework <script>/<style>). But the E2E suite
+// failed: statically-prerendered pages (`/auth/login`, `/auth/register`,
+// etc., build output `○`) get NO nonces because Next.js renders them at
+// build time without a request context. Those scripts then lack the
+// nonce attribute, CSP blocks them, and the page stays on its loading
+// skeleton.
+//
+// Per the Next.js 16 CSP guide (node_modules/next/dist/docs/.../content-
+// security-policy.md), nonce-based CSP requires ALL pages to be
+// dynamically rendered — static optimization, ISR, and PPR are
+// incompatible. The minimum-viable rollout is:
+//
+//   1. Audit each route segment for safe-to-dynamic conversion (pages
+//      with no request-time data are safe; pages that already read
+//      cookies/headers are already dynamic).
+//   2. Add `export const dynamic = 'force-dynamic'` to the root layout
+//      (or per page where needed).
+//   3. Measure the latency / hosting cost of full dynamic rendering.
+//   4. Re-enable the proxy nonce pipeline + remove the static CSP from
+//      next.config.ts.
+//
+// Until that design work is approved, we leave CSP in next.config.ts
+// (with `'unsafe-inline'`, same as before this commit) so static pages
+// keep working. The infrastructure for nonces (proxy nonce header,
+// JsonLd reading x-nonce) stays in place — when we flip to dynamic-only,
+// those pieces just start working without further changes.
+//
+// See docs/PRODUCTION_CHECKLIST.md "Security hardening roadmap" for the
+// follow-up plan.
