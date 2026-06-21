@@ -3,27 +3,16 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-// CSP is more restrictive in production: drop 'unsafe-eval' (only needed
-// for Next.js dev HMR / Webpack). 'unsafe-inline' stays for Next.js
-// streamed inline scripts in production (the framework emits them and
-// there is no first-party nonce pipeline wired in yet — see TODO below).
-const cspDirectives = [
-  "default-src 'self'",
-  isProduction
-    ? "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
-    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' https://placehold.co https://images.unsplash.com https://picsum.photos https://fastly.picsum.photos https://images.tokopedia.net https://p16-images-sign-sg.tokopedia-static.net https://p19-images-sign-sg.tokopedia-static.net https://cf.shopee.co.id https://s-cf-id.shopeesz.com https://s.bukalapak.com https://www.static-src.com https://img.lazcdn.com https://i5.walmartimages.com https://p16-oec-sg.tiktokcdn.com data: blob:",
-  "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com wss://*.supabase.co https://vercel.live",
-  "frame-src 'none'",
-  // Block mixed content and restrict framing further.
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-  // Upgrade insecure requests (only meaningful when served over HTTPS).
-  ...(isProduction ? ["upgrade-insecure-requests"] : []),
-];
+// NOTE: Content-Security-Policy is intentionally NOT set here.
+//
+// It is generated per-request in `src/proxy.ts` so it can include a fresh
+// nonce for inline scripts/styles. With a static header we would need to
+// keep `'unsafe-inline'` to satisfy Next.js's framework-emitted inline
+// scripts/styles, which weakens XSS defense.
+//
+// All other security headers below (HSTS, X-Frame-Options, COOP/COEP/CORP,
+// Permissions-Policy, etc.) are static — they don't depend on request
+// context, so `next.config.ts` is the right home for them.
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -50,10 +39,9 @@ const securityHeaders = [
         },
       ]
     : []),
-  {
-    key: "Content-Security-Policy",
-    value: cspDirectives.join("; "),
-  },
+  // Content-Security-Policy is generated per-request in src/proxy.ts
+  // so it can include a fresh nonce. See the comment block at the top
+  // of this file for why.
 ];
 
 const nextConfig: NextConfig = {

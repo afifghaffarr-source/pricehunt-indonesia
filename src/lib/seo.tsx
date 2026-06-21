@@ -12,6 +12,7 @@
  *     rich-results spec
  */
 import type { Product as DomainProduct, MarketplacePrice } from "./types";
+import { headers } from "next/headers";
 
 const SITE_URL = "https://www.bijakbeli.web.id";
 const SITE_NAME = "BijakBeli";
@@ -200,21 +201,29 @@ export function breadcrumbJsonLd(
  * Convenience: wraps a JSON string in a `<script type="application/ld+json">`
  * element ready to drop into a React tree. Use the key to disambiguate
  * multiple schemas on the same page.
+ *
+ * The `nonce` attribute is read from the `x-nonce` request header (set
+ * per-request in `src/proxy.ts`) so the inline script satisfies the
+ * strict-dynamic CSP nonce policy. The JSON is generated server-side
+ * from our own data, never from user input, so this is safe.
+ *
+ * Async because `headers()` is async in Next.js 16. Callers must be
+ * server components (they are — `JsonLd` is only used in page.tsx).
  */
-export function JsonLd({
+export async function JsonLd({
   data,
   key,
 }: {
   data: string | Record<string, unknown> | Record<string, unknown>[];
   key: string;
 }) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const json = typeof data === "string" ? data : JSON.stringify(data);
   return (
     <script
       key={key}
       type="application/ld+json"
-      // The JSON is generated server-side from our own data, never from
-      // user input, so this is safe.
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: json }}
     />
   );
