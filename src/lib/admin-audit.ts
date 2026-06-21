@@ -19,6 +19,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAuditFailure, logError } from "@/lib/log";
+import type { Json } from "@/lib/supabase/types";
 
 export type AdminAuditAction =
   | "resolve_conflict"
@@ -114,16 +115,15 @@ export async function logAdminAction(input: AdminAuditInput): Promise<void> {
       action: safeString(input.action, 64) ?? "unknown",
       target_type: safeString(input.targetType ?? null, 40),
       target_id: safeString(input.targetId ?? null, 128),
-      metadata: safeMeta(input.metadata),
+      // safeMeta sanitizes via JSON.parse(JSON.stringify(v)) so the runtime
+      // shape is Json. Cast is safe here.
+      metadata: safeMeta(input.metadata) as Json,
       ip,
       user_agent: userAgent,
       request_id: requestId,
     };
 
-    /* eslint-disable @typescript-eslint/ban-ts-comment */
-    // @ts-ignore — admin client type inference limitation on inserts
     const { error } = await supabase.from("admin_audit_log").insert(row);
-    /* eslint-enable @typescript-eslint/ban-ts-comment */
 
     if (error) {
       logAuditFailure({

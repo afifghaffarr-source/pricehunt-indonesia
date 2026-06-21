@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -136,8 +134,23 @@ describe('Deal Score Calculation Optimization', () => {
       .not('lowest_price', 'is', null)
       .limit(3);
 
-    // Supabase type inference issue with complex queries - cast to any
-    const products = data as any;
+    // Type for the products+offers+marketplaces join. Supabase's typed client
+    // doesn't infer nested embed shapes for complex selects; we declare the
+    // shape explicitly here so the test still gets type checking on the
+    // fields it actually reads (id, name, offers[].current_price, etc.).
+    type DealTestProduct = {
+      id: string;
+      name: string;
+      slug: string;
+      lowest_price: number | null;
+      offers: Array<{
+        current_price: number;
+        seller_rating: number | null;
+        stock_status: string;
+        marketplaces: { name: string } | null;
+      }> | null;
+    };
+    const products = data as unknown as DealTestProduct[] | null;
 
     expect(error).toBeNull();
     expect(products).toBeTruthy();

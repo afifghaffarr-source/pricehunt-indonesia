@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { checkPersistentRateLimit, getRequestIdentifier } from '@/lib/rate-limit';
 
@@ -61,7 +59,7 @@ describe('Rate Limiter', () => {
         error: null
       });
       
-      (createAdminClient as any).mockReturnValue({ rpc: mockRpc });
+      vi.mocked(createAdminClient).mockReturnValue({ rpc: mockRpc } as unknown as ReturnType<typeof createAdminClient>);
       
       const result = await checkPersistentRateLimit({
         identifier: 'user:123',
@@ -81,7 +79,7 @@ describe('Rate Limiter', () => {
         error: null
       });
       
-      (createAdminClient as any).mockReturnValue({ rpc: mockRpc });
+      vi.mocked(createAdminClient).mockReturnValue({ rpc: mockRpc } as unknown as ReturnType<typeof createAdminClient>);
       
       const result = await checkPersistentRateLimit({
         identifier: 'user:123',
@@ -101,7 +99,7 @@ describe('Rate Limiter', () => {
         error: { message: 'Connection failed' }
       });
       
-      (createAdminClient as any).mockReturnValue({ rpc: mockRpc });
+      vi.mocked(createAdminClient).mockReturnValue({ rpc: mockRpc } as unknown as ReturnType<typeof createAdminClient>);
       
       const result = await checkPersistentRateLimit({
         identifier: 'user:123',
@@ -120,7 +118,7 @@ describe('Rate Limiter', () => {
       const { createAdminClient } = await import('@/lib/supabase/admin');
       const mockRpc = vi.fn().mockRejectedValue(new Error('Network error'));
       
-      (createAdminClient as any).mockReturnValue({ rpc: mockRpc });
+      vi.mocked(createAdminClient).mockReturnValue({ rpc: mockRpc } as unknown as ReturnType<typeof createAdminClient>);
       
       const result = await checkPersistentRateLimit({
         identifier: 'user:123',

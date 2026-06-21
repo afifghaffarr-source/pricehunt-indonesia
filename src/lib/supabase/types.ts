@@ -56,6 +56,48 @@ export type Database = {
           },
         ]
       }
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          id: string
+          ip: string | null
+          metadata: Json
+          request_id: string | null
+          target_id: string | null
+          target_type: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          request_id?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          request_id?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       api_rate_limits: {
         Row: {
           count: number
@@ -548,54 +590,81 @@ export type Database = {
           confidence_b: number | null
           conflict_status: string
           created_at: string
+          detected_at: string
+          difference_amount: number
+          difference_percent: number
           id: string
+          keep_offer_id: string | null
           marketplace_id: string
           offer_a_id: string | null
           offer_b_id: string | null
+          offer_id: string
           price_a: number
           price_b: number
           price_diff_percentage: number
           product_id: string
           resolution_note: string | null
           resolved_at: string | null
+          resolved_by: string | null
+          snapshot_a_id: string | null
+          snapshot_b_id: string | null
           source_a: string | null
           source_b: string | null
+          status: string
         }
         Insert: {
           confidence_a?: number | null
           confidence_b?: number | null
           conflict_status?: string
           created_at?: string
+          detected_at?: string
+          difference_amount?: number
+          difference_percent?: number
           id?: string
+          keep_offer_id?: string | null
           marketplace_id: string
           offer_a_id?: string | null
           offer_b_id?: string | null
+          offer_id: string
           price_a: number
           price_b: number
-          price_diff_percentage: number
+          price_diff_percentage?: number
           product_id: string
           resolution_note?: string | null
           resolved_at?: string | null
+          resolved_by?: string | null
+          snapshot_a_id?: string | null
+          snapshot_b_id?: string | null
           source_a?: string | null
           source_b?: string | null
+          status?: string
         }
         Update: {
           confidence_a?: number | null
           confidence_b?: number | null
           conflict_status?: string
           created_at?: string
+          detected_at?: string
+          difference_amount?: number
+          difference_percent?: number
           id?: string
+          keep_offer_id?: string | null
           marketplace_id?: string
           offer_a_id?: string | null
           offer_b_id?: string | null
+          offer_id?: string
           price_a?: number
           price_b?: number
           price_diff_percentage?: number
           product_id?: string
           resolution_note?: string | null
           resolved_at?: string | null
+          resolved_by?: string | null
+          snapshot_a_id?: string | null
+          snapshot_b_id?: string | null
           source_a?: string | null
           source_b?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -603,6 +672,27 @@ export type Database = {
             columns: ["marketplace_id"]
             isOneToOne: false
             referencedRelation: "marketplaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_conflicts_offer_a_id_fkey"
+            columns: ["offer_a_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_conflicts_offer_b_id_fkey"
+            columns: ["offer_b_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_conflicts_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
             referencedColumns: ["id"]
           },
           {
@@ -617,6 +707,27 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_conflicts_keep_offer_id_fkey"
+            columns: ["keep_offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_conflicts_snapshot_a_id_fkey"
+            columns: ["snapshot_a_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_conflicts_snapshot_b_id_fkey"
+            columns: ["snapshot_b_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
             referencedColumns: ["id"]
           },
         ]
