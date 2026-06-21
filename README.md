@@ -357,9 +357,16 @@ git push origin master
 
 ## 📚 **Documentation**
 
-- **Beta Testing:** [BETA_QUICK_START.md](BETA_QUICK_START.md)
-- **Monitoring:** [scripts/MONITORING_README.md](scripts/MONITORING_README.md)
-- **Old README:** [README.old.md](README.old.md) (full 650-line version)
+- [Architecture](docs/architecture.md) — system design, layers, key flows
+- [Database](docs/database.md) — schema, migrations, RLS, admin model
+- [API surface](docs/api.md) — public, admin, and cron routes
+- [Testing](docs/testing.md) — Vitest, Playwright, CI gates
+- [Operations runbook](docs/OPERATIONS.md) — alerts, monitoring, recovery
+- [Deployment guide](docs/DEPLOYMENT.md) — Vercel + Supabase setup
+- [Security model](SECURITY.md) — auth, RLS, CSRF, admin role
+- [Admin bootstrap](docs/ADMIN_SEED.md) — how to grant the first admin
+
+Historical audits and one-off reports live in [docs/archive/](docs/archive/).
 
 ---
 
