@@ -7,7 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.5.26] - 2026-06-22 — CSP Pipeline v2 Fix (Static JSON Import + prebuild)
+## [1.5.27] - 2026-06-22 — Revert CSP Hash Pipeline (v1.5.25/26 broken)
+
+### What broke
+
+v1.5.25 (`30cc883`) shipped a per-route hash + nonce hybrid CSP. v1.5.26 (`3ffc71c`) tried to fix it with static JSON import + prebuild. Both are reverted in this release. Production was actively broken under v1.5.26: 4 of 13 inline scripts on `/auth/login` (and similar on other static pages) were not in the CSP allow-list, so the browser refused to execute them. The page was stuck on the `loading.tsx` skeleton. Same issue on `/legal` and all other prerendered routes.
+
+### Root cause
+
+Inline `<script>` blocks emitted by Next.js's React Server Components pipeline include `"b":"<BUILD_ID>"` at the end. `BUILD_ID` is a content hash of every input to the build — so:
+
+- v1.5.25 approach (read `.next/csp-static-hashes.json` at runtime via `fs.readFileSync`): Vercel's Edge runtime for proxy has restricted filesystem access, so the JSON read failed silently → empty hash map → all routes fell through to nonce CSP (no security improvement, but app stayed functional).
+- v1.5.26 attempt A (prebuild hook reading from previous build): the JSON was extracted from the *previous* build's HTML, but `BUILD_ID` in the *current* build's HTML is different (because adding the JSON file as a source input changes the build's content hash). 1-release lag.
+- v1.5.26 attempt B ("build twice" wrapper: `next build && extract && next build`): the *second* build produces a different `BUILD_ID` than the *first* build, because the JSON file (now populated) is a different source input than the empty stub from build 1. So the JSON's hashes (from build 1's HTML) don't match build 2's HTML. 12/13 inline scripts matched, 1 didn't (the RSC payload script containing `BUILD_ID`).
+
+There's no way to compute static hashes that match per-build `BUILD_ID`-bearing scripts without either (a) making the JSON import itself part of the build's content hash input before extraction (chicken-and-egg), or (b) using a Next.js build plugin that hooks into the bundling step to inject hashes into the proxy in one pass (not exposed in the public API in a usable form for Next.js 16 yet).
+
+### What this release does
+
+- Restores `next.config.ts` to the v1.5.24 baseline: static CSP header with `'unsafe-inline'` for `script-src` (acceptable trade-off until hash-based CSP tooling is available — Next.js 16 docs explicitly say nonce-based CSP requires `force-dynamic` on every page, which we don't want for `/auth/*`, `/legal/*`, and other static routes).
+- Restores `src/proxy.ts` to the v1.5.24 baseline: no CSP dispatch, just CORS + CSRF + security headers for API routes.
+- Deletes `scripts/extract-csp-hashes.mjs` and `src/csp-static-hashes.generated.json` (no longer needed).
+- `package.json` build script back to plain `next build` (no prebuild / build-twice wrapper).
+- `docs/SECURITY_AUDIT_2026-06-15.md` CSP checkbox moved back to `[ ]` with a follow-up note.
+
+### Lessons learned
+
+1. **Hash-based CSP for prerendered pages is incompatible with Next.js's current BUILD_ID-bearing inline scripts**, unless you have a custom build plugin. The hash for the script containing `BUILD_ID` literally cannot be predicted before `BUILD_ID` is computed.
+2. **Vercel's Edge runtime for proxy has restricted filesystem access** — `fs.readFileSync` for runtime config files doesn't work reliably. Static JSON imports (bundled at compile time) are the right pattern when you need data in the proxy.
+3. **Test the deployed prod response, not just the local `npm start` response** — local dev runs the proxy on Node.js, prod runs it on Edge. Different runtime semantics. v1.5.25's runtime `fs.readFileSync` worked locally but failed silently on Edge.
+4. **The "build twice" pattern looks clever but BREAK_ID volatility defeats it.** If a build's content hash depends on its own output (even transitively), two consecutive builds produce different hashes.
+
+### Follow-up
+
+The CSP hash pipeline stays open as a future improvement, contingent on one of:
+- Next.js exposing a build plugin hook that lets us inject hashes into the proxy bundle after HTML generation in the same build cycle
+- Next.js's experimental `sri` config growing inline-script support (currently external-only per the docs)
+- Migration to a custom server / different framework that exposes a build-phase data injection API
+
+None of these are available now. Until then, the `'unsafe-inline'` baseline is the right trade-off — other CSP directives (`default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`, `upgrade-insecure-requests`, etc.) plus the rest of the security header set (HSTS, COOP/COEP/CORP, Permissions-Policy, X-Frame-Options) provide the bulk of the XSS / clickjacking / side-channel defenses.
+
+## [1.5.26] - 2026-06-22 — CSP Pipeline v2 Fix (Static JSON Import + prebuild) [REVERTED in v1.5.27]
 
 ### Why this release
 
@@ -48,7 +88,7 @@ This is acceptable: framework scripts (which are the bulk of the hashes) rarely 
 - CI gates: typecheck ✓, lint ✓, 557 unit tests pass
 - v1.5.25 CHANGELOG entry preserved below for historical accuracy — it shipped a non-functional pipeline; v1.5.26 makes it work
 
-## [1.5.25] - 2026-06-22 — CSP Nonce Pipeline v2 (Per-Route Hash + Nonce Hybrid) [partial — runtime fs issue, fixed in v1.5.26]
+## [1.5.25] - 2026-06-22 — CSP Nonce Pipeline v2 (Per-Route Hash + Nonce Hybrid) [REVERTED in v1.5.27]
 
 ### Added
 
