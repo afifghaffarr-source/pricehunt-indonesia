@@ -7,7 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.5.25] - 2026-06-22 — CSP Nonce Pipeline v2 (Per-Route Hash + Nonce Hybrid)
+## [1.5.26] - 2026-06-22 — CSP Pipeline v2 Fix (Static JSON Import + prebuild)
+
+### Why this release
+
+v1.5.25 (commit `30cc883`) shipped the per-route hash + nonce hybrid, but the deployment was broken: static pages like `/auth/login` and `/legal` were getting nonce-CSP instead of hash-CSP. App was functional (nonce + `'strict-dynamic'` allows the inline scripts) but the whole point of v2 — no nonce needed for static pages — was defeated.
+
+### Root cause
+
+`src/proxy.ts` used `fs.readFileSync(process.cwd() + ".next/csp-static-hashes.json")` at runtime. Vercel's Edge runtime for proxy has restricted filesystem access — `existsSync` returned false (or threw silently), so `loadStaticRouteHashes()` returned an empty map, so `isStaticRoute()` always returned false, so all routes fell through to the nonce path.
+
+### Fix
+
+**Static JSON import — `src/proxy.ts`** — replaced the runtime `fs.readFileSync` with `import cspHashManifest from "./csp-static-hashes.generated.json"`. The bundler inlines the JSON content into the proxy bundle at compile time. No fs dependency at runtime. Works on every runtime (Node, Edge, serverless).
+
+**`prebuild` not `postbuild` — `package.json`** — moved the hash extraction hook from `postbuild` to `prebuild`. Why: `next build` bundles `src/proxy.ts` and inlines the imported JSON content. Running extraction AFTER `next build` means the bundle captures the empty stub JSON (the file is populated too late). Running BEFORE means we read from the previous build's `.next/server/app/` and write to `src/` before bundling. Vercel runs npm lifecycle hooks in order, so this works on Vercel too.
+
+**Dual output — `scripts/extract-csp-hashes.mjs`** — still writes to `.next/csp-static-hashes.json` (kept for tooling/debug) but now also writes to `src/csp-static-hashes.generated.json` (the one bundled into the proxy).
+
+**Stub JSON committed — `src/csp-static-hashes.generated.json`** — checked in with empty `staticRoutes`. Ensures the static import resolves on first build (no `.next/` available yet). Postbuild regenerates it on every subsequent build.
+
+### One-release hash lag
+
+If you add a new static route, its hashes appear in the bundled proxy ONE release later:
+- prebuild reads from the previous build's `.next/` and writes the JSON
+- `next build` bundles that JSON (so it has hashes for routes that existed in the PREVIOUS build)
+- post-build, the script reads from the NEW build's `.next/` and updates the JSON
+- Commit the updated JSON, push, next deploy picks it up
+
+This is acceptable: framework scripts (which are the bulk of the hashes) rarely change between Next.js versions. App-specific inline scripts (JSON-LD via `src/lib/seo.tsx`) are typically nonce-protected on dynamic pages anyway.
+
+### Verification
+
+- Bundle inspection: `grep sha256- .next/server/chunks/[root-of-the-server]_*.js` shows 210 hashes inlined into the bundled proxy (was 0 in v1.5.25)
+- Local smoke test (`npm start` then `curl -D -`):
+  - `/auth/login` (static) → `script-src 'self' 'sha256-...' 'sha256-...'` ✓
+  - `/legal` (static) → hash-CSP ✓
+  - `/` (dynamic) → nonce-CSP ✓
+  - `/search` (dynamic) → nonce-CSP ✓
+- CI gates: typecheck ✓, lint ✓, 557 unit tests pass
+- v1.5.25 CHANGELOG entry preserved below for historical accuracy — it shipped a non-functional pipeline; v1.5.26 makes it work
+
+## [1.5.25] - 2026-06-22 — CSP Nonce Pipeline v2 (Per-Route Hash + Nonce Hybrid) [partial — runtime fs issue, fixed in v1.5.26]
 
 ### Added
 

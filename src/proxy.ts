@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { getAppUrl } from "@/lib/app-url";
 import { getCronSecret, getIngestionSecret } from "@/lib/env";
-
-// Proxy always runs on Node.js runtime in Next.js 16 (per
-// https://nextjs.org/docs/messages/middleware-to-proxy). We need the Node
-// runtime so `fs.readFileSync` is available at module load to read the
-// build-time CSP hash manifest. No `export const runtime` needed.
+// Static import of the per-route hash manifest. The JSON file is generated
+// at build time by scripts/extract-csp-hashes.mjs (postbuild npm hook) and
+// lives in src/ so Next.js bundles it into the proxy at compile time.
+//
+// Why static import (not fs.readFileSync at runtime):
+//   - Works on every runtime (Node, Edge, serverless) — no fs dep at runtime
+//   - Vercel's Edge runtime for proxy has restricted filesystem access
+//   - The bundler follows the import, so the data is inlined into the
+//     serverless function's bundle
+//
+// The stub at this path is committed to git (empty hashes); the postbuild
+// hook regenerates it after every build with real hashes. First deploy
+// after a static-route change may briefly serve stale hashes until the
+// next build picks them up. Acceptable: framework scripts rarely change.
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -153,9 +160,14 @@ function checkCsrf(
 }
 
 // ---------------------------------------------------------------------------
-// CSP hash manifest — loaded once at module init from the build artifact
-// produced by scripts/extract-csp-hashes.mjs (postbuild npm hook).
+// CSP hash manifest — imported statically from
+// src/csp-static-hashes.generated.json, which is regenerated at build time
+// by scripts/extract-csp-hashes.mjs (postbuild npm hook). The bundler
+// inlines the JSON content into the proxy bundle at compile time, so no
+// filesystem access is needed at runtime (works on Node, Edge, serverless).
 // ---------------------------------------------------------------------------
+
+import cspHashManifest from "./csp-static-hashes.generated.json";
 
 interface CspStaticHashesManifest {
   staticRoutes: Record<string, string[]>;
@@ -164,33 +176,8 @@ interface CspStaticHashesManifest {
   totalInlineScripts: number;
 }
 
-let STATIC_ROUTE_HASHES: Record<string, string[]> = {};
-let HASHES_LOADED = false;
-
-function loadStaticRouteHashes(): Record<string, string[]> {
-  if (HASHES_LOADED) return STATIC_ROUTE_HASHES;
-  HASHES_LOADED = true;
-  const path = join(process.cwd(), ".next", "csp-static-hashes.json");
-  if (!existsSync(path)) {
-    console.warn(
-      "[proxy/csp] .next/csp-static-hashes.json missing — static pages will " +
-        "use the nonce CSP fallback (which fails for prerendered routes). " +
-        "Re-run `npm run build` so the postbuild hook regenerates the manifest.",
-    );
-    return STATIC_ROUTE_HASHES;
-  }
-  try {
-    const manifest = JSON.parse(readFileSync(path, "utf-8")) as CspStaticHashesManifest;
-    STATIC_ROUTE_HASHES = manifest.staticRoutes ?? {};
-    console.log(
-      `[proxy/csp] Loaded ${Object.keys(STATIC_ROUTE_HASHES).length} static-route ` +
-        `hash sets (generated ${manifest.generatedAt})`,
-    );
-  } catch (err) {
-    console.error(`[proxy/csp] Failed to parse hash manifest: ${err}`);
-  }
-  return STATIC_ROUTE_HASHES;
-}
+const STATIC_ROUTE_HASHES: Record<string, string[]> =
+  (cspHashManifest as CspStaticHashesManifest).staticRoutes ?? {};
 
 /**
  * Build a hash-based CSP for a static (prerendered) route.
@@ -300,12 +287,10 @@ export function proxy(request: NextRequest) {
     return addCorsHeaders(response, origin);
   }
 
-  // Lazy-load the static hash manifest on first page request (cheaper than
-  // at module init when running tests that don't touch page routes).
+  // The hash manifest is statically imported at the top of this file
+  // (generated at build time by scripts/extract-csp-hashes.mjs and bundled
+  // by Next.js into the proxy). No runtime loading needed.
   const isApiRoute = pathname.startsWith("/api/");
-  if (!isApiRoute) {
-    loadStaticRouteHashes();
-  }
 
   const requestHeaders = new Headers(request.headers);
   let csp: string;

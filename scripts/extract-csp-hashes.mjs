@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Post-build CSP hash extraction.
+ * Pre-build CSP hash extraction.
  *
  * Why: Next.js's nonce-based CSP requires dynamic rendering for every page
  * (per https://nextjs.org/docs/app/guides/content-security-policy). Static
@@ -12,38 +12,36 @@
  * for those routes. The browser allows inline scripts whose content matches
  * a known hash even without a nonce.
  *
- * This script runs as the `postbuild` npm hook, so it runs automatically
- * after every `next build` — both locally and on Vercel.
+ * This script runs as the `prebuild` npm hook, so it executes BEFORE
+ * `next build` starts. That's critical:
  *
- * Output: .next/csp-static-hashes.json (gitignored)
- *   {
- *     "staticRoutes": {
- *       "/auth/login": ["sha256-...", "sha256-..."],
- *       ...
- *     },
- *     "generatedAt": "2026-06-22T..."
- *   }
+ *   - `src/csp-static-hashes.generated.json` is imported statically by
+ *     src/proxy.ts. Next.js bundles the import at compile time, so the
+ *     JSON content must exist on disk BEFORE the bundle is created.
+ *   - Running as `postbuild` (after `next build`) would mean the bundle
+ *     captures the empty stub JSON — verified broken, hashes never reach
+ *     the deployed proxy.
+ *   - Running as `prebuild` means we extract hashes from the PREVIOUS
+ *     build's `.next/server/app/` tree (which still exists from the
+ *     last successful build) and write them to src/ before bundling.
  *
- * The middleware (src/proxy.ts, Node.js runtime) reads this file at startup
- * and uses the per-route hash set to build a hash-based CSP for static
- * pages. Dynamic pages continue to use the per-request nonce.
+ * First-build caveat: on a fresh checkout with no `.next/` directory
+ * (e.g. CI from a clean clone), the script finds no HTML files and exits
+ * without updating the JSON. The stub stays empty. Static pages get
+ * nonce CSP (status quo — app works, but loses the hash hardening). The
+ * NEXT build (with this commit in place) will have a populated JSON.
+ *
+ * Hash lag: by one release for new static routes. If you add a new
+ * static route, the hash for it appears in the JSON one build cycle
+ * later (when prebuild reads from the build that just included it).
+ * Existing routes' hashes stay current because prebuild re-extracts on
+ * every build.
  *
  * Why per-route (not a single union set):
- *   - 19 static routes × ~12 inline scripts each = ~228 hashes unioned
+ *   - 16 static routes × ~12 inline scripts each = ~228 hashes unioned
  *     would bloat every static-page response by ~4 KB of CSP header
  *   - Per-route set is ~12 hashes × 71 chars = ~850 bytes per response
  *   - Per-route is also stricter (page A doesn't get page B's hashes)
- *
- * If this script fails:
- *   - Hash JSON is not written → middleware can't serve hash-based CSP
- *   - Middleware falls back to nonce-based CSP for ALL routes
- *   - Static pages would break (this is the original v1 problem)
- *   - Loud warning printed, but build itself does NOT fail
- *
- * Re-run after any change to:
- *   - Next.js version (bootstrap script content can change)
- *   - Any page that affects the static route set
- *   - Any new static route added
  *
  * Verification: the test script (tests/e2e/auth.spec.ts) renders a static
  * page (/auth/login) and verifies the page is interactive, which exercises
@@ -55,7 +53,15 @@ import { join, relative } from "node:path";
 
 const PROJECT_ROOT = process.cwd();
 const APP_DIR = join(PROJECT_ROOT, ".next", "server", "app");
-const OUTPUT_PATH = join(PROJECT_ROOT, ".next", "csp-static-hashes.json");
+// Two output paths: the .next/ JSON is kept for tooling/debug; the src/
+// JSON is bundled into the proxy via static `import`, which works on
+// every runtime (Node, Edge, serverless) without needing fs at request time.
+const OUTPUT_BUILD_PATH = join(PROJECT_ROOT, ".next", "csp-static-hashes.json");
+const OUTPUT_SRC_PATH = join(
+  PROJECT_ROOT,
+  "src",
+  "csp-static-hashes.generated.json",
+);
 const PRERENDER_MANIFEST = join(PROJECT_ROOT, ".next", "prerender-manifest.json");
 
 if (!existsSync(APP_DIR)) {
@@ -206,10 +212,17 @@ const output = {
   totalInlineScripts: totalScripts,
 };
 
-writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf-8");
+writeFileSync(OUTPUT_BUILD_PATH, JSON.stringify(output, null, 2), "utf-8");
+
+// Also write the same data to src/ so it can be statically imported by
+// src/proxy.ts. This is the path that actually reaches the running proxy —
+// the .next/ copy is for tooling/debug only and may not be readable from
+// the proxy's runtime on serverless/Edge deployments.
+writeFileSync(OUTPUT_SRC_PATH, JSON.stringify(output, null, 2), "utf-8");
 
 console.log(
   `[csp-hashes] Extracted ${totalScripts} inline scripts across ` +
     `${Object.keys(finalHashes).length} static routes. ` +
-    `Wrote ${OUTPUT_PATH.replace(PROJECT_ROOT + "/", "")}`,
+    `Wrote ${OUTPUT_BUILD_PATH.replace(PROJECT_ROOT + "/", "")} (build) ` +
+    `and ${OUTPUT_SRC_PATH.replace(PROJECT_ROOT + "/", "")} (src, imported by proxy)`,
 );
