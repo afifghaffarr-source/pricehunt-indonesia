@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.25] - 2026-06-22 — CSP Nonce Pipeline v2 (Per-Route Hash + Nonce Hybrid)
+
+### Added
+
+**Post-build CSP hash extractor — `scripts/extract-csp-hashes.mjs`** (new file, ~215 lines)
+- Runs as `postbuild` npm hook (`package.json`) so it executes automatically after every `next build`, locally and on Vercel
+- Walks `.next/server/app/**/*.html` (prerendered route outputs), extracts every inline `<script>` block (excluding those with `src=`), computes SHA-256 base64 hash of each script's exact content, and emits `.next/csp-static-hashes.json`
+- Reads `prerender-manifest.json` to filter to only the canonical static route set (manifest is the source of truth Next.js itself uses for static-vs-dynamic dispatch)
+- Output schema: `{ staticRoutes: { "/route": ["sha256-...", ...] }, generatedAt, totalStaticRoutes, totalInlineScripts }`
+- Skips binary route handlers (`/favicon.ico`, `/opengraph-image`, `/deals/opengraph-image`) which serve non-HTML payloads and have no inline scripts
+- Handles `index.html` → `/` mapping correctly (strips trailing `/index`, root becomes empty string → `/`)
+- Failure mode: writes nothing → middleware falls back to nonce-CSP for everything (original v1 breaking behavior). Loud warning logged but build itself does not fail, so a broken extractor doesn't block deploys
+
+**Per-route hash-CSP for static pages — `src/proxy.ts`** (~190 new lines for hash loading + dispatch)
+- Loads `.next/csp-static-hashes.json` once at first non-API request (lazy module init — cheap for API-only tests)
+- `isStaticRoute(pathname)` — membership check against the manifest's `staticRoutes` keys, with trailing-slash normalisation (`/auth/login/` → `/auth/login`)
+- `buildStaticCsp(hashes, isProduction)` — generates `script-src 'self' 'sha256-...' 'sha256-...'` for prerendered routes. No nonce, no `unsafe-inline`, no `unsafe-eval`
+- `buildDynamicCsp(nonce, isProduction)` — generates `script-src 'self' 'nonce-<uuid>' 'strict-dynamic'` for dynamic routes. Same as v1 (working path)
+- Dispatch: `isStaticRoute(pathname) ? buildStaticCsp(hashes) : buildDynamicCsp(nonce)`. API routes (`/api/*`) use nonce (they're dynamic anyway; JSON-LD not applicable)
+- Forwards `x-nonce` request header for dynamic routes so server components (`src/lib/seo.tsx` → `JsonLd`) can read it via `headers().get("x-nonce")` and attach it to inline `<script type="application/ld+json">` tags
+
+### Changed
+
+**`package.json`** — added `"postbuild": "node scripts/extract-csp-hashes.mjs"`. Runs after every `next build`, both locally and on Vercel (npm lifecycle hooks are honored by Vercel's build step).
+
+**`next.config.ts`** — removed the static CSP header that was applied to every route via `headers()`. CSP is now generated per-request in `src/proxy.ts` (hash-CSP for static, nonce-CSP for dynamic). All other security headers (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, COOP/COEP/CORP) stay here — they're identical for every page. Updated the header docstring to explain the split and link to `scripts/extract-csp-hashes.mjs`.
+
+### Why this works (and v1 didn't)
+
+Next.js's nonce-based CSP requires every page to be dynamically rendered because the nonce is generated per-request in middleware and must match `<script nonce="...">` attributes in the rendered HTML. Static prerendered pages emit inline framework `<script>` blocks at BUILD time without per-request context — there's no nonce to embed, so CSP blocks them. v1 (`b420472`) tried nonce-only CSP for everything and broke E2E on static pages (commit `39a63de` reverted it).
+
+v2's hybrid approach: static routes ship hash-CSP (the browser allows inline scripts whose content matches a known SHA-256, no nonce needed), dynamic routes ship nonce-CSP (per-request, with `strict-dynamic`). No `unsafe-inline`, no force-dynamic, no breaking change to static prerender pipeline.
+
+### Verification
+
+- **Build:** `npm run build` succeeds, postbuild runs, `210 inline scripts across 16 static routes` written to manifest
+- **Hash coverage:** 16/19 routes in `prerender-manifest.json` get hash-CSP. The 3 skipped (`/favicon.ico`, `/opengraph-image`, `/deals/opengraph-image`) are Next.js Route Handlers that serve binary/image payloads — verified `ls .next/server/app/{favicon.ico,opengraph-image}/` shows `route.js` (handler) and `.body` (binary) only, no `.html`
+- **Hash correctness:** byte-perfect match between inline scripts on `/auth/login` and the manifest's `staticRoutes["/auth/login"]` — 13/13 intersection, 0 missing, 0 extra
+- **Per-route set size:** avg 13.1 hashes per route, range 6–28. Header overhead per static response: ~850 bytes (vs ~4 KB if we'd unioned all 127 unique hashes from the shared set)
+- **Live dispatch (prod server):**
+  - `/auth/login` (static prerender) → `script-src 'self' 'sha256-...' 'sha256-...'` ✓
+  - `/legal` (static prerender) → hash-CSP ✓
+  - `/` (dynamic, ISR-style) → `script-src 'self' 'nonce-<uuid>' 'strict-dynamic'` ✓
+  - `/search` (dynamic) → nonce-CSP ✓
+  - `/api/*` (dynamic) → nonce-CSP ✓
+- **CI gates:** typecheck ✓, lint ✓ (1 expected warning — `scripts/**` excluded per tsconfig), 557 unit tests pass (3 skipped), build exit 0
+- **E2E note:** `tests/e2e/auth.spec.ts` failure observed both on this commit AND on baseline `3a55d27` (without CSP changes) — confirmed pre-existing flake, not a CSP regression. The page renders (header/footer/email input all in DOM per Playwright accessibility tree); the locator reports `hidden` for reasons independent of CSP (likely hydration timing on auth pages)
+
 ## [1.5.24] - 2026-06-22 — Coverage Threshold Enforcement
 
 ### Added

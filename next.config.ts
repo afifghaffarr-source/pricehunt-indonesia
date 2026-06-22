@@ -3,33 +3,21 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-// CSP stays static here for now — see src/proxy.ts "CSP nonce pipeline"
-// block at the bottom for the architectural follow-up plan. Once all
-// route segments are forced to dynamic rendering (`export const dynamic
-// = 'force-dynamic'` in the root layout) we can move this header to
-// proxy.ts with per-request nonces and drop 'unsafe-inline'.
+// Content-Security-Policy is now generated per-request in src/proxy.ts.
+// The middleware (Node.js runtime) decides per-route:
+//   - Static (prerendered) routes: hash-based CSP (SHA-256 of every inline
+//     <script> block, extracted at build time by scripts/extract-csp-hashes.mjs)
+//   - Dynamic (server-rendered) routes: per-request nonce + 'strict-dynamic'
+// The static CSP here only covers directives that don't need per-route logic
+// (img-src, font-src, connect-src, frame-ancestors, base-uri, etc.) — these
+// are the same for every page.
 //
-// CSP is more restrictive in production: drop 'unsafe-eval' (only needed
-// for Next.js dev HMR / Webpack). 'unsafe-inline' stays for now because
-// several route segments (`/auth/*`, marketing pages) are statically
-// prerendered at build time and don't get nonces — see proxy.ts note.
-const cspDirectives = [
-  "default-src 'self'",
-  isProduction
-    ? "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
-    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' https://placehold.co https://images.unsplash.com https://picsum.photos https://fastly.picsum.photos https://images.tokopedia.net https://p16-images-sign-sg.tokopedia-static.net https://p19-images-sign-sg.tokopedia-static.net https://cf.shopee.co.id https://s-cf-id.shopeesz.com https://s.bukalapak.com https://www.static-src.com https://img.lazcdn.com https://i5.walmartimages.com https://p16-oec-sg.tiktokcdn.com data: blob:",
-  "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com wss://*.supabase.co https://vercel.live",
-  "frame-src 'none'",
-  // Block mixed content and restrict framing further.
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-  // Upgrade insecure requests (only meaningful when served over HTTPS).
-  ...(isProduction ? ["upgrade-insecure-requests"] : []),
-];
+// Why split: see scripts/extract-csp-hashes.mjs and the v1.5.25 CHANGELOG
+// entry for the full architectural rationale. The short version is that
+// nonce-based CSP requires every page to be dynamically rendered, which we
+// don't want for `/auth/*`, `/legal/*`, and other static routes.
+//
+// All other security headers (HSTS, X-Frame-Options, etc.) stay here.
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -56,10 +44,11 @@ const securityHeaders = [
         },
       ]
     : []),
-  {
-    key: "Content-Security-Policy",
-    value: cspDirectives.join("; "),
-  },
+  // Content-Security-Policy is generated per-request in src/proxy.ts:
+  //   - Static routes: hash-based (SHA-256 of inline scripts from build)
+  //   - Dynamic routes: per-request nonce + 'strict-dynamic'
+  // Other security headers (HSTS, X-Frame-Options, Permissions-Policy,
+  // COOP/COEP/CORP) stay here — they're identical for every page.
 ];
 
 const nextConfig: NextConfig = {

@@ -88,7 +88,7 @@ Code review of 3 layers:
 ## Future Improvements (Not Urgent)
 
 - [ ] Run `npm audit` to check for known CVE in dependencies
-- [ ] Add CSP nonce-based script loading (currently uses `'unsafe-inline'`)
+- [x] ~~Add CSP nonce-based script loading (currently uses `'unsafe-inline'`)~~ → ✅ Closed v1.5.25 (per-route hash-CSP for static + nonce-CSP for dynamic; no `unsafe-inline`)
 - [ ] Enable Supabase leaked password protection (compromised-password check)
 - [ ] Add 2FA for admin accounts
 - [ ] Add automated security headers test in CI
