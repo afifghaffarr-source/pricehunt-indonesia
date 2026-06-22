@@ -13,6 +13,18 @@ export async function GET(request: NextRequest) {
   // In production, this should be false. Real prices come from ingestion API.
   const enableSimulation = isPriceSimulationEnabled();
 
+  // SAFETY GUARD: refuse to run simulation in production regardless of env
+  // value. A misconfigured env var on a prod deploy would otherwise silently
+  // overwrite every real offer price with a random ±3% perturbation.
+  if (enableSimulation && process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      {
+        error: "ENABLE_PRICE_SIMULATION is not allowed in production",
+      },
+      { status: 503 }
+    );
+  }
+
   if (!enableSimulation) {
     return NextResponse.json({
       message: "Price simulation disabled. Real price updates should come from ingestion API or data sources.",
@@ -191,8 +203,11 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error("Cron job error:", err);
+    // Don't leak err.message to caller — it may contain internal SQL /
+    // file path / Supabase error details that help attackers fingerprint
+    // the schema. Full error is already logged server-side.
     return NextResponse.json(
-      { error: "Cron job failed", details: err instanceof Error ? err.message : "unknown" },
+      { error: "Cron job failed" },
       { status: 500 }
     );
   }

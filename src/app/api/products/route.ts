@@ -9,8 +9,25 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const sort = searchParams.get("sort") || "deal_score";
     const order = searchParams.get("order") || "desc";
-    const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
-    const offset = parseInt(searchParams.get("offset") || "0", 10);
+
+    // Validate pagination params — return 400 for invalid input rather
+    // than letting parseInt → NaN → PostgREST 500.
+    const rawLimit = parseInt(searchParams.get("limit") || "50", 10);
+    const rawOffset = parseInt(searchParams.get("offset") || "0", 10);
+    if (!Number.isFinite(rawLimit) || rawLimit < 1 || rawLimit > 100) {
+      return NextResponse.json(
+        { error: "limit must be an integer between 1 and 100" },
+        { status: 400 }
+      );
+    }
+    if (!Number.isFinite(rawOffset) || rawOffset < 0) {
+      return NextResponse.json(
+        { error: "offset must be a non-negative integer" },
+        { status: 400 }
+      );
+    }
+    const limit = rawLimit;
+    const offset = rawOffset;
 
     let queryBuilder = supabase.from("products").select("*", { count: "exact" });
 

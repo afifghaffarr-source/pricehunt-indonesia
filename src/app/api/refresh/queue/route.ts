@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
-import { getIngestionSecret } from "@/lib/env";
+import { getIngestionSecret, safeEqual } from "@/lib/env";
 
 /**
  * Row shape for `crawl_targets`. See refresh/trigger for the full
@@ -64,7 +64,9 @@ export async function GET(request: Request) {
     }
 
     const providedSecret = authHeader.substring(7); // Remove "Bearer "
-    if (providedSecret !== expectedSecret) {
+    // Constant-time compare to prevent timing-side-channel recovery of
+    // the bearer token. See src/lib/env.ts `safeEqual`.
+    if (!safeEqual(providedSecret, expectedSecret)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized - Invalid token" },
         { status: 401, headers: { "Cache-Control": "no-store" } }

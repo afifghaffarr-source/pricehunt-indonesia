@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
+import { getIngestionSecret, safeEqual } from "@/lib/env";
 import { z } from "zod";
-import { getIngestionSecret } from "@/lib/env";
 
 // Validation schema for ingestion data
 const OfferSchema = z.object({
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (!secret || secret !== expectedSecret) {
+    if (!secret || !safeEqual(secret, expectedSecret)) {
       console.warn("[Ingestion] Unauthorized access attempt");
       return NextResponse.json(
         { error: "Unauthorized. Valid INGESTION_SECRET required." },
@@ -243,12 +243,12 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error("[Ingestion] Unexpected error:", error);
-    
+
+    // Don't leak err.message to caller — internal error details may
+    // include SQL state, file paths, and Supabase RLS hints. Full
+    // error already logged server-side for debugging.
     return NextResponse.json(
-      { 
-        error: "Internal server error during ingestion",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Internal server error during ingestion" },
       { status: 500 }
     );
   }

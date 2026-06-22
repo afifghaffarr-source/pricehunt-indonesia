@@ -42,6 +42,36 @@
  * Used by `/api/ingestion/*`, `/api/refresh/*`, `/api/internal/vexo-search`,
  * and `src/proxy.ts`.
  */
+/**
+ * Constant-time string comparison (length-tolerant via early bail).
+ *
+ * **Why this matters:** plain `===` on secret strings leaks information
+ * via timing. An attacker can recover a bearer token byte-by-byte by
+ * measuring how long the comparison takes (each first-mismatch position
+ * exits early in `===`). The XOR-OR loop below takes the same time
+ * regardless of where the strings diverge, so timing tells the attacker
+ * nothing.
+ *
+ * **Length-bail caveat:** we still bail if the lengths differ — that's
+ * a one-bit signal (the attacker learns the secret length). For our use
+ * case (fixed-length hex tokens generated from 32 random bytes), the
+ * length is known publicly (always 64 chars), so leaking it costs
+ * nothing. For variable-length secrets, add a length-padding step
+ * before the loop.
+ *
+ * Used by `/api/ingestion/*` and `/api/refresh/*` — the proxy uses
+ * its own copy (kept inline so it doesn't import this module from the
+ * Edge bundle).
+ */
+export function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 export function getIngestionSecret(): string | null {
   return process.env.INGESTION_SECRET ?? null;
 }

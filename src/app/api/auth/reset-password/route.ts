@@ -59,8 +59,27 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // The token is automatically validated by Supabase
-    // updateUser will use the session from the token
+    // SECURITY (audit 2026-06-22): verify the recovery token before
+    // changing the password. Previously this route called updateUser()
+    // directly, which would succeed for whoever held the recovery
+    // session cookie — meaning an attacker who triggered their own
+    // password reset could pivot via any prior recovery session.
+    // Now: verifyOtp exchanges the token for a session, and updateUser
+    // is called in the same request scope. If the token is invalid or
+    // expired, the call fails with 400.
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      token_hash: token,
+      type: "recovery",
+    });
+
+    if (verifyError) {
+      console.error("Reset password: token verification failed:", verifyError);
+      return NextResponse.json(
+        { error: "Token tidak valid atau sudah kadaluarsa" },
+        { status: 400 }
+      );
+    }
+
     const { error } = await supabase.auth.updateUser({
       password: password,
     });

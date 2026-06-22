@@ -6,19 +6,24 @@
  * - IP rate limit (10/hour)
  * - Token/password presence validation
  * - Password length validation (>= 6)
- * - Supabase updateUser success/error
+ * - Supabase verifyOtp + updateUser success/error
  * - Generic vs specific error responses (no enumeration)
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-const { mockUpdateUser, mockCheckPersistentRateLimit } = vi.hoisted(() => ({
-  mockUpdateUser: vi.fn(),
-  mockCheckPersistentRateLimit: vi.fn(),
-}));
+const { mockVerifyOtp, mockUpdateUser, mockCheckPersistentRateLimit } =
+  vi.hoisted(() => ({
+    mockVerifyOtp: vi.fn(),
+    mockUpdateUser: vi.fn(),
+    mockCheckPersistentRateLimit: vi.fn(),
+  }));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
-    auth: { updateUser: mockUpdateUser },
+    auth: {
+      verifyOtp: mockVerifyOtp,
+      updateUser: mockUpdateUser,
+    },
   })),
 }));
 
@@ -85,6 +90,7 @@ describe("POST /api/auth/reset-password", () => {
   });
 
   it("returns 200 with success message when Supabase update succeeds", async () => {
+    mockVerifyOtp.mockResolvedValue({ error: null });
     mockUpdateUser.mockResolvedValue({ error: null });
     const res = await POST(makeRequest({ token: "valid-token", password: "newpass123" }) as never);
 
@@ -92,12 +98,27 @@ describe("POST /api/auth/reset-password", () => {
     const data = await res.json();
     expect(data.success).toBe(true);
     expect(data.message).toMatch(/berhasil direset/i);
+    expect(mockVerifyOtp).toHaveBeenCalledWith({
+      token_hash: "valid-token",
+      type: "recovery",
+    });
     expect(mockUpdateUser).toHaveBeenCalledWith({ password: "newpass123" });
   });
 
-  it("returns 400 with generic invalid-token message when Supabase rejects", async () => {
-    mockUpdateUser.mockResolvedValue({ error: { message: "Token expired" } });
+  it("returns 400 with generic invalid-token message when verifyOtp fails", async () => {
+    mockVerifyOtp.mockResolvedValue({ error: { message: "Token expired" } });
     const res = await POST(makeRequest({ token: "expired", password: "newpass123" }) as never);
+
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/tidak valid atau sudah kadaluarsa/i);
+    expect(mockUpdateUser).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 with generic invalid-token message when updateUser fails", async () => {
+    mockVerifyOtp.mockResolvedValue({ error: null });
+    mockUpdateUser.mockResolvedValue({ error: { message: "Update failed" } });
+    const res = await POST(makeRequest({ token: "valid", password: "newpass123" }) as never);
 
     expect(res.status).toBe(400);
     const data = await res.json();

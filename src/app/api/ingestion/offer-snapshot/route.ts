@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
-import { getIngestionSecret } from "@/lib/env";
+import { getIngestionSecret, safeEqual } from "@/lib/env";
 import { z } from "zod";
 import { normalizeMarketplace } from "@/lib/ingestion/normalizer";
 import { calculateConfidenceScore } from "@/lib/ingestion/confidence";
@@ -85,7 +85,9 @@ async function authenticateRequest(request: NextRequest): Promise<{ success: boo
   const secret = authHeader?.replace("Bearer ", "");
   const expectedSecret = getIngestionSecret();
 
-  if (expectedSecret && secret === expectedSecret) {
+  // Constant-time compare to prevent timing-side-channel recovery of the
+  // bearer token. See src/lib/env.ts `safeEqual` for the rationale.
+  if (expectedSecret && secret && safeEqual(secret, expectedSecret)) {
     return { success: true };
   }
 

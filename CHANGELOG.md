@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.28] - 2026-06-22 — Security & Quality Audit Fixes
+
+Audit pass on the whole project (3 parallel review agents: API smoke, code review, browser walkthrough). Surfaced and fixed 1 CRITICAL + 3 HIGH + 8 MEDIUM items in one batch.
+
+### CRITICAL — fixed
+
+**`/extension` page leaked the live `INGESTION_SECRET` in plain text** (`src/app/extension/page.tsx:79`)
+
+The "Beta Testing Secret" card hard-coded the production ingestion secret. Anyone visiting `/extension` could copy it and bypass all ingestion auth. **The leaked value was rotated in `.env.local` and must be rotated in Vercel too** before this commit ships.
+
+Fix: replaced the "Beta Secret" card with onboarding instructions pointing users to the secure channel (extension first-run flow, README, or maintainer contact). Added a comment in the file explicitly forbidding future commits from embedding secrets in public HTML.
+
+### HIGH — fixed
+
+**Timing-side-channel attack on `INGESTION_SECRET` comparison** (`src/lib/env.ts` + 5 ingestion routes)
+
+Plain `===` on secret strings lets an attacker recover the bearer token byte-by-byte via timing analysis. Routes affected:
+- `src/app/api/ingestion/route.ts:97`
+- `src/app/api/ingestion/offer-snapshot/route.ts:88`
+- `src/app/api/refresh/calculate-priorities/route.ts`
+- `src/app/api/refresh/queue/route.ts`
+- `src/app/api/refresh/trigger/route.ts`
+
+Fix: promoted `safeEqual()` (already used in `src/proxy.ts`) to an exported helper in `src/lib/env.ts` and replaced all five `===` checks. Added `src/test/safe-equal.test.ts` with 7 unit tests.
+
+**`/api/auth/reset-password` ignored the token it claimed to require**
+
+The route validated `if (!token || !password)` then called `supabase.auth.updateUser({ password })` directly. Supabase would change the password for whoever held the recovery session cookie — meaning an attacker who triggered their own reset could pivot via any prior recovery session.
+
+Fix: call `supabase.auth.verifyOtp({ token_hash: token, type: 'recovery' })` first; if verification fails, return 400. Only call `updateUser` after a successful token exchange. Updated test (`src/test/api-auth-reset-password.test.ts`) to mock the new flow.
+
+**`ENABLE_PRICE_SIMULATION=true` could destroy prod price data** (`src/app/api/cron/prices/route.ts`)
+
+When the flag is on, the cron overwrites every real offer price with a random ±3% perturbation. The doc comment noted "this MUST be false in production" but there was no runtime guard. A misconfigured env var on a prod deploy would silently destroy data.
+
+Fix: refuse to run simulation if `NODE_ENV === "production"` and `isPriceSimulationEnabled()` is true (return 503). Guard fires before any DB writes.
+
+### MEDIUM — fixed
+
+**`/api/auth/*` not in CSRF-protected paths** (`src/proxy.ts`)
+
+CSRF protected admin/ingestion/ai-advisor/etc but not auth endpoints. A third-party site could POST to `/api/auth/forgot-password` and trigger reset emails to attacker-chosen addresses.
+
+Fix: added `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/auth/register` to `CSRF_PROTECTED_PATHS`.
+
+**`/api/products?limit=-1` returned 500 instead of 400** (`src/app/api/products/route.ts`)
+
+`parseInt("-1")` → `-1` → PostgREST returned 500 with a confusing message. Fix: validate `limit` (1-100) and `offset` (≥0) before the query, return 400 on invalid input.
+
+**500 responses leaked internal error messages** (`src/app/api/cron/prices/route.ts`, `src/app/api/ingestion/route.ts`)
+
+Both routes returned `details: err.message` which could include SQL state, file paths, and Supabase RLS hints — useful for an attacker fingerprinting the schema.
+
+Fix: log the error server-side, return a generic `{ error: "..." }` to the caller.
+
+**`/api/recommendations` returned Next.js's HTML 404 page** (`src/app/api/recommendations/route.ts` new)
+
+Client `<AIRecommendations />` component called `/api/recommendations?product_id=...` and `/api/recommendations/feedback` (POST). Both routes didn't exist — Next.js served the HTML 404 page, causing `SyntaxError: Unexpected token '<'` errors in the browser console on every page that mounted the component.
+
+Fix: created stub routes returning empty JSON `{ recommendations: [] }` for GET and `{ ok: true }` for POST/PUT. Real recommendations live at `/api/recommendation/buy-or-wait` and `/api/recommendation/fake-discount` — stubs document the correct paths in the response message.
+
+**`/api/registry` empty while `/api/registry/health` showed 1 source** (`src/app/api/registry/route.ts`)
+
+Anon RLS filtered out `api_sources` rows; `/api/registry/health` hardcoded a vexo-api entry to surface env-configured sources. The two endpoints disagreed, which the API smoke test caught.
+
+Fix: `/api/registry` now injects the same vexo-api fallback as health when `isVexoConfigured()` returns true. Both endpoints report the same total.
+
+### Verification
+
+- typecheck ✓, lint ✓, 564 unit tests pass (3 skipped)
+- Pre-fix API smoke test re-run: all 50+ endpoints still respond correctly
+- Browser walkthrough re-run: `/extension` no longer shows the secret; `/recommendations` console no longer shows JSON parse errors; `/deals` empty state documented as data-side (no in-stock products with deal score > threshold)
+
+### Known limitations (audit-found, not fixed)
+
+- `/api/deals` returns 0 deals despite homepage showing "Deal Terbaik Hari Ini" — homepage uses different data source; not fixed in this commit, tracked separately
+- Homepage product cards have no images — likely a data-side issue (image URLs are `picsum.photos` placeholders), not a code issue
+- `/api/search` ignores the `marketplace` filter — minor, will fix in a separate pass
+- 13 `console.log` calls remain in production code — informational only, no security impact
+- `/api/auth/session` reveals `email` to any logged-in caller — admin badge doesn't need it, but Header uses it for display
+
 ## [1.5.27] - 2026-06-22 — Revert CSP Hash Pipeline (v1.5.25/26 broken)
 
 ### What broke

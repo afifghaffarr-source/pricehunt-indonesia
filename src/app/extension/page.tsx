@@ -61,35 +61,42 @@ export default function ExtensionPage() {
         </CardContent>
       </Card>
 
-      {/* Beta Secret Card */}
+      {/* Beta Testing Card — secret is delivered out-of-band via the
+          extension's first-run onboarding flow (popup form + secure
+          channel). NEVER embed secrets in public HTML. The previous
+          version of this section (commits ≤ 1866f78) hard-coded the
+          INGESTION_SECRET in plain text on the page, which was a
+          critical credential leak. See CHANGELOG v1.5.28. */}
       <Card className="mx-auto mb-12 max-w-2xl border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
             <Shield className="h-6 w-6 text-amber-600" />
           </div>
-          <CardTitle className="text-xl">Beta Testing Secret</CardTitle>
+          <CardTitle className="text-xl">Beta Testing — Bagaimana Caranya</CardTitle>
           <CardDescription>
-            Ingestion secret untuk beta testers - simpan baik-baik!
+            Cara konfigurasi ingestion key untuk beta testers
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg bg-muted p-4">
-            <p className="mb-2 text-sm font-medium">Ingestion Secret:</p>
-            <code className="block break-all rounded bg-background p-3 text-xs font-mono">
-              8f38f6acaafb1d3f5dc0e2f60f07e7e731ca67c4ed15b9dee7ff8094ec9eebc0
-            </code>
+          <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+            <p className="mb-2 text-foreground">
+              <strong>Cara pakai:</strong>
+            </p>
+            <ol className="ml-4 list-decimal space-y-1">
+              <li>Install extension dari link download di atas</li>
+              <li>Klik icon extension di toolbar Chrome → buka Settings</li>
+              <li>
+                Ingestion key akan diminta pada first-run. Kami kirim key via
+                secure channel (bukan via halaman publik) — lihat
+                <code className="mx-1 rounded bg-background px-1 text-xs">README</code>
+                repo extension atau hubungi maintainer untuk onboarding beta.
+              </li>
+              <li>Paste key di field &quot;Ingestion Key&quot; lalu klik Save</li>
+            </ol>
           </div>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              <strong>Cara pakai:</strong> Copy secret di atas, paste di popup extension saat konfigurasi (Step 3)
-            </p>
-            <p>
-              <strong>Keamanan:</strong> Secret ini hanya untuk beta testers. Jangan share di public!
-            </p>
-            <p className="text-xs">
-              Secret ini akan diganti saat launch publik ke Chrome Web Store
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Secret key dirotasi berkala. Versi publik extension (Chrome Web Store) tidak akan membutuhkan key — semuanya lewat proxy server kami.
+          </p>
         </CardContent>
       </Card>
 

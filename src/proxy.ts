@@ -28,6 +28,12 @@ const CSRF_PROTECTED_PATHS = [
   "/api/price-report",
   "/api/reviews",
   "/api/push/subscribe",
+  // Auth flows — previously missing from CSRF coverage (audit 2026-06-22).
+  // Without this, a third-party site can POST to /api/auth/forgot-password
+  // and trigger reset emails to attacker-chosen addresses.
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/register",
 ];
 
 const CSRF_HEADER = "x-csrf-token";
