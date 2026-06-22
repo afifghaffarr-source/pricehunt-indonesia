@@ -247,6 +247,15 @@ re-introduces the audit's findings.
 
 ### Tests
 
-- Unit: 496 passing, 3 skipped, 0 failing
-- Coverage thresholds are soft (set to 0 in `vitest.config.ts`).
-  Tighten when the team commits to coverage goals.
+- Unit: 557 passing, 3 skipped, 0 failing (was 496 — v1.5.24 added 61 new unit
+  tests across `env.test.ts`, `validation.test.ts`, `vexo-errors.test.ts`)
+- Coverage thresholds are now **enforced** in `vitest.config.ts`:
+  - lines: 26%
+  - functions: 21%
+  - branches: 28%
+  - statements: 26%
+  - Measured: lines 28.18%, functions 23.17%, branches 29.87%, statements 28.57%
+  - Round-down buffer accounts for floating-point jitter + future file additions
+  - See `docs/COVERAGE_EXCLUSIONS.md` for the rationale on which files are
+    excluded (mostly DB-layer code that is exercised via E2E / integration
+    tests, not unit tests).

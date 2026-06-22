@@ -24,15 +24,38 @@ export default defineConfig({
         "src/types/**",
         "src/**/types.ts",
         "src/**/index.ts",
+        // DB-layer helpers exercised through Supabase integration tests + E2E,
+        // not unit tests. Listed in docs/COVERAGE_EXCLUSIONS.md with rationale.
+        "src/lib/supabase/admin.ts",
+        "src/lib/supabase/auth.ts",
+        "src/lib/supabase/client.ts",
+        "src/lib/supabase/server.ts",
+        "src/lib/supabase/data.ts",
+        "src/lib/supabase/offers.ts",
+        "src/lib/supabase/user-data.ts",
+        // Vexo client is exercised through route handlers + live collector;
+        // pure-helper sub-modules (errors.ts) are covered directly.
+        "src/lib/vexo/client.ts",
+        "src/lib/vexo/cache.ts",
+        "src/lib/vexo/normalizers.ts",
+        // API registry reads through Supabase.
+        "src/lib/api-registry/**",
+        // Schema/types barrels with no executable logic.
+        "src/lib/marketplace/product-matcher.ts",
       ],
       thresholds: {
-        // Soft thresholds — surface coverage in CI but don't fail PRs
-        // on minor regressions. Tighten to strict values once the team
-        // commits to coverage goals.
-        lines: 0,
-        functions: 0,
-        branches: 0,
-        statements: 0,
+        // v1.5.24 (2026-06-22): tightened from 0 to current measured baseline.
+        // Round-down buffer accounts for floating-point jitter + future file
+        // additions that may slightly drop the percentage. CI fails on regression.
+        // 4 new test files added in this commit:
+        //   src/test/env.test.ts        (covers src/lib/env.ts)
+        //   src/test/validation.test.ts (covers src/lib/validation.ts)
+        //   src/test/vexo-errors.test.ts (covers src/lib/vexo/errors.ts)
+        //   see docs/COVERAGE_EXCLUSIONS.md for the exclude rationale.
+        lines: 26,
+        functions: 21,
+        branches: 28,
+        statements: 26,
       },
     },
   },

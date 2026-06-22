@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.24] - 2026-06-22 — Coverage Threshold Enforcement
+
+### Added
+
+**New unit tests** — 61 new tests across 3 files (was 496, now 557):
+- `src/test/env.test.ts` (24 tests) — covers `src/lib/env.ts` (the new env-var helpers from v1.5.23). Verifies defaults, parse-with-fallback, lazy reads (no module-level caching), and the `process.env` mutability pattern that existing tests rely on
+- `src/test/validation.test.ts` (28 tests) — covers `src/lib/validation.ts` (dependency-free schema validator). Exercises string/number/UUID/URL/object validators including edge cases (empty strings, NaN, Infinity, integer-only, optional vs required)
+- `src/test/vexo-errors.test.ts` (9 tests) — covers `src/lib/vexo/errors.ts` (Vexo error class hierarchy). Verifies inheritance, default values, and the `toJSON()` contract
+
+**Coverage documentation — `docs/COVERAGE_EXCLUSIONS.md`** — explains why 13 files are excluded from coverage measurement (DB-layer code exercised via integration tests, not unit tests). Provides a clear path to lift each exclusion.
+
+### Changed
+
+**Coverage thresholds enforced — `vitest.config.ts`**
+- Was: all 4 thresholds at `0` (no enforcement)
+- Now:
+  - lines: 26%
+  - functions: 21%
+  - branches: 28%
+  - statements: 26%
+- Measured baseline (after the 3 new test files): lines 28.18%, functions 23.17%, branches 29.87%, statements 28.57%
+- Round-down buffer (~1 pp) accounts for floating-point jitter and future file additions that may slightly drop the average
+- CI (`npm run test:coverage`) now exits non-zero if coverage drops below any threshold. Verified experimentally: setting `lines: 99` produced `ERROR: Coverage for lines (28.18%) does not meet global threshold (99%)` with exit code 1
+
+**`vitest.config.ts` exclude list expanded** — 13 files moved to explicit exclude with rationale comments referencing `docs/COVERAGE_EXCLUSIONS.md`. These are files where unit-test coverage is intrinsically low (DB queries that go through Supabase, fetch wrappers that need heavy mocking, integration-only code paths). Excluding them keeps the global threshold meaningful.
+
+### Files Changed
+
+- `src/test/env.test.ts` (new, 209 lines)
+- `src/test/validation.test.ts` (new, 230 lines)
+- `src/test/vexo-errors.test.ts` (new, 91 lines)
+- `vitest.config.ts` (thresholds + exclude list)
+- `docs/COVERAGE_EXCLUSIONS.md` (new, 4.2 KB)
+- `docs/PRODUCTION_CHECKLIST.md` (section 11: coverage state updated)
+
 ## [1.5.23] - 2026-06-22 — P18 (Env-Vars Broad Audit) Closure
 
 ### Added
