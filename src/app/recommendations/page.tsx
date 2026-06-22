@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { AIRecommendations } from '@/components/ai/ai-recommendations';
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: 'Rekomendasi AI - BijakBeli',
   description: 'Rekomendasi produk berdasarkan preferensi Anda',

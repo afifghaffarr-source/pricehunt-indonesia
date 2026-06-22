@@ -169,6 +169,51 @@ function checkCsrf(
   return null;
 }
 
+/**
+ * Routes that remain statically prerendered at build time.
+ * These pages get framework <script> tags WITHOUT nonces, so they need
+ * 'unsafe-inline' in CSP to keep working. All interactive pages (auth,
+ * dashboard, etc.) have been converted to `force-dynamic` and receive
+ * per-request nonces via the pipeline below.
+ */
+const STATIC_ROUTES = new Set([
+  "/legal",
+  "/legal/privacy",
+  "/legal/terms",
+  "/offline",
+]);
+
+function isStaticRoute(pathname: string): boolean {
+  if (STATIC_ROUTES.has(pathname)) return true;
+  if (pathname === "/_not-found") return true;
+  // ISR pages with revalidate (leaderboard, product/[slug]) may serve
+  // cached HTML — keep unsafe-inline for them too.
+  if (pathname === "/leaderboard" || pathname.startsWith("/product/")) return true;
+  return false;
+}
+
+function buildCsp(nonce: string, isStatic: boolean): string {
+  const isProduction = process.env.NODE_ENV === "production";
+  const directives = [
+    "default-src 'self'",
+    isStatic
+      ? isProduction
+        ? "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
+        : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
+      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://vercel.live`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' https://placehold.co https://images.unsplash.com https://picsum.photos https://fastly.picsum.photos https://images.tokopedia.net https://p16-images-sign-sg.tokopedia-static.net https://p19-images-sign-sg.tokopedia-static.net https://cf.shopee.co.id https://s-cf-id.shopeesz.com https://s.bukalapak.com https://www.static-src.com https://img.lazcdn.com https://i5.walmartimages.com https://p16-oec-sg.tiktokcdn.com data: blob:",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com wss://*.supabase.co https://vercel.live",
+    "frame-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    ...(isProduction ? ["upgrade-insecure-requests"] : []),
+  ];
+  return directives.join("; ");
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const origin = request.headers.get("origin");
@@ -180,20 +225,25 @@ export function proxy(request: NextRequest) {
     return addCorsHeaders(response, origin);
   }
 
-  // Only apply to API routes
-  if (!pathname.startsWith("/api/")) {
-    return NextResponse.next();
-  }
+  const isApiRoute = pathname.startsWith("/api/");
+
+  // Generate per-request nonce for CSP (page routes get nonces on scripts)
+  const nonce = crypto.randomUUID();
+  const isStatic = !isApiRoute && isStaticRoute(pathname);
 
   // Create response
   let response = NextResponse.next();
 
-  // Add CORS headers
-  response = addCorsHeaders(response, origin);
+  // Set nonce header for downstream components (JsonLd reads this)
+  response.headers.set("x-nonce", nonce);
 
-  // CSRF Protection for state-changing methods
-  if (!SAFE_METHODS.has(method)) {
-    // Check if this path requires CSRF protection
+  // Add CORS headers (API routes)
+  if (isApiRoute) {
+    response = addCorsHeaders(response, origin);
+  }
+
+  // CSRF Protection for state-changing methods on API routes
+  if (isApiRoute && !SAFE_METHODS.has(method)) {
     const requiresCSRF = CSRF_PROTECTED_PATHS.some((path) =>
       pathname.startsWith(path),
     );
@@ -204,13 +254,31 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // Add security headers
+  // Security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("X-XSS-Protection", "0");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+  );
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Embedder-Policy", "credentialless");
 
-  // Add request ID for tracing
+  // CSP — nonce-based for dynamic pages, unsafe-inline for static pages
+  response.headers.set("Content-Security-Policy", buildCsp(nonce, isStatic));
+
+  // HSTS (production only)
+  if (process.env.NODE_ENV === "production") {
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload",
+    );
+  }
+
+  // Request ID for tracing
   const requestId = crypto.randomUUID();
   response.headers.set("X-Request-ID", requestId);
 
@@ -219,42 +287,11 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/api/:path*",
+    /*
+     * Match all routes except static assets.
+     * Covers: page routes, API routes, auth flows.
+     * Excludes: _next/static, _next/image, favicon.ico, sitemap.xml, robots.txt
+     */
+    "/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt).*)",
   ],
 };
-
-// ---------------------------------------------------------------------------
-// CSP nonce pipeline — ARCHITECTURAL DESIGN REQUIRED BEFORE ENABLING
-// ---------------------------------------------------------------------------
-//
-// We previously wired up per-request CSP nonces here + in next.config.ts.
-// It worked end-to-end on dynamically-rendered pages (homepage `/` got
-// nonces applied to every framework <script>/<style>). But the E2E suite
-// failed: statically-prerendered pages (`/auth/login`, `/auth/register`,
-// etc., build output `○`) get NO nonces because Next.js renders them at
-// build time without a request context. Those scripts then lack the
-// nonce attribute, CSP blocks them, and the page stays on its loading
-// skeleton.
-//
-// Per the Next.js 16 CSP guide (node_modules/next/dist/docs/.../content-
-// security-policy.md), nonce-based CSP requires ALL pages to be
-// dynamically rendered — static optimization, ISR, and PPR are
-// incompatible. The minimum-viable rollout is:
-//
-//   1. Audit each route segment for safe-to-dynamic conversion (pages
-//      with no request-time data are safe; pages that already read
-//      cookies/headers are already dynamic).
-//   2. Add `export const dynamic = 'force-dynamic'` to the root layout
-//      (or per page where needed).
-//   3. Measure the latency / hosting cost of full dynamic rendering.
-//   4. Re-enable the proxy nonce pipeline + remove the static CSP from
-//      next.config.ts.
-//
-// Until that design work is approved, we leave CSP in next.config.ts
-// (with `'unsafe-inline'`, same as before this commit) so static pages
-// keep working. The infrastructure for nonces (proxy nonce header,
-// JsonLd reading x-nonce) stays in place — when we flip to dynamic-only,
-// those pieces just start working without further changes.
-//
-// See docs/PRODUCTION_CHECKLIST.md "Security hardening roadmap" for the
-// follow-up plan.

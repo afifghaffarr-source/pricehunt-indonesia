@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Chrome Extension - BijakBeli.app",
   description: "Download ekstensi Chrome BijakBeli untuk mengumpulkan data produk dengan satu klik dari Tokopedia, Shopee, dan Bukalapak.",

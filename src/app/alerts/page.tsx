@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { PriceAlertsManager } from '@/components/alerts/price-alerts-manager';
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: 'Price Alerts - BijakBeli',
   description: 'Kelola notifikasi harga produk',

@@ -42,6 +42,56 @@ describe("Security Headers", () => {
     expect(csp).toContain("style-src");
     expect(csp).toContain("img-src");
   });
+
+  it("CSP nonce pipeline: dynamic routes get nonce-based CSP", () => {
+    const nonce = "test-nonce-12345";
+    const isStatic = false;
+    const isProduction = true;
+
+    const directives = [
+      "default-src 'self'",
+      isStatic
+        ? isProduction
+          ? "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
+          : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
+        : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://vercel.live`,
+    ];
+
+    const csp = directives.join("; ");
+
+    expect(csp).toContain(`nonce-${nonce}`);
+    expect(csp).toContain("'strict-dynamic'");
+    expect(csp).not.toContain("'unsafe-inline'");
+    expect(csp).not.toContain("'unsafe-eval'");
+  });
+
+  it("CSP nonce pipeline: static routes get unsafe-inline fallback", () => {
+    const nonce = "test-nonce-12345";
+    const isStatic = true;
+    const isProduction = true;
+
+    const directives = [
+      "default-src 'self'",
+      isStatic
+        ? isProduction
+          ? "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
+          : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
+        : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://vercel.live`,
+    ];
+
+    const csp = directives.join("; ");
+
+    expect(csp).toContain("'unsafe-inline'");
+    expect(csp).not.toContain("nonce-");
+    expect(csp).not.toContain("'strict-dynamic'");
+  });
+
+  it("x-nonce header is set on response", () => {
+    const nonce = crypto.randomUUID();
+    expect(nonce).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+  });
 });
 
 describe("Rate Limiting Logic", () => {

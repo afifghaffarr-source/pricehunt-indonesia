@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ForgotPasswordForm } from "./ForgotPasswordForm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Lupa Password - BijakBeli.app",
   description: "Reset password akun Anda",
