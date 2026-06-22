@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
 import { getAppUrl } from "./app-url";
+import { getVapidConfig } from "@/lib/env";
 import type * as WebPush from "web-push";
 
 interface PushNotificationPayload {
@@ -51,14 +52,12 @@ export async function sendPushNotificationToUser(
   let currentPreferences: Record<string, unknown> = {};
 
   try {
-    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-    const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@bijakbeli.id";
-
-    if (!vapidPublicKey || !vapidPrivateKey) {
+    const vapid = getVapidConfig();
+    if (!vapid) {
       console.log("[Push] VAPID keys not configured, skipping push notification");
       return false;
     }
+    const { publicKey: vapidPublicKey, privateKey: vapidPrivateKey, subject: vapidSubject } = vapid;
 
     // Get user's push subscription from preferences
     const supabase = createAdminClient();

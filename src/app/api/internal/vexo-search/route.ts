@@ -22,10 +22,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { checkPersistentRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
-
-const VEXO_BASE = process.env.VEXO_API_BASE_URL || "https://vexoapi.dev";
-const VEXO_KEY = process.env.VEXO_API_KEY || "";
-const INGESTION_SECRET = process.env.INGESTION_SECRET || "";
+import { getIngestionSecret, getVexoConfig } from "@/lib/env";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 60;
@@ -59,8 +56,9 @@ function json(data: unknown, init?: ResponseInit) {
 }
 
 async function vexoGet(path: string, params: Record<string, string>): Promise<unknown> {
-  const qs = new URLSearchParams({ key: VEXO_KEY, ...params }).toString();
-  const res = await fetch(`${VEXO_BASE}${path}?${qs}`, {
+  const { baseUrl, apiKey } = getVexoConfig();
+  const qs = new URLSearchParams({ key: apiKey, ...params }).toString();
+  const res = await fetch(`${baseUrl}${path}?${qs}`, {
     signal: AbortSignal.timeout(15_000),
     headers: { "User-Agent": "bijakbeli-collector/1.0" },
   });
@@ -72,11 +70,12 @@ async function vexoGet(path: string, params: Record<string, string>): Promise<un
 
 async function vexoAi(prompt: string, context: string): Promise<string | null> {
   // Try primary model (gpt-oss-120b), fallback to duckai if needed.
+  const { baseUrl, apiKey } = getVexoConfig();
   const models = ["gptoss120b", "duckai"];
   for (const model of models) {
     try {
       const res = await fetch(
-        `${VEXO_BASE}/api/ai/${model}?key=${VEXO_KEY}`,
+        `${baseUrl}/api/ai/${model}?key=${apiKey}`,
         {
           method: "POST",
           signal: AbortSignal.timeout(20_000),
@@ -133,10 +132,11 @@ export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const secret = authHeader?.replace("Bearer ", "").trim();
 
-  if (!INGESTION_SECRET) {
+  const expectedSecret = getIngestionSecret();
+  if (!expectedSecret) {
     return json({ error: "INGESTION_SECRET not configured on server" }, { status: 500 });
   }
-  if (!secret || secret !== INGESTION_SECRET) {
+  if (!secret || secret !== expectedSecret) {
     return json({ error: "Unauthorized. Valid INGESTION_SECRET required." }, { status: 401 });
   }
 
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Validate input
-  if (!VEXO_KEY) {
+  if (!getVexoConfig().apiKey) {
     return json({ error: "VEXO_API_KEY not configured on server" }, { status: 500 });
   }
 

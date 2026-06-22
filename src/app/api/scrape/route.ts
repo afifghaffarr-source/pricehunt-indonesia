@@ -3,6 +3,7 @@ import { scrapeAllMarketplaces, generateScrapeReport } from "@/lib/scraper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin-auth";
 import type { Database } from "@/lib/supabase/types";
+import { isPriceSimulationEnabled } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
   // ✅ SECURITY: Require admin authentication (expensive operation)
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   // ⚠️ DATA TRUST WARNING: This endpoint uses simulated/demo scraper
   // Real price data should come from ingestion API with proper source tracking
   // This is for development/testing only
-  const enableSimulation = process.env.ENABLE_PRICE_SIMULATION === 'true';
+  const enableSimulation = isPriceSimulationEnabled();
   
   if (!enableSimulation) {
     return NextResponse.json({

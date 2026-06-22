@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/api-auth";
 import { checkPersistentRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
-
-const VEXO_BASE = process.env.VEXO_API_BASE_URL || "https://vexoapi.dev";
+import { getVexoConfig } from "@/lib/env";
 
 interface VexoMarketplaceData {
   status: number | boolean;
@@ -26,7 +25,7 @@ interface VexoMarketplaceData {
 
 export async function GET(request: NextRequest) {
   // v1.5.2: read env at request time so tests can override it.
-  const VEXO_KEY = process.env.VEXO_API_KEY || "";
+  const { baseUrl: VEXO_BASE, apiKey: VEXO_KEY } = getVexoConfig();
 
   const user = await getAuthenticatedUser();
   const { searchParams } = request.nextUrl;

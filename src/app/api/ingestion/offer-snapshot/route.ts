@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
+import { getIngestionSecret } from "@/lib/env";
 import { z } from "zod";
 import { normalizeMarketplace } from "@/lib/ingestion/normalizer";
 import { calculateConfidenceScore } from "@/lib/ingestion/confidence";
@@ -82,7 +83,7 @@ interface OfferSnapshotResponse {
 async function authenticateRequest(request: NextRequest): Promise<{ success: boolean; error?: string }> {
   const authHeader = request.headers.get("authorization");
   const secret = authHeader?.replace("Bearer ", "");
-  const expectedSecret = process.env.INGESTION_SECRET;
+  const expectedSecret = getIngestionSecret();
 
   if (expectedSecret && secret === expectedSecret) {
     return { success: true };

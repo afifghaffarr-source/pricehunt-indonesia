@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 import { z } from "zod";
+import { getIngestionSecret } from "@/lib/env";
 
 // Validation schema for ingestion data
 const OfferSchema = z.object({
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const secret = authHeader?.replace("Bearer ", "");
     
-    const expectedSecret = process.env.INGESTION_SECRET;
+    const expectedSecret = getIngestionSecret();
     
     if (!expectedSecret) {
       console.error("[Ingestion] INGESTION_SECRET not configured");

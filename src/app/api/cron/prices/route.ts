@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { isOfferInStock } from "@/lib/ingestion/adapter";
+import { isPriceSimulationEnabled } from "@/lib/env";
 
 export async function GET(request: NextRequest) {
   // ✅ SECURITY: Require cron secret (fail closed)
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   // ✅ DATA TRUST: Check if price simulation is enabled
   // In production, this should be false. Real prices come from ingestion API.
-  const enableSimulation = process.env.ENABLE_PRICE_SIMULATION === 'true';
+  const enableSimulation = isPriceSimulationEnabled();
 
   if (!enableSimulation) {
     return NextResponse.json({

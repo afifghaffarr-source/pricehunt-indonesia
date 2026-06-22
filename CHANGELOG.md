@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.23] - 2026-06-22 — P18 (Env-Vars Broad Audit) Closure
+
+### Added
+
+**Centralised env-var helpers — `src/lib/env.ts`** (server-only)
+- `getIngestionSecret(): string | null` — replaces 7× duplicated `const expectedSecret = process.env.INGESTION_SECRET` reads across `/api/ingestion/*`, `/api/refresh/*`, `/api/internal/vexo-search`, and `src/proxy.ts`
+- `getCronSecret(): string | null` — replaces the direct read in `src/proxy.ts`
+- `getVexoConfig(): { baseUrl, apiKey, timeoutMs, cacheTtlSeconds }` — defaults baked in once (previously hardcoded `|| "https://vexoapi.dev"` in 3 routes). Invalid numeric values fall back to defaults with `console.warn`
+- `getVapidConfig(): { publicKey, privateKey, subject } | null` — returns `null` when keys are missing. Used by `src/lib/push-notifications.ts`
+- `isPriceSimulationEnabled(): boolean` — typed wrapper. Used by `/api/cron/prices` and `/api/scrape`
+
+### Changed
+
+**Documentation accuracy — `docs/PRODUCTION_CHECKLIST.md` section 3**
+- Removed `SUPABASE_URL` and `SUPABASE_ANON_KEY` from the "Required" list. The code never reads these — the codebase uses `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` via `createBrowserClient` / `createServerClient` helpers in `src/lib/supabase/`. These were documentation bugs from the original checklist; following them would have configured unused env vars
+- Added 14 env vars that were used in code but missing from the checklist: `VEXO_API_BASE_URL`, `VEXO_API_TIMEOUT_MS`, `VEXO_CACHE_TTL_SECONDS`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_SENTRY_DSN`, `ENABLE_PRICE_SIMULATION`, `SENTRY_ORG`, `SENTRY_PROJECT`, `EXTERNAL_API_KEY`, `NEXT_PUBLIC_SITE_URL` (legacy), `VERCEL_URL` (runtime)
+- Reorganised into Required / Public / Framework sections + a "Centralised helpers" section that points to `src/lib/env.ts`
+- Section 11 audit status updated: P18 marked CLOSED
+
+**Code refactors**
+- 7 INGESTION_SECRET read sites → `getIngestionSecret()`
+- 3 VEXO_API_BASE_URL + VEXO_API_KEY + VEXO_API_TIMEOUT_MS + VEXO_CACHE_TTL_SECONDS read sites → `getVexoConfig()`
+- VAPID trio in `src/lib/push-notifications.ts` → `getVapidConfig()`
+- CRON_SECRET read in `src/proxy.ts` → `getCronSecret()`
+- ENABLE_PRICE_SIMULATION reads in `/api/cron/prices` and `/api/scrape` → `isPriceSimulationEnabled()`
+- `NEXT_PUBLIC_APP_URL` direct read in `src/proxy.ts:6` → `getAppUrl()` (single source of truth per `src/lib/app-url.ts`)
+- Removed dead commented-out `cookie: process.env.GEMINI_COOKIE` line in `src/lib/ai/vexoapi.ts`
+
+### Audit state
+
+- **P18 closed.** The full env-var surface is now documented, consolidated, and verified against actual code usage
+- Server-only secrets verified NOT to leak into the client bundle: `grep -r "SUPABASE_SERVICE_ROLE_KEY|RESEND_API_KEY|OPENAI_API_KEY|VEXO_API_KEY|VAPID_PRIVATE_KEY|EXTERNAL_API_KEY|INGESTION_SECRET|CRON_SECRET" .next/static` returns 0 matches
+
+### Tests
+
+- All gates green: `npm run lint` 0 errors, `npm run typecheck` clean, `npm run test` 496/496 pass (3 skipped), `npm run build` exit 0
+- Backwards-compatible with existing test pattern: helpers read `process.env` lazily on each call, so tests that mutate `process.env.INGESTION_SECRET` etc. in `beforeEach` continue to work unchanged
+
+### Files Changed
+
+- `src/lib/env.ts` (new — 145 lines incl. JSDoc)
+- `src/app/api/ingestion/route.ts` (use helper)
+- `src/app/api/ingestion/offer-snapshot/route.ts` (use helper)
+- `src/app/api/refresh/trigger/route.ts` (use helper)
+- `src/app/api/refresh/queue/route.ts` (use helper)
+- `src/app/api/refresh/calculate-priorities/route.ts` (use helper)
+- `src/app/api/internal/vexo-search/route.ts` (use helpers)
+- `src/app/api/vexo/marketplace/route.ts` (use helper)
+- `src/app/api/vexo/health/route.ts` (use helper)
+- `src/app/api/cron/prices/route.ts` (use helper)
+- `src/app/api/scrape/route.ts` (use helper)
+- `src/proxy.ts` (use helpers + `getAppUrl()`)
+- `src/lib/push-notifications.ts` (use helper)
+- `src/lib/ai/vexoapi.ts` (dead comment removed)
+- `docs/PRODUCTION_CHECKLIST.md` (section 3 rewritten + P18 closed)
+
 ## [1.5.22] - 2026-06-22 — P20 (Type-Safety Residual) Closure
 
 ### Changed

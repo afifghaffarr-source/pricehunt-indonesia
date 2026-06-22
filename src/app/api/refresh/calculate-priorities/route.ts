@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
+import { getIngestionSecret } from "@/lib/env";
 
 /**
  * Row shape used by the calculate-priorities handler. Joins the
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify authorization
     const authHeader = request.headers.get("Authorization");
-    const expectedSecret = process.env.INGESTION_SECRET;
+    const expectedSecret = getIngestionSecret();
 
     if (!expectedSecret) {
       console.error("INGESTION_SECRET not configured");

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getAppUrl } from "@/lib/app-url";
+import { getCronSecret, getIngestionSecret } from "@/lib/env";
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_APP_URL || "https://www.bijakbeli.web.id",
+  getAppUrl(),
   "http://localhost:3000", // Development
   "http://localhost:3001", // Alternative dev port
 ];
@@ -100,12 +102,12 @@ function checkCsrf(
   // Allow Python collector and cron via service secret.
   const authHeader = request.headers.get("authorization");
   if (authHeader) {
-    const expectedIngestion = process.env.INGESTION_SECRET;
+    const expectedIngestion = getIngestionSecret();
     if (expectedIngestion) {
       const token = authHeader.replace(/^Bearer\s+/i, "");
       if (safeEqual(token, expectedIngestion)) return null;
     }
-    const expectedCron = process.env.CRON_SECRET;
+    const expectedCron = getCronSecret();
     if (expectedCron) {
       const token = authHeader.replace(/^Bearer\s+/i, "");
       if (safeEqual(token, expectedCron)) return null;

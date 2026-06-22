@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { isVexoConfigured } from "@/lib/vexo/client";
+import { getVexoConfig } from "@/lib/env";
 
 export async function GET() {
   const configured = isVexoConfigured();
-  const baseUrl = process.env.VEXO_API_BASE_URL || "";
-  const timeoutMs = parseInt(process.env.VEXO_API_TIMEOUT_MS || "10000", 10);
-  const cacheTTL = parseInt(process.env.VEXO_CACHE_TTL_SECONDS || "3600", 10);
+  const { baseUrl, timeoutMs, cacheTtlSeconds } = getVexoConfig();
 
   let apiReachable = false;
   if (configured && baseUrl) {
@@ -25,7 +24,7 @@ export async function GET() {
     apiReachable,
     baseUrl: configured ? baseUrl.replace(/\/api.*$/, "") : null,
     timeoutMs,
-    cacheTTL,
-    hasKey: !!process.env.VEXO_API_KEY,
+    cacheTTL: cacheTtlSeconds,
+    hasKey: !!getVexoConfig().apiKey,
   });
 }

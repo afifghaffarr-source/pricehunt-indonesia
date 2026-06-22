@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
+import { getIngestionSecret } from "@/lib/env";
 
 /**
  * Row shape for `crawl_targets`. See refresh/trigger for the full
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
   try {
     // Verify authorization (same secret as ingestion API)
     const authHeader = request.headers.get("Authorization");
-    const expectedSecret = process.env.INGESTION_SECRET;
+    const expectedSecret = getIngestionSecret();
 
     if (!expectedSecret) {
       console.error("INGESTION_SECRET not configured");
