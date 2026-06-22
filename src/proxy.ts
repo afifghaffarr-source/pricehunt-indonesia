@@ -200,7 +200,9 @@ function buildCsp(nonce: string, isStatic: boolean): string {
       ? isProduction
         ? "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
         : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live"
-      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://vercel.live`,
+      : isProduction
+        ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://vercel.live`
+        : `script-src 'self' 'unsafe-eval' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://vercel.live`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' https://placehold.co https://images.unsplash.com https://picsum.photos https://fastly.picsum.photos https://images.tokopedia.net https://p16-images-sign-sg.tokopedia-static.net https://p19-images-sign-sg.tokopedia-static.net https://cf.shopee.co.id https://s-cf-id.shopeesz.com https://s.bukalapak.com https://www.static-src.com https://img.lazcdn.com https://i5.walmartimages.com https://p16-oec-sg.tiktokcdn.com data: blob:",
     "font-src 'self' https://fonts.gstatic.com",
@@ -231,10 +233,18 @@ export function proxy(request: NextRequest) {
   const nonce = crypto.randomUUID();
   const isStatic = !isApiRoute && isStaticRoute(pathname);
 
-  // Create response
-  let response = NextResponse.next();
+  // Pass nonce to downstream via request headers (server components read this)
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
 
-  // Set nonce header for downstream components (JsonLd reads this)
+  // Create response with forwarded request headers
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  // Also set on response headers for client-side access
   response.headers.set("x-nonce", nonce);
 
   // Add CORS headers (API routes)
