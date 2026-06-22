@@ -27,6 +27,15 @@ export async function GET(request: NextRequest) {
   }
 
   if (!enableSimulation) {
+    // Log a "skipped" entry so watchdog can see cron_prices is being invoked
+    // (it's a no-op in production, but we still want observability)
+    await withJobLogging("cron_prices", async () => ({
+      success: true,
+      processedCount: 0,
+      successCount: 0,
+      failedCount: 0,
+      metadata: { skipped: true, reason: "simulation_disabled" },
+    }));
     return NextResponse.json({
       message: "Price simulation disabled. Real price updates should come from ingestion API or data sources.",
       simulation_enabled: false,
