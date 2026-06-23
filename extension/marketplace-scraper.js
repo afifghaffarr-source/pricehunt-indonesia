@@ -43,6 +43,63 @@
     return isNaN(num) || num <= 0 ? null : num;
   }
 
+  /**
+   * Generate a stable, deterministic, unique-per-product URL.
+   * Used when the card link points to a generic search page instead of
+   * the individual product URL (common in Tokopedia search results where
+   * linkEl.href can equal window.location.href).
+   *
+   * Format: <page-url>#product=<slugified-title>-<first-8-chars-of-hash>
+   * This keeps the URL unique per (search-query, product) pair without
+   * fabricating a fake product path.
+   */
+  function makeUniqueSearchUrl(baseUrl, title) {
+    const slug = (title || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .substring(0, 40);
+    let hash = 0;
+    const str = `${baseUrl}|${title}`;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) | 0;
+    }
+    const hashHex = (hash >>> 0).toString(16).padStart(8, "0");
+    return `${baseUrl}#product=${slug}-${hashHex}`;
+  }
+
+  /**
+   * Decide if a candidate URL is "real" (points to a specific product page)
+   * vs "generic" (search/category/listing page). Generic URLs must be made
+   * unique per product or the backend will reject duplicates.
+   */
+  function isGenericUrl(url) {
+    if (!url) return true;
+    const lower = url.toLowerCase();
+    const path = lower.split("?")[0].split("#")[0];
+    // Generic patterns (search/category/listing)
+    if (path.endsWith("/search") || path.endsWith("/search/")) return true;
+    if (lower.includes("search?") || lower.includes("search/?")) return true;
+    if (path.endsWith("/cari") || path.endsWith("/cari/")) return true;
+    if (path.endsWith("/catalog") || path.endsWith("/catalog/")) return true;
+    if (path.endsWith("/list") || path.includes("/list/")) return true;
+    if (path.endsWith("/find") || path.includes("/find/")) return true;
+    // Specific product patterns (must contain numeric product ID)
+    if (path.includes("-i.") && /\-i\.\d+\.\d+/.test(lower)) return false; // shopee: -i.shopid.itemid
+    // Tokopedia: /p/<id> OR /p/<name>/<id>
+    if (/\/p\/\d+/.test(lower)) return false;
+    if (/\/p\/[^/?#]+\/\d+/.test(lower)) return false;
+    // Lazada: /products/<name>/<id>.html
+    if (/\/products\/[^/?#]+\/[^/?#]+\.html/.test(lower)) return false;
+    if (/\/products\/[^/?#]+\/\d+/.test(lower)) return false;
+    // TikTok Shop: /product/<name>/<id>
+    if (/\/product\/[^/?#]+\/\d+/.test(lower)) return false;
+    // Blibli: /p/<name>/<id>-<slug> or /p/<slug>-<id>
+    if (/\/p\/[^/?#]*\d+/.test(lower)) return false;
+    // Default: treat as generic (safer to dedupe than to send dupes)
+    return true;
+  }
+
   function parseRating(text) {
     if (!text) return null;
     const match = text.match(/(\d+(?:[.,]\d+)?)/);
@@ -123,8 +180,8 @@
         cards.forEach((card) => {
           try {
             const linkEl = card.querySelector('a[href*="-i."]');
-            const url = linkEl?.href || null;
-            if (!url) return;
+            const rawUrl = linkEl?.href || null;
+            if (!rawUrl) return;
 
             const titleEl = card.querySelector(
               '[data-sqe="name"], .yQmm7j, .Cve6sr, a > div > div:nth-child(2) > div:nth-child(2)'
@@ -138,6 +195,12 @@
             const title = cleanText(titleEl?.textContent || linkEl.textContent);
             const price = parsePriceIDR(priceEl?.textContent);
             if (!title || !price) return;
+
+            // Ensure URL is unique per product. If Shopee card link points
+            // to a search page (generic), make it unique with title hash.
+            const url = isGenericUrl(rawUrl)
+              ? makeUniqueSearchUrl(rawUrl, title)
+              : rawUrl;
 
             items.push({
               title,
@@ -207,8 +270,8 @@
         cards.forEach((card) => {
           try {
             const linkEl = card.querySelector('a[href*="/p/"]');
-            const url = linkEl?.href || null;
-            if (!url) return;
+            const rawUrl = linkEl?.href || null;
+            if (!rawUrl) return;
 
             const titleEl = card.querySelector('[data-testid="spnSRPProdName"], [data-testid="lblProductName"]');
             const priceEl = card.querySelector('[data-testid="spnSRPProdPrice"], [data-testid="lblProductPrice"]');
@@ -220,6 +283,13 @@
             const title = cleanText(titleEl?.textContent || linkEl.getAttribute("aria-label"));
             const price = parsePriceIDR(priceEl?.textContent);
             if (!title || !price) return;
+
+            // Tokopedia search results commonly use a[href*="/p/"] which
+            // can match generic search page when card structure varies.
+            // Hash-title fallback ensures unique URLs across cards.
+            const url = isGenericUrl(rawUrl)
+              ? makeUniqueSearchUrl(rawUrl, title)
+              : rawUrl;
 
             items.push({
               title,
