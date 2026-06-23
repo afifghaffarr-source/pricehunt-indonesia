@@ -1,5 +1,3 @@
-import type { ScrapeResult } from ".";
-
 export interface EnhancedProduct {
   title: string;
   marketplace: "shopee" | "tokopedia";
@@ -34,7 +32,7 @@ async function extractProductMetadata(url: string, marketplace: string): Promise
     
     // Fallback: HTML scraping
     return await fetchHTMLMetadata(url, marketplace);
-  } catch (error) {
+  } catch (_error) {
     return {};
   }
 }
@@ -123,7 +121,7 @@ async function fetchShopeeItemAPI(url: string): Promise<Partial<EnhancedProduct>
     }
     
     return result;
-  } catch (error) {
+  } catch (_error) {
     return {};
   }
 }
@@ -168,7 +166,7 @@ async function fetchTokopediaItemAPI(url: string): Promise<Partial<EnhancedProdu
     if (item.rating) result.rating = item.rating;
     
     return result;
-  } catch (error) {
+  } catch (_error) {
     return {};
   }
 }
@@ -176,7 +174,7 @@ async function fetchTokopediaItemAPI(url: string): Promise<Partial<EnhancedProdu
 /**
  * Fallback: HTML scraping for meta tags
  */
-async function fetchHTMLMetadata(url: string, marketplace: string): Promise<Partial<EnhancedProduct>> {
+async function fetchHTMLMetadata(url: string, _marketplace: string): Promise<Partial<EnhancedProduct>> {
   try {
     const response = await fetch(url, {
       headers: {
@@ -457,7 +455,7 @@ export class MultiStrategyShoppingScraper {
       let count = 0;
       
       while ((match = resultRegex.exec(html)) !== null && count < limit) {
-        let rawUrl = match[1];
+        const rawUrl = match[1];
         const titleHtml = match[2];
         const title = titleHtml.replace(/<[^>]*>/g, '').trim();
         

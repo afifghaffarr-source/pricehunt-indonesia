@@ -27,7 +27,7 @@
         // Swallow "Receiving end does not exist" errors during page unload.
         void chrome.runtime.lastError;
       });
-    } catch (e) {
+    } catch (_e) {
       // Extension context invalidated (page navigated during update). Silent.
     }
   }

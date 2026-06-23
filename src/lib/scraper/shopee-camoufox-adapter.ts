@@ -162,7 +162,21 @@ export class ShopeeCamoufoxAdapter {
   private async scrapeFromDOM(page: Page): Promise<ShopeeRawItem[]> {
     const items = await page.evaluate(() => {
       const links = document.querySelectorAll('a[href*="/product/"]');
-      const results: any[] = [];
+      interface DomCard {
+        item_basic: {
+          itemid: number;
+          shopid: number;
+          name: string;
+          image: string;
+          price: number;
+          stock: number;
+          sold: number;
+          shop_rating: number;
+          is_official_shop: boolean;
+          is_free_shipping: boolean;
+        };
+      }
+      const results: DomCard[] = [];
 
       links.forEach((link) => {
         try {
@@ -184,7 +198,7 @@ export class ShopeeCamoufoxAdapter {
           const shopid = match ? parseInt(match[1]) : 0;
           const itemid = match ? parseInt(match[2]) : 0;
 
-          if (name && itemid && !results.find((r: any) => r.item_basic.itemid === itemid)) {
+          if (name && itemid && !results.find((r: DomCard) => r.item_basic.itemid === itemid)) {
             results.push({
               item_basic: {
                 itemid,
@@ -219,7 +233,7 @@ export class ShopeeCamoufoxAdapter {
       .map((item) => {
         try {
           return normalizeShopeeItem(item);
-        } catch (error) {
+        } catch (_error) {
           return null;
         }
       })

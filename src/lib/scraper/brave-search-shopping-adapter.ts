@@ -8,6 +8,14 @@ export interface BraveSearchProduct {
   source?: string;
 }
 
+interface BraveApiResult {
+  title?: string;
+  url?: string;
+  description?: string;
+  price?: string;
+  source?: string;
+}
+
 export interface BraveSearchConfig {
   apiKey?: string;
   maxResults?: number;
@@ -77,7 +85,7 @@ export class BraveSearchShoppingAdapter {
       
       console.log(`[BraveSearch] Found ${results.length} results from API`);
       
-      return results.map((result: any) => this.parseSearchResult(result));
+      return results.map((result: BraveApiResult) => this.parseSearchResult(result));
     } catch (error) {
       console.error("[BraveSearch] API search failed:", error);
       throw error;
@@ -116,7 +124,7 @@ export class BraveSearchShoppingAdapter {
       let count = 0;
       
       while ((match = resultRegex.exec(html)) !== null && count < maxResults) {
-        let rawUrl = match[1];
+        const rawUrl = match[1];
         const titleHtml = match[2];
         
         // Strip HTML tags from title
@@ -163,7 +171,7 @@ export class BraveSearchShoppingAdapter {
   /**
    * Parse Brave Search API result to ScrapeResult
    */
-  private parseSearchResult(result: any): ScrapeResult {
+  private parseSearchResult(result: BraveApiResult): ScrapeResult {
     const url = result.url || "";
     const marketplace = url.includes("shopee.co.id") ? "shopee" : "tokopedia";
     const title = result.title || "";

@@ -20,6 +20,7 @@ const MAX_HISTORY = 200;
 const FLUSH_ALARM = "bijakbeli-flush";
 
 // In-memory pending queue (lost on service worker idle — that's OK, we flush via storage)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for future enhancement (queue persistence)
 const pendingQueue = new Map(); // url → product payload
 
 // ─── Helpers ─────────────────────────────────────────────────────────────

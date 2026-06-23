@@ -8,7 +8,7 @@ async function debugShopeeResponse() {
   });
 
   const page = await context.newPage();
-  let rawData: any = null;
+  let rawData: unknown = null;
 
   page.on("response", async (response) => {
     const url = response.url();

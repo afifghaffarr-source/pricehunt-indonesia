@@ -41,15 +41,19 @@ async function applyStealthScripts(page: Page): Promise<void> {
     });
 
     // Chrome runtime (makes it look like real Chrome)
-    (window as any).chrome = { runtime: {} };
+    type ChromeStub = { runtime: Record<string, unknown> };
+    type NavigatorWithPermissions = Navigator & { permissions?: Permissions };
+    const win = window as unknown as { chrome: ChromeStub; navigator: NavigatorWithPermissions };
+
+    win.chrome = { runtime: {} };
 
     // Permissions API
-    const originalQuery = (window.navigator as any).permissions?.query;
+    const originalQuery = win.navigator.permissions?.query.bind(win.navigator.permissions);
     if (originalQuery) {
-      (window.navigator as any).permissions.query = (params: { name: string }) =>
-        params.name === "notifications"
-          ? Promise.resolve({ state: Notification.permission })
-          : originalQuery(params);
+      win.navigator.permissions.query = ((p: PermissionDescriptor) =>
+        p.name === "notifications"
+          ? Promise.resolve({ state: Notification.permission } as unknown as PermissionStatus)
+          : originalQuery(p)) as typeof win.navigator.permissions.query;
     }
 
     // WebGL vendor/renderer (realistic values)
@@ -242,10 +246,24 @@ export class ShopeePlaywrightAdapter {
   /**
    * Fallback: scrape product data directly from the page DOM
    */
-  private async scrapeFromDOM(page: Page, keyword: string): Promise<ShopeeRawItem[]> {
+  private async scrapeFromDOM(page: Page, _keyword: string): Promise<ShopeeRawItem[]> {
     const items = await page.evaluate(() => {
       const productCards = document.querySelectorAll('[data-sqe="item"], .col-xs-2_4, .shopee-search-item-result__item');
-      const results: any[] = [];
+      interface DomCard {
+        item_basic: {
+          itemid: number;
+          shopid: number;
+          name: string;
+          image: string;
+          price: number;
+          stock: number;
+          sold: number;
+          shop_rating: number;
+          is_official_shop: boolean;
+          is_free_shipping: boolean;
+        };
+      }
+      const results: DomCard[] = [];
 
       productCards.forEach((card) => {
         try {
