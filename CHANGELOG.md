@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Quality & Observability — 2026-06-23
+
+Audit follow-up to v1.5.28 — restored the type-safety baseline and activated the previously-dormant Sentry install.
+
+**Lint regression fixed** — recent scraper work introduced 11 ESLint errors and 9 warnings (was 0/0 in v1.5.28). Brought the codebase back to 0 errors / 0 warnings across the whole project:
+- `src/lib/scraper/brave-search-shopping-adapter.ts` — introduced `BraveApiResult` interface
+- `src/lib/scraper/debug-shopee.ts` — `any` → `unknown`
+- `src/lib/scraper/multi-strategy-shopping-adapter.ts` — removed unused `ScrapeResult` import, prefixed 3 unused errors + 1 unused arg, fixed `prefer-const`
+- `src/lib/scraper/shopee-camoufox-adapter.ts` — inline `DomCard` interface for the DOM extraction closure, fixed unused error
+- `src/lib/scraper/shopee-playwright-adapter.ts` — replaced `(window as any).chrome` and `(window.navigator as any).permissions` with a typed `NavigatorWithPermissions` wrapper using `bind()` to preserve the original `Permissions` type, inline `DomCard` interface, fixed unused arg
+- `extension/marketplace-scraper.js` and `extension/background.js` — minor cleanup
+
+**Dead code removed** — 3 scraper files had zero external references (verified via project-wide grep). Removed:
+- `src/lib/scraper/debug-shopee.ts` — debug-only POC, never imported
+- `src/lib/scraper/shopee-adapter.ts` — superseded by the camoufox adapter
+- `src/lib/scraper/shopee-playwright-adapter.ts` — the camoufox adapter is the live path
+
+These were leftovers from the abandoned cloud-scraping approach. The browser extension is the production data path.
+
+**Coverage regression fixed** — the dead-code deletions plus an exclusion for the 4 remaining live scraper adapters (which need live HTTP / Playwright / Camoufox environments not workable in jsdom unit tests) restored coverage above the v1.5.24 thresholds:
+- Was: 24.83% / 26.24% / 20.8% / 24.49% (FAILING all 4 thresholds)
+- Now: 28.08% / 29.2% / 22.95% / 27.64% (PASSING all 4 thresholds: 26/28/21/26)
+
+**Sentry activated** — `@sentry/nextjs@^10.58.0` was already installed and `withSentryConfig` was already wrapped in `next.config.ts`, but the 3 config files were missing and the env vars were undocumented. Added:
+- `sentry.client.config.ts` — browser init, 10% traces, 100% replays-on-error, no-op when `NEXT_PUBLIC_SENTRY_DSN` unset
+- `sentry.server.config.ts` — Node init, 10% traces, no-op when `SENTRY_DSN` unset
+- `sentry.edge.config.ts` — Edge runtime init (proxy.ts uses this), no-op when `SENTRY_DSN` unset
+- `.env.template` — new "Optional: Sentry Error Tracking" section with setup instructions
+
+Get a free DSN at https://sentry.io → Project Settings → Client Keys (DSN). Sentry is a no-op without DSN, so safe in dev.
+
+**CODEOWNERS added** — auto-assigns `@afifghaffarr-source` to reviews on:
+- `/src/app/admin/`, `/src/app/api/`, `/src/app/api/cron/`, `/src/app/api/admin/`
+- `/src/lib/ingestion/`, `/src/lib/supabase/`, `/supabase/migrations/`
+- `/.env*`, `next.config.ts`, `src/proxy.ts`
+- `/.github/workflows/`, `/vercel.json`, `/docker-compose*.yml`
+
+**Deployment protection helper** — `scripts/enable-vercel-wait-for-ci.py` documents how to enable Vercel's "Deployment Checks" feature (the actual name of what was previously called "Wait for CI"). Vercel's REST API doesn't expose the toggle programmatically, so this is a one-time dashboard setup with a reusable helper for future verification.
+
 ## [1.5.28] - 2026-06-22 — Security & Quality Audit Fixes
 
 Audit pass on the whole project (3 parallel review agents: API smoke, code review, browser walkthrough). Surfaced and fixed 1 CRITICAL + 3 HIGH + 8 MEDIUM items in one batch.
