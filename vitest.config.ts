@@ -42,6 +42,14 @@ export default defineConfig({
         "src/lib/api-registry/**",
         // Schema/types barrels with no executable logic.
         "src/lib/marketplace/product-matcher.ts",
+        // Marketplace scrapers hit live HTTP + Playwright/Camoufox browsers
+        // that don't work in jsdom unit tests. The browser extension is the
+        // production data path; these adapters are reference implementations
+        // for future residential-proxy setups. Re-include once mocked.
+        "src/lib/scraper/brave-search-shopping-adapter.ts",
+        "src/lib/scraper/multi-strategy-shopping-adapter.ts",
+        "src/lib/scraper/shopee-camoufox-adapter.ts",
+        "src/lib/scraper/shopee-normalizer.ts",
       ],
       thresholds: {
         // v1.5.24 (2026-06-22): tightened from 0 to current measured baseline.
