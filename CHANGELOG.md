@@ -1515,3 +1515,4 @@ v2's hybrid approach: static routes ship hash-CSP (the browser allows inline scr
 ---
 
 **Note:** This changelog is automatically maintained. Each commit updates this file with relevant changes.
+trailing newline
