@@ -23,7 +23,7 @@ from pathlib import Path
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env.local"
 TEAM = "afif-s-projects5"
 PROJECT = "pricehunt-indonesia"
-DASHBOARD_URL = f"https://vercel.com/{TEAM}/{PROJECT}/settings/git"
+DASHBOARD_URL = f"https://vercel.com/{TEAM}/{PROJECT}/settings/deployment-checks"
 
 
 def read_token() -> str:
@@ -94,27 +94,37 @@ def main():
     # API doesn't expose the toggle. Provide dashboard instructions.
     print()
     print("=" * 70)
-    print("  Vercel API does NOT expose 'Wait for CI' programmatically.")
-    print("  Enable manually via dashboard:")
+    print("  Vercel feature is called 'Deployment Checks' (not 'Wait for CI')")
     print("=" * 70)
     print()
-    print(f"  1. Open: {DASHBOARD_URL}")
+    print(f"  Direct link: {DASHBOARD_URL}")
     print()
-    print("  2. Find the section 'Deploy Hooks' or 'Git Integration'")
+    print("  EASIEST PATH — Native Deployment Checks (Vercel runs scripts directly):")
+    print("    1. Click 'Add Checks' on the Deployment Checks page")
+    print("    2. Choose provider: 'Vercel'")
+    print("    3. Enable both:")
+    print("       - Lint  (runs `npm run lint`)")
+    print("       - Typecheck (runs `npm run typecheck`)")
+    print("    4. Click 'Add' → done.")
     print()
-    print("  3. Toggle ON: 'Wait for CI to pass before deploying'")
+    print("  Your project already has both scripts in package.json,")
+    print("  so this works immediately with zero further setup.")
     print()
-    print("  4. Confirm the required CI check matches your ci.yml workflow name")
-    print(f"     (typically 'CI / lint-test-build' for this project)")
+    print("  ADVANCED — GitHub Checks (uses your ci.yml workflow):")
+    print("    1. Same Deployment Checks page → 'Add Checks'")
+    print("    2. Choose provider: 'GitHub'")
+    print("    3. Search for ci.yml jobs (e.g. 'lint', 'test', 'build')")
+    print("    4. Select which checks are required.")
     print()
-    print("  5. Save. Next push to master will gate on ci.yml.")
+    print("  After both runs pass, Vercel aliases the build to your domain.")
+    print("  While pending, deployment sits in 'Promoting' state — not visible to users.")
     print()
     print("=" * 70)
     print()
-    print(f"Direct dashboard link: {DASHBOARD_URL}")
+    print(f"Open: {DASHBOARD_URL}")
     print()
-    print("After enabling, re-run with --check to verify (may still show None")
-    print("since API doesn't expose the field, but deploys will gate correctly).")
+    print("Re-run with --check to verify state (API still doesn't expose,")
+    print("but you can see check status on the deployment detail page).")
 
 
 if __name__ == "__main__":
