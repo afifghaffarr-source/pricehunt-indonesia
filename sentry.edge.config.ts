@@ -1,18 +1,19 @@
-// This file configures the initialization of Sentry for edge features (middleware, edge routes).
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
-
 import * as Sentry from "@sentry/nextjs";
 
-const SENTRY_DSN = process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN;
+/**
+ * Sentry Edge runtime initialization (middleware / proxy.ts).
+ *
+ * Edge runtime has its own bundle, so config is duplicated from
+ * sentry.server.config.ts intentionally — Sentry Next.js requires
+ * one config per runtime.
+ */
+const dsn = process.env.SENTRY_DSN;
 
-if (SENTRY_DSN) {
+if (dsn) {
   Sentry.init({
-    dsn: SENTRY_DSN,
-
-    // Adjust this value in production, or use tracesSampler for finer control
-    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
-
-    // Setting this option to true will print useful information to the console while you're setting up Sentry.
+    dsn,
+    tracesSampleRate: 0.1,
     debug: false,
+    environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
   });
 }
