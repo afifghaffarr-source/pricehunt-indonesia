@@ -1,13 +1,35 @@
 {
   "manifest_version": 3,
   "name": "BijakBeli.app",
-  "version": "1.0.0",
-  "description": "Bandingkan harga marketplace Indonesia saat browsing",
-  "permissions": ["activeTab", "storage"],
-  "host_permissions": ["https://www.bijakbeli.web.id/*"],
+  "version": "2.0.0",
+  "description": "Bandingkan harga marketplace Indonesia saat browsing. Auto-scrape produk yang kamu lihat untuk membantu komunitas.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "scripting",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://www.bijakbeli.web.id/*",
+    "https://shopee.co.id/*",
+    "https://*.shopee.co.id/*",
+    "https://www.tokopedia.com/*",
+    "https://www.lazada.co.id/*",
+    "https://www.blibli.com/*",
+    "https://www.bukalapak.com/*",
+    "https://shop.tiktok.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "BijakBeli"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
   },
   "icons": {
     "16": "icon16.png",
@@ -21,9 +43,12 @@
         "*://*.shopee.co.id/*",
         "*://*.bukalapak.com/*",
         "*://*.lazada.co.id/*",
-        "*://*.blibli.com/*"
+        "*://*.blibli.com/*",
+        "*://shop.tiktok.com/*"
       ],
-      "js": ["content.js"]
+      "js": ["marketplace-scraper.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ]
 }

@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Chrome Extension - BijakBeli.app",
-  description: "Download ekstensi Chrome BijakBeli untuk mengumpulkan data produk dengan satu klik dari Tokopedia, Shopee, dan Bukalapak.",
+  description: "Download ekstensi Chrome BijakBeli v3.0 — auto-scrape marketplace Indonesia (Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop) untuk membantu komunitas.",
   alternates: {
     canonical: "/extension",
   },
@@ -28,14 +28,15 @@ export default function ExtensionPage() {
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4 border-primary/20">
-          Initial Beta v2.0.2
+          v3.0.0 — Auto-Scrape
         </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
         </h1>
         <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-          Kumpulkan data produk dari marketplace favorit dengan satu klik.
-          Bantu kami membangun database harga terlengkap di Indonesia! 🇮🇩
+          Browsing marketplace = otomatis bantu BijakBeli. Setiap halaman produk
+          yang kamu lihat, data harganya otomatis terkirim ke database kami.
+          Bantu ribuan pembeli Indonesia! 🇮🇩
         </p>
       </div>
 
@@ -47,18 +48,17 @@ export default function ExtensionPage() {
           </div>
           <CardTitle className="text-2xl">Download Extension</CardTitle>
           <CardDescription>
-            Versi Beta - Gratis untuk semua pengguna
+            v3.0.0 — Gratis untuk semua pengguna
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v2.0.2-beta.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.0.0.tar.gz" download>
             <Button size="lg" className="w-full text-lg">
-              <Download className="mr-2 h-5 w-5" />
-              Download Extension (14 KB)
+              <Download className="mr-2 h-5 w-5" /> Download Extension
             </Button>
           </Link>
           <p className="text-center text-sm text-muted-foreground">
-            SHA256: <code className="text-xs">1d5f620d...efb926</code>
+            Manifest V3 • ~50 KB • 6 marketplace support
           </p>
         </CardContent>
       </Card>
@@ -109,31 +109,30 @@ export default function ExtensionPage() {
           <CardDescription>Update terbaru extension</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="border-l-2 border-red-500 pl-4">
+          <div className="border-l-2 border-primary pl-4">
             <div className="mb-1 flex items-center gap-2">
-              <Badge variant="default" className="bg-red-500">v2.0.2</Badge>
-              <span className="text-xs text-muted-foreground">2026-06-13 (Latest)</span>
+              <Badge variant="default">v3.0.0</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-23 (Latest)</span>
             </div>
-            <p className="text-sm font-medium text-foreground">Critical Database Error Fix</p>
+            <p className="text-sm font-medium text-foreground">Auto-Scrape Mode</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>&bull; Fixed &quot;API error: 500 - OFFER_UPSERT_FAILED&quot;</li>
-              <li>&bull; Changed source value: &apos;chrome-extension&apos; → &apos;extension_snapshot&apos;</li>
-              <li>• Database CHECK constraint now accepts the correct value</li>
+              <li>• Auto-scrape PDP & search results dari 6 marketplace</li>
+              <li>• Background service worker (Manifest V3 compliant)</li>
+              <li>• SPA-aware: handle dynamic loading (Shopee, Tokopedia)</li>
+              <li>• Side panel dengan stats & history</li>
+              <li>• Dedupe otomatis (1 jam per URL)</li>
+              <li>• JSON-LD fallback untuk marketplace tanpa selector</li>
             </ul>
-            <p className="mt-2 text-xs text-red-600">
-              <strong>Wajib update!</strong> Versi 2.0.1 tidak bisa save data ke database.
-            </p>
           </div>
           <div className="border-l-2 border-muted pl-4">
             <div className="mb-1 flex items-center gap-2">
-              <Badge variant="outline">v2.0.1</Badge>
-              <span className="text-xs text-muted-foreground">2026-06-12</span>
+              <Badge variant="outline">v2.0.2</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-13</span>
             </div>
-            <p className="text-sm font-medium text-muted-foreground">Critical Bug Fix</p>
+            <p className="text-sm font-medium text-muted-foreground">Critical Database Error Fix</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>&bull; Fixed &quot;Failed to fetch&quot; error saat klik button</li>
-              <li>• Manifest V3 CORS issue resolved via message passing</li>
-              <li>• API calls sekarang via background worker (lebih stabil)</li>
+              <li>• Fixed &quot;API error: 500 - OFFER_UPSERT_FAILED&quot;</li>
+              <li>• Changed source value: &apos;chrome-extension&apos; → &apos;extension_snapshot&apos;</li>
             </ul>
           </div>
           <div className="border-l-2 border-muted pl-4">
@@ -142,11 +141,6 @@ export default function ExtensionPage() {
               <span className="text-xs text-muted-foreground">2026-06-12</span>
             </div>
             <p className="text-sm font-medium text-muted-foreground">Initial Beta Release</p>
-            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>• Support Tokopedia, Shopee, Bukalapak</li>
-              <li>• One-click data collection</li>
-              <li>• Auto-sync to BijakBeli database</li>
-            </ul>
           </div>
         </CardContent>
       </Card>
@@ -212,7 +206,7 @@ export default function ExtensionPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Marketplace yang Didukung</CardTitle>
           <CardDescription>
-            Extension otomatis mendeteksi marketplace dan mengekstrak data produk
+            Extension otomatis deteksi marketplace dan scrape PDP + search results
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -220,22 +214,43 @@ export default function ExtensionPage() {
             <div className="flex items-center gap-3 rounded-lg border p-4">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
-                <p className="font-medium">Tokopedia</p>
-                <p className="text-sm text-muted-foreground">Semua produk</p>
+                <p className="font-medium">Shopee</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-lg border p-4">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
-                <p className="font-medium">Shopee</p>
-                <p className="text-sm text-muted-foreground">Semua produk</p>
+                <p className="font-medium">Tokopedia</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="font-medium">Lazada</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="font-medium">Blibli</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-lg border p-4">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
                 <p className="font-medium">Bukalapak</p>
-                <p className="text-sm text-muted-foreground">Semua produk</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="font-medium">TikTok Shop</p>
+                <p className="text-sm text-muted-foreground">via JSON-LD</p>
               </div>
             </div>
           </div>
@@ -310,9 +325,9 @@ export default function ExtensionPage() {
       {/* How it Works */}
       <Card className="mb-12 border-primary/20">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Cara Menggunakan</CardTitle>
+          <CardTitle className="text-xl">Cara Kerja Auto-Scrape</CardTitle>
           <CardDescription>
-            Sangat mudah, bahkan untuk pemula sekalipun!
+            Browsing biasa = kontribusi otomatis ke database BijakBeli
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -322,33 +337,31 @@ export default function ExtensionPage() {
                 1
               </div>
               <div>
-                <p className="font-medium">Buka halaman produk</p>
+                <p className="font-medium">Browsing seperti biasa</p>
                 <p className="text-sm text-muted-foreground">
-                  Kunjungi produk apa saja di Tokopedia, Shopee, atau Bukalapak
+                  Buka halaman produk di Shopee, Tokopedia, Lazada, Blibli, Bukalapak, atau TikTok Shop
                 </p>
               </div>
             </div>
-
             <div className="flex gap-4">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                 2
               </div>
               <div>
-                <p className="font-medium">Klik tombol floating</p>
+                <p className="font-medium">Auto-detect & scrape</p>
                 <p className="text-sm text-muted-foreground">
-                  Tombol <strong>Add to BijakBeli</strong> muncul di pojok kanan bawah
+                  Extension otomatis scrape nama, harga, rating, seller, dan kirim ke BijakBeli
                 </p>
               </div>
             </div>
-
             <div className="flex gap-4">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                 3
               </div>
               <div>
-                <p className="font-medium">Selesai!</p>
+                <p className="font-medium">Masuk database BijakBeli</p>
                 <p className="text-sm text-muted-foreground">
-                  Tombol berubah jadi <strong>Saved!</strong> dan notifikasi muncul. Data sudah masuk database!
+                  Data membantu ribuan pembeli lain mendapat harga terbaik. Cek history di side panel!
                 </p>
               </div>
             </div>
