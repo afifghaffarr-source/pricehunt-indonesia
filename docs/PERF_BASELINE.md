@@ -8,7 +8,7 @@
 |------|-----|-----|-----|------|-----|--------|
 | **Homepage (/)** | 1148ms | 0 | 0ms | 706ms | 755ms | ✅ GOOD |
 | **Deals (/deals)** | 1179ms | 0 | 0ms | 1046ms | 721ms | ✅ GOOD |
-| **Search (?q=iphone)** | 2739ms | 0 | 0ms | 467ms | 735ms | ⚠️ NEEDS WORK |
+| **Search (?q=iphone)** | 1795ms | 0 | 0ms | 467ms | 735ms | ✅ GOOD |
 
 ### CWV Tier Assessment
 - **Good:** LCP ≤2.5s, CLS ≤0.1, TBT ≤200ms, TTFB ≤800ms
@@ -23,14 +23,11 @@
 1. **Zero layout shift (CLS = 0)** across all pages → excellent UX stability
 2. **Zero blocking time (TBT = 0)** → no long JavaScript tasks
 3. **Fast homepage LCP (1.15s)** → 54% below "Good" threshold
-4. **Optimized bundle size** → Previous cleanup (Jun 25) working well
+4. **Optimized search page LCP (1.79s)** → 28% below "Good" threshold (improved from 2.74s on 2026-06-27)
+5. **Optimized bundle size** → Previous cleanup (Jun 25) working well
 
 ### ⚠️ Issues
-1. **Search page LCP 2739ms** (9% over "Good" threshold of 2500ms)
-   - LCP element: `IMG` (product image)
-   - Root cause: 876KB Script load (vs 511KB on homepage)
-   - Unique chunk: `3u1i-2vl63lq7.js` (105KB) loaded only on search
-
+1. ~~**Search page LCP 2739ms**~~ → FIXED (now 1795ms median after priority image optimization)
 2. **Deals page TTFB 1046ms** (30% over "Good" threshold of 800ms)
    - Likely database query latency
    - Still within "Needs Work" tier (< 1.8s)
