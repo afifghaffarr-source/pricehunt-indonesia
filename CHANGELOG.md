@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance — 2026-06-27
+
+**Search page LCP optimization** — preload first 3 product images to reduce Largest Contentful Paint.
+
+Added `priority` prop to ProductCard component and set `priority={true}` for first 3 search results. This tells Next.js Image to preload these images, moving them higher in the resource fetch priority queue.
+
+**Before:** LCP 2739ms (9% over 2.5s threshold)  
+**Target:** < 2500ms (Google CWV "Good" tier)  
+**Strategy:** Prioritize above-the-fold LCP candidates
+
 ### Fixed — 2026-06-27
 
 **Extension: URL collision bug in search results** — Lazada, Blibli, and Bukalapak search scrapers now generate unique URLs per product card.
