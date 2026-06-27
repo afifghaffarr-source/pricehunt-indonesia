@@ -463,7 +463,7 @@ export default function ExtensionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v2.0.2-beta.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
             <Button size="lg" className="text-lg">
               <Download className="mr-2 h-5 w-5" />
               Download Extension Sekarang
