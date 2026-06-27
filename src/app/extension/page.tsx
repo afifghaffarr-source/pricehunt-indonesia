@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Chrome Extension - BijakBeli.app",
-  description: "Download ekstensi Chrome BijakBeli v3.0 — auto-scrape marketplace Indonesia (Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop) untuk membantu komunitas.",
+  description: "Download ekstensi Chrome BijakBeli v3.0.1 — auto-scrape marketplace Indonesia (Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop) untuk membantu komunitas.",
   alternates: {
     canonical: "/extension",
   },
@@ -28,7 +28,7 @@ export default function ExtensionPage() {
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4 border-primary/20">
-          v3.0.0 — Auto-Scrape
+          v3.0.1 — Auto-Scrape
         </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
@@ -48,11 +48,11 @@ export default function ExtensionPage() {
           </div>
           <CardTitle className="text-2xl">Download Extension</CardTitle>
           <CardDescription>
-            v3.0.0 — Gratis untuk semua pengguna
+            v3.0.1 — Gratis untuk semua pengguna
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v3.0.0.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
             <Button size="lg" className="w-full text-lg">
               <Download className="mr-2 h-5 w-5" /> Download Extension
             </Button>
@@ -111,10 +111,21 @@ export default function ExtensionPage() {
         <CardContent className="space-y-3">
           <div className="border-l-2 border-primary pl-4">
             <div className="mb-1 flex items-center gap-2">
-              <Badge variant="default">v3.0.0</Badge>
-              <span className="text-xs text-muted-foreground">2026-06-23 (Latest)</span>
+              <Badge variant="default">v3.0.1</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-27 (Latest)</span>
             </div>
-            <p className="text-sm font-medium text-foreground">Auto-Scrape Mode</p>
+            <p className="text-sm font-medium text-foreground">URL Collision Fix</p>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>• Fixed URL collision di Lazada, Blibli, Bukalapak search results</li>
+              <li>• Marketplace scraper improved product URL extraction</li>
+            </ul>
+          </div>
+          <div className="border-l-2 border-muted pl-4">
+            <div className="mb-1 flex items-center gap-2">
+              <Badge variant="outline">v3.0.0</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-23</span>
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">Auto-Scrape Mode</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               <li>• Auto-scrape PDP & search results dari 6 marketplace</li>
               <li>• Background service worker (Manifest V3 compliant)</li>
