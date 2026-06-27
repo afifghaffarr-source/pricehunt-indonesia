@@ -344,8 +344,8 @@
         cards.forEach((card) => {
           try {
             const linkEl = card.querySelector('a[href*="/products/"]');
-            const url = linkEl?.href || null;
-            if (!url) return;
+            const rawUrl = linkEl?.href || null;
+            if (!rawUrl) return;
 
             const titleEl = card.querySelector('[class*="RfADt"], a[title]');
             const priceEl = card.querySelector('[class*="ooOxS"], [data-tracking="product-price"]');
@@ -354,6 +354,11 @@
             const title = cleanText(titleEl?.getAttribute("title") || titleEl?.textContent);
             const price = parsePriceIDR(priceEl?.textContent);
             if (!title || !price) return;
+
+            // Lazada search results can share URLs; make unique per product
+            const url = isGenericUrl(rawUrl)
+              ? makeUniqueSearchUrl(rawUrl, title)
+              : rawUrl;
 
             items.push({
               title, price, original_price: null, url,
@@ -399,8 +404,8 @@
         cards.forEach((card) => {
           try {
             const linkEl = card.querySelector('a[href*="/p/"]');
-            const url = linkEl?.href || null;
-            if (!url) return;
+            const rawUrl = linkEl?.href || null;
+            if (!rawUrl) return;
 
             const titleEl = card.querySelector('[data-testid="product-card-title"], h3, h4');
             const priceEl = card.querySelector('[data-testid="product-card-price"]');
@@ -408,6 +413,11 @@
             const title = cleanText(titleEl?.textContent);
             const price = parsePriceIDR(priceEl?.textContent);
             if (!title || !price) return;
+
+            // Blibli search results can share URLs; make unique per product
+            const url = isGenericUrl(rawUrl)
+              ? makeUniqueSearchUrl(rawUrl, title)
+              : rawUrl;
 
             items.push({
               title, price, original_price: null, url,
@@ -453,14 +463,19 @@
         cards.forEach((card) => {
           try {
             const linkEl = card.querySelector('a[href*="/p/"]');
-            const url = linkEl?.href || null;
-            if (!url) return;
+            const rawUrl = linkEl?.href || null;
+            if (!rawUrl) return;
             const titleEl = card.querySelector('h3, [data-testid="product-name"]');
             const priceEl = card.querySelector('[data-testid="product-price"], .price');
 
             const title = cleanText(titleEl?.textContent);
             const price = parsePriceIDR(priceEl?.textContent);
             if (!title || !price) return;
+
+            // Bukalapak search results can share URLs; make unique per product
+            const url = isGenericUrl(rawUrl)
+              ? makeUniqueSearchUrl(rawUrl, title)
+              : rawUrl;
 
             items.push({
               title, price, original_price: null, url,

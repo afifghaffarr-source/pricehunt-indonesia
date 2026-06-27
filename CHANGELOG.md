@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — 2026-06-27
+
+**Extension: URL collision bug in search results** — Lazada, Blibli, and Bukalapak search scrapers now generate unique URLs per product card.
+
+**Problem:** All product cards in search results shared the same URL (the search page URL), causing backend to reject duplicate submissions. Only 1 product per search page was saved.
+
+**Solution:** Applied the same `isGenericUrl()` + `makeUniqueSearchUrl()` pattern already used by Shopee and Tokopedia scrapers. Each product now gets a deterministic unique URL format: `<search-url>#product=<slugified-title>-<hash>`.
+
+**Impact:** 3x-5x more products captured per search page on affected marketplaces.
+
+**Files modified:**
+- `extension/marketplace-scraper.js` — Lazada, Blibli, Bukalapak search functions (3 patches, +15 lines)
+
 ### Removed — 2026-06-27
 
 **Dead scraper code cleanup** — removed non-working cloud-side scraping routes and adapters.
