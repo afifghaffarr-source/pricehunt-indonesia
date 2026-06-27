@@ -293,3 +293,4 @@ re-introduces the audit's findings.
   - See `docs/COVERAGE_EXCLUSIONS.md` for the rationale on which files are
     excluded (mostly DB-layer code that is exercised via E2E / integration
     tests, not unit tests).
+# Test deployment checks - 2026-06-27
