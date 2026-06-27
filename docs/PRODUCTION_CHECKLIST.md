@@ -171,7 +171,41 @@ If rollback is needed:
 
 ---
 
-## 11. Audit findings (2026-06-17)
+## 11. Deployment Protection Status (2026-06-27)
+
+**Current state:** Deployment Checks NOT enabled (verified via API).
+
+**Root cause:** Vercel's "Deployment Checks" feature requires manual dashboard setup — the API does NOT expose the toggle programmatically. Previous attempts (2026-06-23) disabled `productionDeploymentsFastLane` via API (success ✅) but missed that Deployment Checks itself was never activated.
+
+**Action required (one-time, 2 min):**
+1. Go to: https://vercel.com/afif-s-projects5/pricehunt-indonesia/settings/deployment-checks
+2. Click "Add Checks"
+3. Provider: **Vercel** (native checks, zero config)
+4. Enable: **Lint** + **Typecheck**
+5. Click "Add" → done
+
+**Why Vercel native > GitHub checks:**
+- Zero additional config (npm scripts already exist)
+- Faster (no GitHub Actions queue delay)
+- Same security outcome (bad code blocked before promotion)
+
+**Verification after setup:**
+```bash
+# Make a test commit, push, watch deployment
+cd ~/projects/bijakbeli-app
+python3 scripts/enable-vercel-wait-for-ci.py --check
+# Then check latest deployment detail page for "Checks" section
+```
+
+**Expected behavior after setup:**
+- Deployment builds immediately
+- Stays in "Promoting" state while lint + typecheck run
+- Only aliases to production domain after both checks pass
+- Failed checks prevent promotion (deployment stays in staging)
+
+---
+
+## 12. Audit findings (2026-06-17)
 
 Schema and code audit discovered significant drift between the migration
 files in this repo and the live prod database. Anyone running through

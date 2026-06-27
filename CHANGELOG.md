@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Infrastructure — 2026-06-27
+
+**Deployment Protection investigation** — resolved the June 23 mystery of why checks weren't blocking.
+
+**Root cause:** Vercel's "Deployment Checks" feature was never enabled. Previous session (2026-06-23) successfully disabled `productionDeploymentsFastLane` via API ✅, but missed that Deployment Checks itself requires manual dashboard setup — the API doesn't expose the toggle.
+
+**Current state verified via API:**
+- `productionDeploymentsFastLane: false` ✅ (Fast Lane OFF)
+- `deploymentProtection: null` ❌ (feature not enabled)
+- Latest deployment has 0 checks configured
+
+**Action required (manual, one-time):** Go to https://vercel.com/afif-s-projects5/pricehunt-indonesia/settings/deployment-checks and enable Vercel native checks (Lint + Typecheck). See `docs/PRODUCTION_CHECKLIST.md` § 11 for step-by-step.
+
+**Docs updated:**
+- `docs/PRODUCTION_CHECKLIST.md` — new section 11 with setup instructions + verification steps
+- `scripts/enable-vercel-wait-for-ci.py` — already had correct guidance (from June 23)
+
+---
+
 ### Quality & Observability — 2026-06-23
 
 Audit follow-up to v1.5.28 — restored the type-safety baseline and activated the previously-dormant Sentry install.
