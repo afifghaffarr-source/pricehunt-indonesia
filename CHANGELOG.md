@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed — 2026-06-27
+
+**Dead scraper code cleanup** — removed non-working cloud-side scraping routes and adapters.
+
+After testing both Camoufox browser automation and multi-strategy HTML scraping from VPS, confirmed ALL Indonesian marketplace APIs block datacenter IPs:
+- Camoufox + Shopee search: API intercepted but returns 0 items (soft block)
+- Direct Shopee item API: HTTP 403 (hard block)
+- DuckDuckGo API + Bing HTML scraping: 0 URLs discovered
+
+**Removed files:**
+- `src/app/api/scrape/` — entire directory (4 route files)
+- `src/lib/scraper/shopee-camoufox-adapter.ts` — 255 lines, unused in production
+
+**Production data source:** Browser extension v3.0.0 (commit `068f1d4`) remains the only viable solution. Extension runs in user's browser with valid cookies + residential IP, bypasses all anti-bot detection.
+
 ### Infrastructure — 2026-06-27
 
 **Deployment Protection investigation** — resolved the June 23 mystery of why checks weren't blocking.
