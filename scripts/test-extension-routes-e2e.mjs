@@ -278,6 +278,84 @@ try {
     assert(legacyText, "legacy banner copy 'Masih versi beta' visible");
     await page2.close();
   });
+
+  await test("FAQ page has FAQPage JSON-LD schema in <head>", async ({ assert }) => {
+    const page = await browser.newPage();
+    const resp = await page.goto(`${BASE}/extension/faq`, {
+      waitUntil: "domcontentloaded",
+    });
+    assert(resp?.status() === 200, `200 OK (got ${resp?.status()})`);
+    // Wait for streaming to settle
+    await page.waitForTimeout(2000);
+    const ldScripts = await page
+      .locator('script[type="application/ld+json"]')
+      .count();
+    assert(ldScripts >= 1, `≥1 ld+json script in document (got ${ldScripts})`);
+    const ldText = await page
+      .locator('script[type="application/ld+json"]')
+      .first()
+      .textContent();
+    assert(
+      ldText && /"@type":\s*"FAQPage"/.test(ldText),
+      "JSON-LD contains @type: FAQPage"
+    );
+    assert(
+      ldText && /"inLanguage":\s*"id"/.test(ldText),
+      "JSON-LD declares inLanguage: id"
+    );
+    assert(
+      ldText && /"mainEntity"/.test(ldText),
+      "JSON-LD contains mainEntity array"
+    );
+    await page.close();
+  });
+
+  await test("/extension/faq.json returns FAQ index with 22 questions", async ({
+    assert,
+  }) => {
+    const page = await browser.newPage();
+    const resp = await page.goto(`${BASE}/extension/faq.json`, {
+      waitUntil: "domcontentloaded",
+    });
+    assert(resp?.status() === 200, `200 OK (got ${resp?.status()})`);
+    assert(
+      resp?.headers()["content-type"]?.startsWith("application/json"),
+      `content-type is application/json (got ${resp?.headers()["content-type"]})`
+    );
+    const body = (await page.locator("body").textContent()) ?? "";
+    const parsed = JSON.parse(body);
+    assert(parsed["@context"] === "https://schema.org", "@context is schema.org");
+    assert(parsed.total_questions === 22, `total_questions=22 (got ${parsed.total_questions})`);
+    const idCount = parsed.locales.id.questions.length;
+    const enCount = parsed.locales.en.questions.length;
+    assert(idCount === 11, `11 Bahasa questions (got ${idCount})`);
+    assert(enCount === 11, `11 English questions (got ${enCount})`);
+    assert(
+      parsed.locales.id.questions[0].question === "Apa itu INGESTION_SECRET dan bagaimana cara mendapatkannya?",
+      "first Bahasa question is INGESTION_SECRET one"
+    );
+    await page.close();
+  });
+
+  await test("FAQ search bar exposes data-* hooks for analytics", async ({ assert }) => {
+    const page = await browser.newPage();
+    await page.goto(`${BASE}/extension/faq?q=tokopedia`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.waitForTimeout(2000);
+    const input = page.locator('[data-testid="faq-search"]');
+    const queryAttr = await input.getAttribute("data-faq-query").catch(() => null);
+    assert(queryAttr === "tokopedia", `search input exposes data-faq-query="tokopedia" (got ${queryAttr ?? "null"})`);
+    const count = await page
+      .locator('[data-testid="faq-match-count"]')
+      .getAttribute("data-faq-count");
+    assert(count === "4", `counter exposes data-faq-count="4" (got ${count})`);
+    const sectionCount = await page
+      .locator("[data-faq-section]")
+      .count();
+    assert(sectionCount >= 1, `≥1 rendered section with data-faq-section (got ${sectionCount})`);
+    await page.close();
+  });
 } finally {
   await browser.close();
 }

@@ -93,6 +93,23 @@ else
   fail=1
 fi
 
+# --- 9. FAQ JSON endpoint reachable + valid JSON ---
+hdr "9. FAQ JSON endpoint (machine-readable for AI ingestion)"
+faq_json_status=$(curl -sIL -o /dev/null -w '%{http_code}' --max-time 10 \
+  "$BASE_URL/extension/faq.json" || echo "000")
+if [ "$faq_json_status" != "200" ]; then
+  red "FAIL: /extension/faq.json returned HTTP $faq_json_status"
+  fail=1
+else
+  if curl -sL --max-time 10 "$BASE_URL/extension/faq.json" \
+     | jq -e '.["@context"] == "https://schema.org" and .total_questions == 22' >/dev/null; then
+    green "OK: /extension/faq.json returns valid schema.org/FAQPage (22 questions)"
+  else
+    red "FAIL: /extension/faq.json not in expected schema.org shape"
+    fail=1
+  fi
+fi
+
 echo
 if [ "$fail" -eq 0 ]; then
   green "ALL PRE-FLIGHT CHECKS PASSED ✓"
