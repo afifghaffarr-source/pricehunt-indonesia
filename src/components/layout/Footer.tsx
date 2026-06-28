@@ -22,7 +22,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="mb-3 text-sm font-semibold">Marketplace</h4>
+            <h2 className="mb-3 text-sm font-semibold">Marketplace</h2>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Tokopedia</li>
               <li>Shopee</li>
@@ -34,7 +34,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="mb-3 text-sm font-semibold">Kategori</h4>
+            <h2 className="mb-3 text-sm font-semibold">Kategori</h2>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link href="/search?category=Smartphone" className="hover:text-foreground transition-colors">
@@ -60,7 +60,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="mb-3 text-sm font-semibold">Tentang</h4>
+            <h2 className="mb-3 text-sm font-semibold">Tentang</h2>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link href="/legal#accuracy" className="hover:text-foreground transition-colors">
@@ -73,7 +73,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/legal#privacy" className="hover:text-foreground transition-colors">
+                <Link href="/extension/privacy-policy" className="hover:text-foreground transition-colors">
                   Kebijakan Privasi
                 </Link>
               </li>

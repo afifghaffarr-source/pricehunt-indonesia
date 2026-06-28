@@ -25,10 +25,10 @@ from config import get_config
 import requests
 
 # Config
-SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL', 'https://siwmmzzhfzfndfmbbyvj.supabase.co')
+SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL', 'https://oklaxwjoyttpwgxhphko.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 INGESTION_SECRET = os.getenv('INGESTION_SECRET', '')
-API_URL = os.getenv('NEXT_PUBLIC_API_URL', 'https://www.bijakbeli.app')
+API_URL = os.getenv('NEXT_PUBLIC_API_URL', 'https://www.bijakbeli.web.id')
 BATCH_SIZE = 20  # Process 20 URLs per cron run
 DELAY_BETWEEN = 3  # Seconds between requests
 
@@ -53,7 +53,7 @@ async def main():
             "Authorization": f"Bearer {SUPABASE_KEY}",
         },
         params={
-            "crawl_status": "eq.queued",
+            "or": "(crawl_status.eq.pending,crawl_status.eq.queued)",
             "select": "id,url,domain",
             "order": "next_crawl_at.asc.nullsfirst,priority_score.desc",
             "limit": BATCH_SIZE
@@ -87,13 +87,13 @@ async def main():
         print(f"URL: {url[:70]}...")
         
         try:
-            # Scrape
+            # Scrape (auto-falls-back to Camofox if Playwright blocked — 2026-06-15)
             result = await collector.scrape_product(url)
-            
+
             if not result or not result.get('name'):
                 print(f"   ❌ No data extracted")
                 fail_count += 1
-                
+
                 # Mark as failed
                 requests.patch(
                     f"{SUPABASE_URL}/rest/v1/crawl_targets",
@@ -112,9 +112,11 @@ async def main():
                     timeout=10
                 )
                 continue
-            
+
+            # Track which path was used (observability — 2026-06-15)
+            scrape_path = getattr(collector, "last_scrape_path", None) or "unknown"
             print(f"   ✅ Scraped: {result['name'][:50]}...")
-            print(f"   Price: Rp {result.get('price', 0):,.0f}")
+            print(f"   Price: Rp {result.get('price', 0):,.0f}  (via {scrape_path})")
             
             # Extract marketplace_product_id from URL
             url_parts = url.rstrip('/').split('-')
@@ -230,7 +232,7 @@ async def main():
                 await close_result
         except:
             pass
-    
+
     # Summary
     print(f"\n{'='*60}")
     print(f"CRON SCRAPER SUMMARY")
@@ -238,6 +240,7 @@ async def main():
     print(f"Total: {len(targets)}")
     print(f"Success: {success_count}")
     print(f"Failed: {fail_count}")
+    print(f"Last path used: {getattr(collector, 'last_scrape_path', 'unknown')}")
     print(f"{'='*60}\n")
 
 if __name__ == "__main__":

@@ -2,33 +2,48 @@ import { Clock, Database, Users, RefreshCw } from "lucide-react";
 
 interface TrustSignalsBarProps {
   marketplaceCount: number;
-  lastUpdated?: Date | string;
+  /**
+   * Most recent update timestamp across all marketplaces. Accepts `null`
+   * for callers that may pass a nullable DB value; the component handles
+   * null / undefined / empty string the same way (renders nothing).
+   */
+  lastUpdated?: Date | string | null;
   trackerCount?: number;
   autoCheckFrequency?: string;
   className?: string;
 }
 
+/**
+ * v1.5.24 — Render nothing if no real lastUpdated is provided. Previously
+ * the fallback returned "baru saja" (just now) which is a lie when no
+ * data exists. If the caller doesn't have real data, the bar should not
+ * claim freshness.
+ */
 export function TrustSignalsBar({
   marketplaceCount,
   lastUpdated,
   trackerCount,
-  autoCheckFrequency = "1 jam",
+  autoCheckFrequency,
   className = "",
 }: TrustSignalsBarProps) {
-  const formatLastUpdated = (date?: Date | string) => {
-    if (!date) return "baru saja";
-    
+  if (!lastUpdated) {
+    // No real data — don't render the freshness bar at all.
+    // Callers should either provide a real lastUpdated or remove the bar.
+    return null;
+  }
+
+  const formatLastUpdated = (date: Date | string) => {
     const now = new Date();
     const updated = typeof date === "string" ? new Date(date) : date;
     const diffMs = now.getTime() - updated.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return "baru saja";
     if (diffMins < 60) return `${diffMins} menit lalu`;
-    
+
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours} jam lalu`;
-    
+
     const diffDays = Math.floor(diffHours / 24);
     return `${diffDays} hari lalu`;
   };

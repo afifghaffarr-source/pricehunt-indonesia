@@ -63,7 +63,7 @@ def ingest_offer(marketplace: str, product_url: str, title: str, price: int, ima
     if not secret:
         raise ValueError("INGESTION_SECRET not set")
     
-    api_url = "https://www.bijakbeli.app/api/ingestion/offer-snapshot"
+    api_url = "https://www.bijakbeli.web.id/api/ingestion/offer-snapshot"
     headers = {
         'Authorization': f'Bearer {secret}',
         'Content-Type': 'application/json'

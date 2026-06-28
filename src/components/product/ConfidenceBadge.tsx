@@ -16,19 +16,21 @@ export function ConfidenceBadge({ label, score, className }: ConfidenceBadgeProp
       icon: CheckCircle2,
       text: "Tinggi",
       variant: "default" as const,
-      className: "bg-green-500 text-white hover:bg-green-600",
+      className: "bg-green-700 text-white hover:bg-green-800",
     },
     dipercaya: {
       icon: CheckCircle2,
       text: "Dipercaya",
       variant: "secondary" as const,
-      className: "bg-blue-500 text-white hover:bg-blue-600",
+      className: "bg-blue-700 text-white hover:bg-blue-800",
     },
     perlu_verifikasi: {
       icon: AlertCircle,
       text: "Perlu Verifikasi",
       variant: "outline" as const,
-      className: "border-amber-500 text-amber-600",
+      // amber-700 (≈#b45309) gives ~4.5:1+ on white/light-blue row bg;
+      // amber-600 (#d97706) was failing WCAG 2.1 AA at 12px.
+      className: "border-amber-500 text-amber-700",
     },
   };
 

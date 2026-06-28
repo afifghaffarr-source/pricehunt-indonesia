@@ -3,6 +3,7 @@ import { verifyCronSecret } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
 import { getAppUrl } from "@/lib/app-url";
+import { withJobLogging } from "@/lib/job-logger";
 
 type AlertRow = {
   id: string;
@@ -63,122 +64,131 @@ export async function GET(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
-  const startedAt = new Date().toISOString();
-  const errors: string[] = [];
-  let processed = 0;
-  let success = 0;
-  let failed = 0;
+  const result = await withJobLogging("cron_alerts", async () => {
+    const startedAt = new Date().toISOString();
+    const errors: string[] = [];
+    let processed = 0;
+    let success = 0;
+    let failed = 0;
 
-  try {
-    const supabase = createAdminClient();
+    try {
+      const supabase = createAdminClient();
 
-    const { data, error } = await supabase
-      .from("price_alerts")
-      .select("id, user_id, target_price, triggered_at, products(id, name, slug, lowest_price)")
-      .eq("is_active", true)
-      .is("triggered_at", null);
+      const { data, error } = await supabase
+        .from("price_alerts")
+        .select("id, user_id, target_price, triggered_at, products(id, name, slug, lowest_price)")
+        .eq("is_active", true)
+        .is("triggered_at", null);
 
-    if (error) {
-      throw new Error(`Failed to load price alerts: ${error.message}`);
-    }
-
-    const alerts = (data || []) as AlertRow[];
-    const triggeredAlerts = alerts.filter((alert) => {
-      const currentPrice = alert.products?.lowest_price;
-      return typeof currentPrice === "number" && currentPrice > 0 && currentPrice <= alert.target_price;
-    });
-
-    processed = triggeredAlerts.length;
-
-    const userIds = [...new Set(triggeredAlerts.map((alert) => alert.user_id))];
-    const users = new Map<string, { email: string; name: string }>();
-
-    for (const userId of userIds) {
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
-      if (userError || !userData.user?.email) {
-        errors.push(`User lookup failed for ${userId}: ${userError?.message || "email missing"}`);
-        continue;
+      if (error) {
+        throw new Error(`Failed to load price alerts: ${error.message}`);
       }
 
-      users.set(userId, {
-        email: userData.user.email,
-        name: (userData.user.user_metadata?.display_name as string) || "Pemburu harga",
+      const alerts = (data || []) as AlertRow[];
+      const triggeredAlerts = alerts.filter((alert) => {
+        const currentPrice = alert.products?.lowest_price;
+        return typeof currentPrice === "number" && currentPrice > 0 && currentPrice <= alert.target_price;
       });
-    }
 
-    for (const alert of triggeredAlerts) {
-      const product = alert.products;
-      const currentPrice = product?.lowest_price;
-      const user = users.get(alert.user_id);
+      processed = triggeredAlerts.length;
 
-      if (!product || typeof currentPrice !== "number" || !user) {
-        failed++;
-        errors.push(`Alert ${alert.id} skipped: incomplete product or user data`);
-        continue;
-      }
+      const userIds = [...new Set(triggeredAlerts.map((alert) => alert.user_id))];
+      const users = new Map<string, { email: string; name: string }>();
 
-      try {
-        const emailResult = await sendAlertEmail({
-          email: user.email,
-          userName: user.name,
-          productName: product.name,
-          productSlug: product.slug,
-          targetPrice: alert.target_price,
-          currentPrice,
+      for (const userId of userIds) {
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+        if (userError || !userData.user?.email) {
+          errors.push(`User lookup failed for ${userId}: ${userError?.message || "email missing"}`);
+          continue;
+        }
+
+        users.set(userId, {
+          email: userData.user.email,
+          name: (userData.user.user_metadata?.display_name as string) || "Pemburu harga",
         });
-
-        if (!emailResult.sent) {
-          failed++;
-          errors.push(`Alert ${alert.id}: ${emailResult.error}`);
-          continue;
-        }
-
-        const alertUpdate = {
-          triggered_at: new Date().toISOString(),
-          is_active: false,
-        } as never;
-
-        const { error: updateError } = await supabase
-          .from("price_alerts")
-          .update(alertUpdate)
-          .eq("id", alert.id);
-
-        if (updateError) {
-          failed++;
-          errors.push(`Alert ${alert.id} sent but update failed: ${updateError.message}`);
-          continue;
-        }
-
-        success++;
-      } catch (error) {
-        failed++;
-        errors.push(`Alert ${alert.id}: ${compactError(error)}`);
       }
-    }
 
-    return NextResponse.json({
-      success: failed === 0,
-      job: "price-alerts",
-      startedAt,
-      finishedAt: new Date().toISOString(),
-      totalActiveAlerts: alerts.length,
-      processed,
-      successCount: success,
-      failedCount: failed,
-      errors: errors.slice(0, 10),
-    });
-  } catch (error) {
-    console.error("Cron alerts failed:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        job: "price-alerts",
-        processed,
+      for (const alert of triggeredAlerts) {
+        const product = alert.products;
+        const currentPrice = product?.lowest_price;
+        const user = users.get(alert.user_id);
+
+        if (!product || typeof currentPrice !== "number" || !user) {
+          failed++;
+          errors.push(`Alert ${alert.id} skipped: incomplete product or user data`);
+          continue;
+        }
+
+        try {
+          const emailResult = await sendAlertEmail({
+            email: user.email,
+            userName: user.name,
+            productName: product.name,
+            productSlug: product.slug,
+            targetPrice: alert.target_price,
+            currentPrice,
+          });
+
+          if (!emailResult.sent) {
+            failed++;
+            errors.push(`Alert ${alert.id}: ${emailResult.error}`);
+            continue;
+          }
+
+          const alertUpdate = {
+            triggered_at: new Date().toISOString(),
+            is_active: false,
+          } as never;
+
+          const { error: updateError } = await supabase
+            .from("price_alerts")
+            .update(alertUpdate)
+            .eq("id", alert.id);
+
+          if (updateError) {
+            failed++;
+            errors.push(`Alert ${alert.id} sent but update failed: ${updateError.message}`);
+            continue;
+          }
+
+          success++;
+        } catch (error) {
+          failed++;
+          errors.push(`Alert ${alert.id}: ${compactError(error)}`);
+        }
+      }
+
+      return {
+        success: failed === 0,
+        processedCount: alerts.length,
         successCount: success,
-        failedCount: failed + 1,
-        errors: [compactError(error)],
-      },
-      { status: 500 }
-    );
+        failedCount: failed,
+        errorSummary: errors.length > 0 ? errors.slice(0, 3).join("; ") : undefined,
+        metadata: { triggeredAlerts: processed, totalActiveAlerts: alerts.length },
+        result: {
+          startedAt,
+          totalActiveAlerts: alerts.length,
+          processed,
+          successCount: success,
+          failedCount: failed,
+        },
+      };
+    } catch (error) {
+      console.error("Cron alerts failed:", error);
+      throw error;
+    }
+  });
+
+  if (!result) {
+    return NextResponse.json({ error: "Cron job failed" }, { status: 500 });
   }
+
+  return NextResponse.json({
+    job: "price-alerts",
+    success: result.processed === 0 ? true : result.failedCount === 0,
+    totalActiveAlerts: result.totalActiveAlerts,
+    processed: result.processed,
+    successCount: result.successCount,
+    failedCount: result.failedCount,
+  });
 }

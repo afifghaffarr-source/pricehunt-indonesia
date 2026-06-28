@@ -29,11 +29,25 @@ export default async function AdminProductEditPage({ params }: PageProps) {
 
   if (!product) notFound();
 
-  const { data: prices } = await supabase
-    .from("prices")
-    .select("*, marketplaces(id, display_name, name)")
+  // A-002: read from `offers` (post-114) instead of legacy `prices`.
+  // Map to the shape PriceManager expects.
+  const { data: offers } = await supabase
+    .from("offers")
+    .select("id, current_price, marketplace_id, marketplaces(id, display_name, name)")
     .eq("product_id", id)
-    .order("price", { ascending: true });
+    .order("current_price", { ascending: true });
+
+  const pricesForManager = ((offers ?? []) as Array<{
+    id: string;
+    current_price: number | null;
+    marketplace_id: string;
+    marketplaces: { id: string; display_name: string; name: string } | { id: string; display_name: string; name: string }[] | null;
+  }>).map((o) => ({
+    id: o.id,
+    price: o.current_price ?? 0,
+    marketplace_id: o.marketplace_id,
+    marketplaces: Array.isArray(o.marketplaces) ? o.marketplaces[0] ?? null : o.marketplaces,
+  }));
 
   const { data: marketplaces } = await supabase
     .from("marketplaces")
@@ -59,7 +73,7 @@ export default async function AdminProductEditPage({ params }: PageProps) {
           <CardContent>
             <PriceManager
               productId={id}
-              prices={prices || []}
+              prices={pricesForManager}
               marketplaces={marketplaces || []}
             />
           </CardContent>

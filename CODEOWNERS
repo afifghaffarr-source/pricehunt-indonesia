@@ -1,0 +1,35 @@
+# CODEOWNERS
+# Auto-assigns reviewers for changes in each area.
+# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything not otherwise matched
+*       @afifghaffarr
+
+# Auth, security, and rate limiting — review carefully
+/src/app/api/auth/         @afifghaffarr
+/src/lib/rate-limit.ts     @afifghaffarr
+/src/lib/csrf.ts           @afifghaffarr
+/src/proxy.ts              @afifghaffarr
+
+# Database schema and migrations — always review
+/supabase/migrations/      @afifghaffarr
+/src/lib/supabase/types.ts @afifghaffarr
+
+# Ingestion and data pipeline
+/src/lib/ingestion/        @afifghaffarr
+/collectors/               @afifghaffarr
+
+# Admin panel and admin-only APIs
+/src/app/admin/            @afifghaffarr
+/src/app/api/admin/        @afifghaffarr
+/src/lib/admin-auth.ts     @afifghaffarr
+
+# Cron jobs and external integrations
+/src/app/api/cron/         @afifghaffarr
+/src/app/api/ingestion/    @afifghaffarr
+/src/app/api/vexo/         @afifghaffarr
+
+# Build and deploy configuration
+/next.config.ts            @afifghaffarr
+/vercel.json               @afifghaffarr
+/.github/workflows/        @afifghaffarr

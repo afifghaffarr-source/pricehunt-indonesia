@@ -118,7 +118,7 @@ export function EnhancedPriceTable({
 
                   <TableCell className="hidden sm:table-cell">
                     {item.shippingCost === 0 ? (
-                      <span className="flex items-center gap-1 text-green-600">
+                      <span className="flex items-center gap-1 text-green-700">
                         <Truck className="h-3 w-3" />
                         Gratis
                       </span>
@@ -134,11 +134,11 @@ export function EnhancedPriceTable({
                   <TableCell className="hidden lg:table-cell">
                     <div className="flex items-center gap-2">
                       {item.inStock ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <CheckCircle2 className="h-4 w-4 text-green-700" />
                       ) : (
-                        <XCircle className="h-4 w-4 text-red-600" />
+                        <XCircle className="h-4 w-4 text-red-700" />
                       )}
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-foreground/80">
                         {item.inStock ? "Tersedia" : "Habis"}
                       </span>
                       {item.rating && (

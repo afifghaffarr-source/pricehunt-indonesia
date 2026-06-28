@@ -1,9 +1,13 @@
 import { Metadata } from 'next';
 import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard';
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: 'Analytics - BijakBeli',
   description: 'Dashboard analytics dan visualisasi data harga',
+  robots: { index: false, follow: false },
+  alternates: { canonical: '/analytics' },
 };
 
 export default function AnalyticsPage() {

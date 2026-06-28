@@ -59,7 +59,6 @@ KEYWORDS:
       body: JSON.stringify({
         text: prompt,
         // Optional: cookie for authenticated Gemini access
-        // cookie: process.env.GEMINI_COOKIE,
       }),
     });
 

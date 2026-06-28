@@ -98,15 +98,10 @@ export async function checkAndSendPriceAlerts() {
 
       if (emailSent) {
         // ✅ Update alert status using admin client
-        // Admin client doesn't have full type inference, but operation is valid
-        /* eslint-disable @typescript-eslint/ban-ts-comment */
-        // @ts-ignore - Admin client type inference limitation
         await supabase
           .from("price_alerts")
-          // @ts-ignore
           .update({ triggered_at: new Date().toISOString(), is_active: false })
           .eq("id", alert.id);
-        /* eslint-enable @typescript-eslint/ban-ts-comment */
         sent++;
       }
     }

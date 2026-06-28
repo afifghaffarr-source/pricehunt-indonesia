@@ -2,9 +2,14 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { CompareContent } from "./CompareContent";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Bandingkan Produk",
   description: "Bandingkan harga dan spesifikasi produk secara berdampingan.",
+  alternates: {
+    canonical: "/compare",
+  },
 };
 
 export default function ComparePage() {

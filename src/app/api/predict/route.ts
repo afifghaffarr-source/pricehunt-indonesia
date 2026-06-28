@@ -28,11 +28,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // P7-Post: read from price_snapshots (joined to offers for product_id).
+    // The legacy `price_history` table was dropped in migration 129.
     const { data: history } = await supabase
-      .from("price_history")
-      .select("price, recorded_at")
-      .eq("product_id", productId)
-      .order("recorded_at", { ascending: true });
+      .from("price_snapshots")
+      .select("current_price, captured_at, offers!inner(product_id)")
+      .eq("offers.product_id", productId)
+      .order("captured_at", { ascending: true });
 
     if (!history || history.length < 7) {
       return NextResponse.json({
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const prices = history.map((h) => h.price as number);
+    const prices = history.map((h) => h.current_price as number);
 
     const recentAvg = prices.slice(-7).reduce((a, b) => a + b, 0) / 7;
     const olderAvg = prices.slice(0, 7).reduce((a, b) => a + b, 0) / 7;
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         const priceData = history.slice(-14).map((h) =>
-          `${h.recorded_at}: Rp${(h.price as number).toLocaleString("id-ID")}`
+          `${h.captured_at}: Rp${(h.current_price as number).toLocaleString("id-ID")}`
         ).join("\n");
 
         const completion = await openai.chat.completions.create({

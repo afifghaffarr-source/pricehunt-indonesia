@@ -129,6 +129,11 @@ export function ReviewsList({ productId, currentUserId }: ReviewsListProps) {
     );
   }
 
+  // Reviews table is deployed — render the section.
+  if (!stats) {
+    return null;
+  }
+
   return (
     <div className="space-y-6">
       {/* Stats Section */}

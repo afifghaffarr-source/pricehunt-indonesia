@@ -1,0 +1,24 @@
+# CODEOWNERS — auto-assigns reviewers for protected paths.
+# One owner per glob, latest matching rule wins.
+
+# Default: no owner (community contribution allowed)
+/*
+
+# Critical paths require explicit review
+/src/app/admin/       @afifghaffarr-source
+/src/app/api/         @afifghaffarr-source
+/src/app/api/cron/    @afifghaffarr-source
+/src/app/api/admin/   @afifghaffarr-source
+/src/lib/ingestion/   @afifghaffarr-source
+/src/lib/supabase/    @afifghaffarr-source
+/supabase/migrations/ @afifghaffarr-source
+
+# Secrets + env templates (high blast radius if wrong)
+/.env*                @afifghaffarr-source
+next.config.ts        @afifghaffarr-source
+src/proxy.ts          @afifghaffarr-source
+
+# Workflows + infra
+/.github/workflows/   @afifghaffarr-source
+/vercel.json          @afifghaffarr-source
+/docker-compose*.yml  @afifghaffarr-source

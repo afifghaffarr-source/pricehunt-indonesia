@@ -57,11 +57,11 @@ async function simulateTriggeredAlert() {
     message += `├ 🎯 Your Target: Rp ${targetPrice.toLocaleString('id-ID')}\n`;
     message += `├ 💰 Current Price: Rp ${currentPrice.toLocaleString('id-ID')}\n`;
     message += `├ 💸 Extra Savings: Rp ${savings.toLocaleString('id-ID')} (${percentage}% below target!)\n`;
-    message += `└ 🛒 Buy now: https://bijakbeli.app/product/${product.slug}\n\n`;
+    message += `└ 🛒 Buy now: https://www.bijakbeli.web.id/product/${product.slug}\n\n`;
   });
 
   message += `\n⏰ *Act fast!* Prices can change anytime.\n`;
-  message += `📱 Manage your alerts: https://bijakbeli.app/settings/notifications\n\n`;
+  message += `📱 Manage your alerts: https://www.bijakbeli.web.id/settings/notifications\n\n`;
   message += `_BijakBeli.app — Beli yang Tepat, di Waktu yang Tepat_ 🎯`;
 
   console.log('📤 Formatted notification message:\n');

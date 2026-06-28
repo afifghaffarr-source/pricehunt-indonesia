@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 "use client";
 
 import { useSearchParams } from "next/navigation";
@@ -13,6 +11,7 @@ import { SectionHeading } from "@/components/common/SectionHeading";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
 import type { Product } from "@/lib/types";
 import type { BijakBeliDiscoveredProduct } from "@/lib/vexo/types";
+import type { ApiProductSearchResult, ApiMarketplacePriceSearchResult } from "@/lib/search-api-types";
 import {
   Select,
   SelectContent,
@@ -29,8 +28,6 @@ const categories = [
 ];
 
 export function SearchPageContent() {
-// Pre-existing Vexo/Supabase response typing (Phase 5). replace `any` usages with proper types.
-
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || "";
@@ -69,8 +66,8 @@ export function SearchPageContent() {
         }
 
         // Transform API response to Product type
-        const result: Product[] = (data.results || []).map((p: any) => {
-          const prices = (p.prices || []).map((pr: any) => ({
+        const result: Product[] = (data.results || []).map((p: ApiProductSearchResult) => {
+          const prices = (p.prices || []).map((pr: ApiMarketplacePriceSearchResult) => ({
             marketplace: pr.marketplace || pr.marketplaces?.name || "tokopedia",
             price: pr.price,
             url: pr.url,
@@ -182,6 +179,12 @@ export function SearchPageContent() {
           title={query ? `Hasil pencarian: "${query}"` : "Semua Produk"}
           subtitle={loading ? "Memuat..." : `${products.length} produk dari database`}
         />
+        {/* A11y: announce result count changes to screen readers */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {loading
+            ? "Memuat hasil pencarian"
+            : `${products.length} produk${query ? ` untuk "${query}"` : ""} ditemukan`}
+        </div>
         <SearchBar
           defaultValue={query}
           onSearch={handleSearch}
@@ -200,7 +203,7 @@ export function SearchPageContent() {
             setCategory(val === "all" || val === null ? undefined : val)
           }
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px]" aria-label="Filter kategori">
             <SelectValue placeholder="Kategori" />
           </SelectTrigger>
           <SelectContent>
@@ -216,7 +219,7 @@ export function SearchPageContent() {
           value={sortBy}
           onValueChange={(val: string | null) => setSortBy(val || "deal-score")}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Urutkan hasil">
             <SelectValue placeholder="Urutkan" />
           </SelectTrigger>
           <SelectContent>
@@ -241,8 +244,8 @@ export function SearchPageContent() {
         <LoadingSkeleton count={8} variant="card" />
       ) : products.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {products.map((product, index) => (
+            <ProductCard key={product.id} product={product} priority={index < 3} />
           ))}
         </div>
       ) : (

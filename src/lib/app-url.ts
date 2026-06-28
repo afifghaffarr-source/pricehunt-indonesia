@@ -9,7 +9,7 @@
  * or `process.env.NEXT_PUBLIC_APP_URL` directly. This avoids mismatches
  * such as the password reset redirect producing `undefined/auth/...`.
  */
-export const DEFAULT_APP_URL = "https://bijakbeli-app.vercel.app";
+export const DEFAULT_APP_URL = "https://www.bijakbeli.web.id";
 
 export function getAppUrl(): string {
   const fromApp = process.env.NEXT_PUBLIC_APP_URL?.trim();

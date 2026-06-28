@@ -34,7 +34,7 @@ ATAU
 ### 5. Test (dari HP browser)
 Buka:
 ```
-https://bijakbeli-app.vercel.app/api/admin/data-collection/offers?limit=1
+https://www.bijakbeli.web.id/api/admin/data-collection/offers?limit=1
 ```
 
 **Expected Response:**

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatRupiah } from "@/lib/utils";
 import { getAppUrl } from "./app-url";
+import { getVapidConfig } from "@/lib/env";
 import type * as WebPush from "web-push";
 
 interface PushNotificationPayload {
@@ -17,28 +18,55 @@ interface PushNotificationPayload {
  * @param payload - Notification content
  * @returns true if sent successfully, false otherwise
  */
+/**
+ * Clean up an expired/invalid push subscription from the user's profile.
+ * The user can re-subscribe from /settings/notifications.
+ */
+async function cleanupExpiredPushSubscription(
+  userId: string,
+  currentPreferences: Record<string, unknown>,
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error: cleanupError } = await supabase
+    .from("user_profiles")
+    .update({
+      preferences: {
+        ...currentPreferences,
+        push_subscription: null,
+        push_enabled: false,
+      },
+    })
+    .eq("id", userId);
+  if (cleanupError) {
+    console.error("[Push] Failed to clean up expired subscription:", cleanupError);
+  } else {
+    console.log("[Push] Cleaned up expired subscription for user:", userId);
+  }
+}
+
 export async function sendPushNotificationToUser(
   userId: string,
   payload: PushNotificationPayload
 ): Promise<boolean> {
-  try {
-    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-    const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@bijakbeli.id";
+  // Captured in the try block so the catch block can clean up on 404/410.
+  let currentPreferences: Record<string, unknown> = {};
 
-    if (!vapidPublicKey || !vapidPrivateKey) {
+  try {
+    const vapid = getVapidConfig();
+    if (!vapid) {
       console.log("[Push] VAPID keys not configured, skipping push notification");
       return false;
     }
+    const { publicKey: vapidPublicKey, privateKey: vapidPrivateKey, subject: vapidSubject } = vapid;
 
     // Get user's push subscription from preferences
     const supabase = createAdminClient();
-    
+
     type ProfileData = {
       id: string;
       preferences: Record<string, unknown> | null;
     };
-    
+
     const { data: profileData } = await supabase
       .from("user_profiles")
       .select("preferences")
@@ -51,9 +79,9 @@ export async function sendPushNotificationToUser(
     }
 
     const profile = profileData as ProfileData;
-    const preferences = (profile.preferences as Record<string, unknown>) || {};
-    const pushEnabled = preferences.push_enabled === true;
-    const pushSubscription = preferences.push_subscription;
+    currentPreferences = (profile.preferences as Record<string, unknown>) || {};
+    const pushEnabled = currentPreferences.push_enabled === true;
+    const pushSubscription = currentPreferences.push_subscription;
 
     if (!pushEnabled || !pushSubscription) {
       console.log("[Push] User has not enabled push notifications:", userId);
@@ -87,7 +115,9 @@ export async function sendPushNotificationToUser(
       const statusCode = (err as { statusCode: number }).statusCode;
       if (statusCode === 404 || statusCode === 410) {
         console.log("[Push] Subscription expired/invalid for user:", userId);
-        // TODO: Could clean up expired subscription from database
+        // Clean up the dead subscription so we don't retry it on every
+        // notification. The user can re-subscribe from /settings/notifications.
+        await cleanupExpiredPushSubscription(userId, currentPreferences);
         return false;
       }
     }

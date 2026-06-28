@@ -27,12 +27,18 @@ WHERE crawl_status = 'queued';
 -- 2. Rate limits: drop any partial index that used NOW() (non-immutable).
 --    Recreate as a plain index on window_start. A partial cleanup index
 --    cannot be used because partial index predicates must be IMMUTABLE.
+--
+-- FIX (2026-06-15): The actual table is `api_rate_limits` (created in
+-- migration 106), not `rate_limits`. The original 122 referenced the
+-- wrong table name, which would have failed with "relation does not
+-- exist" on a clean apply. Confirmed via probe_schema.py against
+-- production Supabase (oklaxwjoyttpwgxhphko).
 -- ============================================================================
 
 DROP INDEX IF EXISTS idx_rate_limits_cleanup;
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_rate_limits_cleanup
-ON rate_limits(window_start);
+ON api_rate_limits(window_start);
 
 -- ============================================================================
 -- 3. Products name search: ensure a portable search index exists.

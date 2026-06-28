@@ -21,7 +21,10 @@ export function MarketplaceBadge({
       className={cn("font-medium", className)}
       style={{
         borderColor: color,
-        color: color,
+        // Use foreground (always dark) for text — marketplace brand color
+        // (e.g. Tokopedia #42B549) only has 2.6:1 contrast on white, which
+        // fails WCAG 2.1 AA. The border keeps the brand identity.
+        color: undefined,
       }}
     >
       {name}

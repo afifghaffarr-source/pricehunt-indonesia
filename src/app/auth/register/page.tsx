@@ -3,9 +3,13 @@ import Link from "next/link";
 import { Tag } from "lucide-react";
 import { RegisterForm } from "./RegisterForm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Daftar",
   description: "Buat akun BijakBeli.app baru.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/auth/register" },
 };
 
 export default function RegisterPage() {

@@ -27,32 +27,60 @@ export function VexoImageFallback({
   sizes,
   priority,
 }: VexoImageFallbackProps) {
-  const [src, setSrc] = useState(fallbackSrc || "");
+  // Compute a deterministic picsum.photos URL synchronously from the product name.
+  // This is the LCP image — we render it immediately instead of waiting for the
+  // VexoAPI waterfall (marketplace → images → picsum fallback) which costs
+  // 100-300ms of dead time on every product page load. The useEffect below can
+  // still upgrade the src to a real marketplace image when VexoAPI succeeds.
+  const picsumSrc = (() => {
+    if (!productName) return "";
+    const slug = productName
+      .replace(/[^\w\s]/g, '')
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !['the','and','for','with','gen','rgb','inch','new','m2','m3','m1','core','ultra'].includes(w.toLowerCase()))
+      .slice(0, 3)
+      .join('-');
+    return slug ? `https://picsum.photos/seed/${encodeURIComponent(slug)}/600/600` : "";
+  })();
+
+  // Initial src: use the real imageUrl if it's not a placeholder, otherwise
+  // start the LCP image load immediately with picsum.photos (deterministic).
+  const initialSrc = (() => {
+    if (!fallbackSrc || fallbackSrc === "" || fallbackSrc.includes("placehold.co")) {
+      return picsumSrc;
+    }
+    return fallbackSrc;
+  })();
+  const [src, setSrc] = useState(initialSrc);
   const [triedVexo, setTriedVexo] = useState(false);
   const [imageError, setImageError] = useState(false);
-  
+
   // Enhanced detection: placeholder URLs, sample/test URLs, or empty
-  const isPlaceholderOrInvalid = 
+  const isPlaceholderOrInvalid =
     !fallbackSrc ||
     fallbackSrc === "" ||
-    fallbackSrc.includes("placehold.co") || 
+    fallbackSrc.includes("placehold.co") ||
     fallbackSrc.includes("/sample/") ||
     fallbackSrc.includes("/test/") ||
     imageError;
 
   useEffect(() => {
-    // Try VexoAPI if placeholder, invalid URL, or image load failed
+    // Try VexoAPI to upgrade the picsum fallback to a real marketplace image.
+    // If the product has a real imageUrl, this is skipped (no upgrade needed).
     if (!isPlaceholderOrInvalid || triedVexo) return;
 
     let cancelled = false;
 
     async function fetchImage() {
       // 1) Try VexoAPI marketplace (returns product image from marketplace data)
+      // v1.5.2: if VexoAPI returns mock data (503 + mockDisabled: true) or
+      // any other error, fall through to the next fallback instead of
+      // serving a fake image URL to users.
       try {
         const mktRes = await fetch(`/api/vexo/marketplace?name=${encodeURIComponent(productName)}`);
         const mktData = await mktRes.json();
         if (cancelled) return;
-        if (mktData.success && mktData.product?.imageUrl) {
+        if (mktRes.ok && mktData.success && mktData.product?.imageUrl) {
           setSrc(mktData.product.imageUrl);
           setImageError(false);
           return;
@@ -75,19 +103,7 @@ export function VexoImageFallback({
         // continue to next fallback
       }
 
-      // 3) Fallback to picsum.photos (stable, always valid)
-      if (cancelled) return;
-      const slug = productName
-        .replace(/[^\w\s]/g, '')
-        .split(/\s+/)
-        .filter(w => w.length > 2 && !['the','and','for','with','gen','rgb','inch','new','m2','m3','m1','core','ultra'].includes(w.toLowerCase()))
-        .slice(0, 3)
-        .join('-');
-      if (slug) {
-        setSrc(`https://picsum.photos/seed/${encodeURIComponent(slug)}/600/600`);
-        setImageError(false);
-      }
-
+      // 3) picsum.photos fallback — already the current src, no work needed.
       setTriedVexo(true);
     }
 

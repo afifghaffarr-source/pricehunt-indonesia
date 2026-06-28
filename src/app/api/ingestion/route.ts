@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/lib/supabase/types";
+import { getIngestionSecret, safeEqual } from "@/lib/env";
 import { z } from "zod";
 
 // Validation schema for ingestion data
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const secret = authHeader?.replace("Bearer ", "");
     
-    const expectedSecret = process.env.INGESTION_SECRET;
+    const expectedSecret = getIngestionSecret();
     
     if (!expectedSecret) {
       console.error("[Ingestion] INGESTION_SECRET not configured");
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (!secret || secret !== expectedSecret) {
+    if (!secret || !safeEqual(secret, expectedSecret)) {
       console.warn("[Ingestion] Unauthorized access attempt");
       return NextResponse.json(
         { error: "Unauthorized. Valid INGESTION_SECRET required." },
@@ -129,15 +131,13 @@ export async function POST(request: NextRequest) {
     if (data.offers && data.offers.length > 0) {
       for (const offer of data.offers) {
         try {
-          // TODO: Regenerate Supabase types after migrations 107+108
           const { error } = await supabase
             .from("offers")
             .upsert({
               ...offer,
               last_checked_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any, {
+            } as Database["public"]["Tables"]["offers"]["Insert"], {
               onConflict: "product_id,marketplace_id,marketplace_product_id",
               ignoreDuplicates: false, // Update existing
             });
@@ -160,14 +160,17 @@ export async function POST(request: NextRequest) {
     if (data.price_snapshots && data.price_snapshots.length > 0) {
       for (const snapshot of data.price_snapshots) {
         try {
-          // TODO: Regenerate Supabase types after migrations 107+108
+          // Map legacy `price` field to `current_price` (DB column).
+          // The zod schema accepts `price` for backwards compatibility with
+          // existing collectors. New code should use `current_price`.
+          const { price: _legacyPrice, ...rest } = snapshot;
           const { error } = await supabase
             .from("price_snapshots")
             .insert({
-              ...snapshot,
+              ...rest,
+              current_price: snapshot.price,
               captured_at: new Date().toISOString(),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any);
+            } as Database["public"]["Tables"]["price_snapshots"]["Insert"]);
           
           if (error) {
             snapshotsFailed++;
@@ -189,20 +192,25 @@ export async function POST(request: NextRequest) {
                    (offersProcessed > 0 || snapshotsProcessed > 0) ? "partial" : "failed";
     
     try {
-      // TODO: Regenerate Supabase types after migrations 107+108
+      // Map to actual ingestion_logs schema columns.
+      // Old field names → DB column names:
+      //   job_name, status, duration_ms, error_summary → all in metadata
+      //   status → log_status
+      //   error_summary → error_message
       await supabase
         .from("ingestion_logs")
         .insert({
-          job_name: data.job_name,
           source: data.source,
-          status,
-        items_processed: offersProcessed + snapshotsProcessed,
-        items_failed: offersFailed + snapshotsFailed,
-        duration_ms: duration,
-        error_summary: errors.length > 0 ? errors.slice(0, 10).join("; ") : null,
-        metadata: data.metadata || {},
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+          log_status: status,
+          items_processed: offersProcessed + snapshotsProcessed,
+          items_failed: offersFailed + snapshotsFailed,
+          error_message: errors.length > 0 ? errors.slice(0, 10).join("; ") : null,
+          metadata: {
+            ...(data.metadata || {}),
+            job_name: data.job_name,
+            duration_ms: duration,
+          },
+        } as Database["public"]["Tables"]["ingestion_logs"]["Insert"]);
     } catch (logError) {
       console.error("[Ingestion] Failed to log job:", logError);
       // Don't fail the request if logging fails
@@ -235,12 +243,12 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error("[Ingestion] Unexpected error:", error);
-    
+
+    // Don't leak err.message to caller — internal error details may
+    // include SQL state, file paths, and Supabase RLS hints. Full
+    // error already logged server-side for debugging.
     return NextResponse.json(
-      { 
-        error: "Internal server error during ingestion",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Internal server error during ingestion" },
       { status: 500 }
     );
   }

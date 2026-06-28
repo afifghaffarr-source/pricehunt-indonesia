@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Legal & Kepercayaan",
   description: "Kebijakan privasi, syarat penggunaan, disclosure afiliasi, disclaimer akurasi harga, dan kontak BijakBeli.app.",
+  alternates: {
+    canonical: "/legal",
+  },
 };
 
 const sections = [

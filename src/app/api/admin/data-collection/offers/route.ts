@@ -8,14 +8,14 @@
  * - No raw DB error details are returned to the client.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 export async function GET(request: NextRequest) {
   const guard = await requireAdmin(request);
-  if (guard) return guard;
+  if (!guard.ok) return guard.response;
 
   const { searchParams } = new URL(request.url);
   const validationStatus = searchParams.get("validation_status");

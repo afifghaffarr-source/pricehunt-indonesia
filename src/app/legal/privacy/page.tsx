@@ -3,6 +3,9 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Privacy Policy - BijakBeli.app",
   description: "Kebijakan privasi BijakBeli.app mengenai pengumpulan, penggunaan, dan perlindungan data pengguna.",
+  alternates: {
+    canonical: "/legal/privacy",
+  },
 };
 
 export default function PrivacyPolicyPage() {

@@ -35,7 +35,7 @@ cp .env.example .env
 
 ```env
 # BijakBeli API
-BIJAKBELI_API_URL=https://www.bijakbeli.app
+BIJAKBELI_API_URL=https://www.bijakbeli.web.id
 INGESTION_SECRET=your-ingestion-secret-here
 
 # Supabase (untuk query product/marketplace IDs)

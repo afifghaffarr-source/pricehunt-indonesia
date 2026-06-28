@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
 import { isUserAdmin } from "@/lib/admin-auth";
+import { isOfferInStock } from "@/lib/ingestion/adapter";
 
 async function requireAdmin() {
   const user = await getUser();
@@ -15,64 +16,40 @@ async function requireAdmin() {
   const isAdmin = await isUserAdmin(user.id);
   if (!isAdmin) redirect("/dashboard?error=forbidden");
 
+  // Only after admin check passes do we instantiate the service-role client.
   return { user, adminClient: createAdminClient() };
-}
-
-export async function createProduct(formData: FormData) {
-  const { adminClient } = await requireAdmin();
-
-  const name = formData.get("name") as string;
-  const slug = (formData.get("slug") as string) || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  const category = formData.get("category") as string;
-  const description = formData.get("description") as string;
-  const imageUrl = formData.get("image_url") as string;
-
-  const productInsert = {
-    name,
-    slug,
-    category,
-    description,
-    image_url: imageUrl || "https://placehold.co/400x400/e2e8f0/64748b?text=Product",
-    lowest_price: 0,
-    highest_price: 0,
-    average_price: 0,
-    deal_score: 0,
-  } as never;
-
-  const { error } = await adminClient.from("products").insert(productInsert);
-
-  if (error) return { error: error.message };
-
-  revalidatePath("/admin");
-  revalidatePath("/search");
-  return { success: true };
 }
 
 export async function updateProduct(productId: string, formData: FormData) {
   const { adminClient } = await requireAdmin();
 
-  const updates: Record<string, unknown> = {};
   const name = formData.get("name") as string;
   const category = formData.get("category") as string;
-  const description = formData.get("description") as string;
   const imageUrl = formData.get("image_url") as string;
+  const description = formData.get("description") as string;
   const aiVerdict = formData.get("ai_verdict") as string;
 
-  if (name) updates.name = name;
-  if (category) updates.category = category;
-  if (description) updates.description = description;
-  if (imageUrl) updates.image_url = imageUrl;
-  if (aiVerdict !== null) updates.ai_verdict = aiVerdict;
+  if (!name || !category) {
+    return { error: "Nama dan kategori wajib diisi." };
+  }
+
+  const update = {
+    name,
+    category,
+    description: description || null,
+    image_url: imageUrl || null,
+    ai_verdict: aiVerdict || null,
+  };
 
   const { error } = await adminClient
     .from("products")
-    .update(updates as never)
+    .update(update as never)
     .eq("id", productId);
 
   if (error) return { error: error.message };
 
   revalidatePath("/admin");
-  revalidatePath(`/product/${formData.get("slug") || ""}`);
+  revalidatePath("/search");
   return { success: true };
 }
 
@@ -87,6 +64,10 @@ export async function deleteProduct(productId: string) {
   return { success: true };
 }
 
+// A-002: write to `offers` (post-114) instead of legacy `prices`. The
+// new table's unique index is on `url`, not (product_id, marketplace_id),
+// so we look up the existing offer's url first, falling back to a
+// synthetic admin:// URL for the (product, marketplace) tuple.
 export async function upsertPrice(formData: FormData) {
   const { adminClient } = await requireAdmin();
 
@@ -100,21 +81,34 @@ export async function upsertPrice(formData: FormData) {
     return { error: "product_id, marketplace_id, dan price wajib diisi." };
   }
 
-  const priceUpsert = {
-      product_id: productId,
-      marketplace_id: marketplaceId,
-      price,
-      url,
-      seller,
-      in_stock: true,
-      shipping_cost: 0,
-      last_updated: new Date().toISOString(),
+  const { data: existing } = await adminClient
+    .from("offers")
+    .select("id, url")
+    .eq("product_id", productId)
+    .eq("marketplace_id", marketplaceId)
+    .maybeSingle();
+
+  const offerUrl =
+    url ||
+    (existing as { url: string | null } | null)?.url ||
+    `admin://${productId}/${marketplaceId}`;
+
+  const offerUpsert = {
+    product_id: productId,
+    marketplace_id: marketplaceId,
+    current_price: price,
+    url: offerUrl,
+    seller_name: seller || null,
+    stock_status: "in_stock",
+    is_active: true,
+    source: "manual_admin",
+    last_checked_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   } as never;
 
-  const { error } = await adminClient.from("prices").upsert(
-    priceUpsert,
-    { onConflict: "product_id,marketplace_id" }
-  );
+  const { error } = await adminClient
+    .from("offers")
+    .upsert(offerUpsert, { onConflict: "url" });
 
   if (error) return { error: error.message };
 
@@ -129,15 +123,21 @@ async function recalculateProductStats(
   supabase: ReturnType<typeof createAdminClient>,
   productId: string
 ) {
-  const { data: prices } = await supabase
-    .from("prices")
-    .select("price")
-    .eq("product_id", productId)
-    .eq("in_stock", true);
+  // A-002: read from `offers` and use the adapter's stock-status logic
+  // to filter to in-stock offers (consistent with public read routes).
+  const { data: offers } = await supabase
+    .from("offers")
+    .select("current_price, stock_status, is_active")
+    .eq("product_id", productId);
 
-  if (!prices || prices.length === 0) return;
+  if (!offers || offers.length === 0) return;
 
-  const priceValues = (prices as Array<{ price: number }>).map((p) => p.price);
+  const inStock = (offers as Array<{ current_price: number | null; stock_status: string | null; is_active: boolean | null }>)
+    .filter((o) => isOfferInStock(o.stock_status, o.is_active) && (o.current_price ?? 0) > 0);
+  const priceValues = inStock.map((p) => p.current_price ?? 0);
+
+  if (priceValues.length === 0) return;
+
   const lowest = Math.min(...priceValues);
   const highest = Math.max(...priceValues);
   const average = Math.round(priceValues.reduce((a, b) => a + b, 0) / priceValues.length);

@@ -33,7 +33,7 @@ function formatMessage(alerts, userName) {
     msg += `   💰 Harga sekarang: ${formatPrice(alert.currentPrice)}\n`;
     msg += `   🎯 Target Anda: ${formatPrice(alert.targetPrice)}\n`;
     msg += `   💸 Hemat: ${formatPrice(alert.savings)} (${alert.savingsPercent}%)\n`;
-    msg += `   🛒 Beli: https://bijakbeli.app/product/${alert.productSlug}\n\n`;
+    msg += `   🛒 Beli: https://www.bijakbeli.web.id/product/${alert.productSlug}\n\n`;
   });
   
   msg += `Buruan beli sebelum harganya naik lagi! 🚀`;

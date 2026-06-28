@@ -13,7 +13,6 @@
  * Also verifies logAdminAction never throws (fail-open contract)
  * and that the safeString/safeMeta helpers do not crash on weird input.
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -32,9 +31,12 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/supabase/auth", () => ({
   getUser: vi.fn(async () => {
     const result = mockGetUser();
-    // mockGetUser may be either a Supabase response {data:{user}} or a user
+    // mockGetUser may be either a Supabase response {data:{user}} or a user.
+    // Type guard: if result is an object with a `data` property, treat as
+    // Supabase response shape; otherwise treat as user directly.
     if (result && typeof result === "object" && "data" in result) {
-      return (result as any).data?.user ?? null;
+      const data = (result as { data: { user?: unknown } | null }).data;
+      return data?.user ?? null;
     }
     return result ?? null;
   }),
@@ -186,10 +188,11 @@ describe("verifyApiKey", () => {
     else process.env.EXTERNAL_API_KEY = ORIGINAL;
   });
 
-  it("returns null when EXTERNAL_API_KEY is not configured (auth check fallback)", () => {
+  it("returns 503 when EXTERNAL_API_KEY is not configured (fail-closed)", () => {
     delete process.env.EXTERNAL_API_KEY;
     const res = verifyApiKey(makeRequest());
-    expect(res).toBeNull();
+    expect(res).not.toBeNull();
+    expect(res!.status).toBe(503);
   });
 
   it("returns 401 when key is wrong", () => {

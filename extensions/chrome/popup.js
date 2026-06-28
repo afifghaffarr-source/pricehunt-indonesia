@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Load configuration
   const config = await chrome.storage.sync.get(['apiUrl', 'ingestionSecret']);
-  document.getElementById('apiUrl').value = config.apiUrl || 'https://www.bijakbeli.app';
+  document.getElementById('apiUrl').value = config.apiUrl || 'https://www.bijakbeli.web.id';
   document.getElementById('ingestionSecret').value = config.ingestionSecret || '';
   
   // Load history

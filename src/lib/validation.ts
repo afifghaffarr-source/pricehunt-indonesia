@@ -6,6 +6,12 @@
  * These helpers cover what we need right now (whitelisted object payloads
  * for /api/admin/* routes). If validation requirements grow, this file is
  * the single place to swap in a schema library.
+ *
+ * A-007 resolution (2026-06-15): the audit originally flagged this as
+ * "dual validation systems" alongside zod. The intent was deliberate —
+ * complex ingestion routes use zod (unions, enums, regex, transforms);
+ * admin routes use these tiny helpers to avoid a new dep in security-
+ * critical paths. Two tools, two niches — not a debt to consolidate.
  */
 
 export type ValidationIssue = { path: string; message: string };
@@ -81,6 +87,35 @@ export const url = (): Schema<string> => ({
   },
 });
 
+/**
+ * enum<T extends readonly string[]>(values: T): Schema<T[number]>
+ *
+ * Whitelist validator. Accepts only one of the literal values, otherwise
+ * returns a 400-style "invalid enum: expected X | Y" message. Use this
+ * whenever a request body or query param maps to a server-side enum
+ * (don't trust freeform strings as DB enums).
+ */
+export const enum_ = <T extends readonly string[]>(
+  values: T,
+  opts: { errorMap?: () => string } = {}
+): Schema<T[number]> => ({
+  safeParse: (value: unknown): SafeParseResult<T[number]> => {
+    if (typeof value !== "string") {
+      return {
+        ok: false,
+        message: opts.errorMap?.() ?? `Invalid enum: expected one of ${values.join(", ")}`,
+      };
+    }
+    if (!(values as readonly string[]).includes(value)) {
+      return {
+        ok: false,
+        message: opts.errorMap?.() ?? `Invalid enum: expected one of ${values.join(", ")}`,
+      };
+    }
+    return { ok: true, value: value as T[number] };
+  },
+});
+
 type Shape = Record<string, Schema<unknown>>;
 type ShapeOutput<S extends Shape> = { [K in keyof S]: S[K] extends Schema<infer V> ? V : never };
 
@@ -94,10 +129,11 @@ export function object<S extends Shape>(shape: S): Schema<ShapeOutput<S>> {
       for (const key of Object.keys(shape)) {
         const r = shape[key].safeParse(input[key]);
         if (!r.ok) {
+          // r is narrowed to { ok: false; message: string } here.
           return { ok: false, message: `${key}: ${r.message}` };
         }
-        if ((r as { value: unknown }).value !== undefined) {
-          out[key] = (r as { value: unknown }).value;
+        if (r.value !== undefined) {
+          out[key] = r.value;
         }
       }
       return { ok: true, value: out as ShapeOutput<S> };
@@ -107,4 +143,4 @@ export function object<S extends Shape>(shape: S): Schema<ShapeOutput<S>> {
 
 // Re-export a thin "z" so call sites use a familiar shape
 // (`z.object({...})`, `z.string({...})`, ...).
-export const z = { object, string, optionalString, number, optionalUuid, url };
+export const z = { object, string, optionalString, number, optionalUuid, url, enum: enum_ };

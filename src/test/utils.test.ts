@@ -37,28 +37,30 @@ describe("formatCompactRupiah", () => {
 });
 
 describe("getDealScoreInfo", () => {
+  // Background colors are WCAG 2.1 AA compliant (700+ shades for 4.5:1
+  // contrast on 12px white text). See tests/e2e/a11y.spec.ts.
   it("returns great deal for score >= 85", () => {
     const info = getDealScoreInfo(90);
     expect(info.label).toBe("Harga Terbaik");
-    expect(info.bgColor).toBe("bg-emerald-600");
+    expect(info.bgColor).toBe("bg-emerald-700");
   });
 
   it("returns good deal for score >= 70", () => {
     const info = getDealScoreInfo(75);
     expect(info.label).toBe("Deal Bagus");
-    expect(info.bgColor).toBe("bg-green-500");
+    expect(info.bgColor).toBe("bg-green-700");
   });
 
   it("returns OK deal for score >= 50", () => {
     const info = getDealScoreInfo(55);
     expect(info.label).toBe("Harga Wajar");
-    expect(info.bgColor).toBe("bg-amber-500");
+    expect(info.bgColor).toBe("bg-amber-700");
   });
 
   it("returns expensive for score < 50", () => {
     const info = getDealScoreInfo(30);
     expect(info.label).toBe("Mahal");
-    expect(info.bgColor).toBe("bg-red-500");
+    expect(info.bgColor).toBe("bg-red-700");
   });
 });
 

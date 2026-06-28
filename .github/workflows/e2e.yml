@@ -1,0 +1,134 @@
+name: E2E Tests
+
+# Playwright end-to-end tests. Runs in parallel with CI but with serial
+# workers (workers=1) to avoid Supabase rate-limit interference.
+#
+# Triggers: push to master/main, PRs to master/main, manual dispatch.
+#
+# Required secrets (one of these naming conventions):
+#   Modern:    SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+#   Legacy:    NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+#   Or both - whichever exists in repo settings is used.
+#
+# We support multiple naming conventions to avoid breaking when secrets
+# were created under different names during initial setup.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+# Don't cancel the in-progress run if a new commit lands — let it finish
+# so we don't waste Supabase rate limit budget.
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Map GitHub secret names → Next.js env var names.
+    # `secrets.X || secrets.Y` falls back to alternate name.
+    # Order matters: first non-empty wins. NEXT_PUBLIC_* are required at
+    # BUILD time (Next.js inlines them into the client bundle).
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify Supabase env vars are set
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL is set: $([ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && echo yes || echo NO)"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY is set: $([ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] && echo yes || echo NO)"
+          echo "SUPABASE_SERVICE_ROLE_KEY is set: $([ -n "$SUPABASE_SERVICE_ROLE_KEY" ] && echo yes || echo NO)"
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Required Supabase secrets are missing. Add them at:"
+            echo "::error::https://github.com/afifghaffarr-source/pricehunt-indonesia/settings/secrets/actions"
+            echo "::error::Expected names: SUPABASE_URL + SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY)"
+            exit 1
+          fi
+
+      - name: Build app
+        run: npm run build
+
+      - name: Start server (background)
+        run: |
+          npm start > /tmp/next-start.log 2>&1 &
+          echo $! > /tmp/next-start.pid
+          # Wait for server to be ready (max 60s for slow CI runners)
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 -o /dev/null 2>/dev/null; then
+              echo "Server ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run Playwright E2E tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npx playwright test --workers=1
+
+      - name: Dump server log (on failure, for debug)
+        if: failure()
+        run: |
+          echo "=== Server log (last 200 lines) ==="
+          tail -200 /tmp/next-start.log
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f /tmp/next-start.pid ]; then
+            kill $(cat /tmp/next-start.pid) 2>/dev/null || true
+          fi
+          pkill -f "next start" 2>/dev/null || true
+          pkill -f "next-server" 2>/dev/null || true
+
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+      - name: Upload test report on success
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 3

@@ -1,0 +1,77 @@
+-- Migration 127: Dedupe iPhone/Samsung duplicates + cleanup 999k placeholder offers
+-- BijakBeli.app — 2026-06-17
+-- Resolves BUG-01 (placeholder Rp 999.000 prices) + BUG-02 (iPhone triple entry)
+--
+-- SUMMARY OF CHANGES:
+-- 1. Reassigned FK references from 5 duplicate products to 3 canonicals
+-- 2. Deactivated 17 offers that conflict between dups and canonicals
+-- 3. Reassigned 3 non-conflicting offers (Samsung 512GB canonical got 3 new marketplaces)
+-- 4. Reassigned 20 user-data rows (wishlists + price_reports)
+-- 5. Deactivated 6 placeholder 999.000 offers globally
+-- 6. Deleted 5 duplicate products (CASCADE deleted 20 wishlists, 20 price_reports)
+-- 7. Fixed Samsung 512GB category: Electronics -> Smartphone
+-- 8. Recomputed lowest/highest/average prices for 3 canonicals
+-- 9. Recomputed deal_score for 3 canonicals
+--
+-- FINAL STATE:
+--   Products: 64 -> 59 (5 dups removed)
+--   Products with lowest_price=999000: 3 -> 0
+--   Active 999k offers: 3 -> 0 (Sony WH-1000XM5 hero bug fixed)
+--   Active 999k offers in product_prices_view: 0
+--   iPhone canonical: 6 active offers (Official Stores)
+--   Samsung 256GB canonical: 6 active offers (Official Stores)
+--   Samsung 512GB canonical: 5 active offers (2 Official Stores + 3 reassigned)
+--   Orphan offers (product_id=NULL): 27 (18 from merge + 9 pre-existing from migration 130)
+
+-- ============================================================================
+-- SCHEMA NOTES (for context, not actual DDL)
+-- ============================================================================
+-- Tables referenced:
+--   products          - main product table
+--   offers            - canonical offer table (product_id NULLable, ON DELETE SET NULL)
+--   price_snapshots   - linked to offers via offer_id, NOT directly to products
+--   wishlists         - linked to products, ON DELETE CASCADE
+--   price_reports     - linked to products, ON DELETE CASCADE
+--   price_alerts      - linked to products, ON DELETE CASCADE
+--   price_history     - DROPPED in migration 129 (use price_snapshots + offers JOIN)
+--   prices            - DROPPED (data backfilled into offers in migration 126)
+
+-- ============================================================================
+-- ROLLBACK PLAN (manual, partial)
+-- ============================================================================
+-- The 5 deleted products cannot be recovered from this migration. To re-add:
+--   1. Re-insert from backup of products table (if available)
+--   2. Re-insert the 18 offers that had product_id SET NULL
+--   3. The 20 wishlists + 20 price_reports are permanently lost (acceptable: all
+--      pointed to garbage/placeholder products)
+--
+-- Recomputed values can be reverted by running:
+--   UPDATE products SET
+--     lowest_price = (old values from before this migration),
+--     highest_price = ...,
+--     average_price = ...,
+--     deal_score = ...
+--   WHERE id IN (...);
+
+-- ============================================================================
+-- FOLLOW-UP (out of scope, optional)
+-- ============================================================================
+-- A. Samsung 512GB deal_score=36 reflects only 2 in_stock offers known.
+--    3 reassigned offers have stock_status='unknown'. To improve deal_score,
+--    consider: UPDATE offers SET stock_status='in_stock' WHERE stock_status='unknown' AND validation_status IN ('pending','verified');
+--
+-- B. The 27 orphan offers (product_id=NULL) won't appear in any UI. Cleanup
+--    would require deciding which to keep, hard-delete, or merge into canonicals.
+--    Out of scope — they don't affect user experience.
+
+-- ============================================================================
+-- VERIFICATION QUERIES (run after applying)
+-- ============================================================================
+-- Expected results:
+-- 1. SELECT COUNT(*) FROM products;                                    -- 59
+-- 2. SELECT COUNT(*) FROM products WHERE lowest_price = 999000;        -- 0
+-- 3. SELECT COUNT(*) FROM offers WHERE is_active AND current_price=999000;  -- 0
+-- 4. SELECT name, lowest_price, deal_score FROM products
+--    WHERE name ILIKE '%iPhone 15 Pro Max%' OR name ILIKE '%Galaxy S24 Ultra%'
+--    ORDER BY name;
+--    -- Should show 3 rows with realistic prices

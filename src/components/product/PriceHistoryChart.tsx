@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LineChart,
   Line,
@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Legend,
 } from "recharts";
 import { format } from "date-fns";
@@ -162,52 +161,7 @@ export function PriceHistoryChart({
         <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="h-[300px] w-full md:h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={chartData}
-              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11 }}
-                interval="preserveStartEnd"
-                stroke="currentColor"
-              />
-              <YAxis
-                tickFormatter={formatYAxis}
-                tick={{ fontSize: 11 }}
-                width={60}
-                domain={yAxisDomain}
-                stroke="currentColor"
-              />
-              <Tooltip content={<CustomTooltip />} />
-              {showLegend && (
-                <Legend
-                  wrapperStyle={{ fontSize: "12px" }}
-                  formatter={(value: string) =>
-                    getMarketplaceName(value as Marketplace)
-                  }
-                />
-              )}
-              {marketplaces.map((mp) => (
-                <Line
-                  key={mp}
-                  type="monotone"
-                  dataKey={mp}
-                  name={mp}
-                  stroke={getMarketplaceColor(mp)}
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 5 }}
-                  connectNulls
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
+        <PriceHistoryChartInner chartData={chartData} showLegend={showLegend} yAxisDomain={yAxisDomain} />
         {/* Summary stats */}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>{stats.count} data point</span>
@@ -217,5 +171,101 @@ export function PriceHistoryChart({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Resize-observer wrapper around Recharts.
+ *
+ * Recharts' built-in `ResponsiveContainer` returns `width(-1) / height(-1)`
+ * when the parent hasn't computed its layout yet (e.g. when the chart is
+ * mounted inside a hidden tab, or during SSR/hydration). That triggers a
+ * noisy `console.error` and renders nothing. Measuring the parent
+ * ourselves with `ResizeObserver` and passing explicit `width`/`height`
+ * to `LineChart` sidesteps the race entirely.
+ */
+function PriceHistoryChartInner({
+  chartData,
+  showLegend,
+  yAxisDomain,
+}: {
+  chartData: Array<{ date: string; fullDate: string; [mp: string]: number | string | null }>;
+  showLegend: boolean;
+  yAxisDomain: [number | "auto" | "dataMin" | "dataMax", number | "auto" | "dataMin" | "dataMax"] | number[];
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    // Seed with the current size so the first paint isn't empty.
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setSize({ w: Math.floor(rect.width), h: Math.floor(rect.height) });
+    }
+    const observer = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect;
+      if (r && r.width > 0 && r.height > 0) {
+        setSize({ w: Math.floor(r.width), h: Math.floor(r.height) });
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Always render the wrapper so ResizeObserver can attach. The chart
+  // itself only renders once we have real dimensions, which avoids the
+  // "width(-1) and height(-1)" warning from Recharts.
+  return (
+    <div
+      ref={containerRef}
+      className="h-[300px] w-full min-w-0 md:h-[400px]"
+      data-testid="price-history-chart"
+    >
+      {size.w > 0 && size.h > 0 ? (
+        <LineChart
+          width={size.w}
+          height={size.h}
+          data={chartData}
+          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 11 }}
+            interval="preserveStartEnd"
+            stroke="currentColor"
+          />
+          <YAxis
+            tickFormatter={formatYAxis}
+            tick={{ fontSize: 11 }}
+            width={60}
+            domain={yAxisDomain}
+            stroke="currentColor"
+          />
+          <Tooltip content={<CustomTooltip />} />
+          {showLegend && (
+            <Legend
+              wrapperStyle={{ fontSize: "12px" }}
+              formatter={(value: string) => getMarketplaceName(value as Marketplace)}
+            />
+          )}
+          {marketplaces.map((mp) => (
+            <Line
+              key={mp}
+              type="monotone"
+              dataKey={mp}
+              name={mp}
+              stroke={getMarketplaceColor(mp)}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 5 }}
+              connectNulls
+            />
+          ))}
+        </LineChart>
+      ) : null}
+    </div>
   );
 }

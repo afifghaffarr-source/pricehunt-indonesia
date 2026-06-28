@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { WifiOff } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Anda Offline - BijakBeli.app",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/offline" },
+};
 
 export default function OfflinePage() {
   return (

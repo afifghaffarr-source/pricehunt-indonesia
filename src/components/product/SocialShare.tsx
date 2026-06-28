@@ -19,7 +19,7 @@ export function SocialShare({ url, title, className }: SocialShareProps) {
   const links = [
     {
       name: "WhatsApp",
-      color: "bg-green-500 hover:bg-green-600",
+      color: "bg-green-700 hover:bg-green-800",
       href: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
     },
     {

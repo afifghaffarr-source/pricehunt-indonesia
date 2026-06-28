@@ -9,16 +9,15 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    const products = await searchProductsFromDB(query, category, limit + offset, 0);
-    
-    // Filter out products without prices or offers
-    const productsWithPrices = products
-      .filter(p => p.lowestPrice > 0 && p.prices.length > 0)
-      .slice(offset, offset + limit);
+    // P9 (audit 2026-06-17): proper DB range + count via the helper.
+    // `total` = count of products matching the search (query + category),
+    // independent of the page slice. The page slice comes from the helper
+    // which already attaches live prices from the union view.
+    const { products, total } = await searchProductsFromDB(query, category, limit, offset);
 
     return NextResponse.json({
-      results: productsWithPrices,
-      total: productsWithPrices.length,
+      results: products,
+      total,
       limit,
       offset,
     });

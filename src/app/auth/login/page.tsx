@@ -3,9 +3,13 @@ import Link from "next/link";
 import { Tag } from "lucide-react";
 import { LoginForm } from "./LoginForm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Login",
   description: "Masuk ke akun BijakBeli.app Anda.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/auth/login" },
 };
 
 export default function LoginPage() {

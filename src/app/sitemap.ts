@@ -41,7 +41,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { data: products, error } = await supabase
       .from("products")
       .select("slug, updated_at")
-      .eq("is_active", true)
       .limit(1000) // Limit for sitemap performance
       .order("updated_at", { ascending: false })
 

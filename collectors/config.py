@@ -20,7 +20,7 @@ class Config(BaseSettings):
     
     # BijakBeli API
     pricehunt_api_url: str = Field(
-        default="https://www.bijakbeli.app",
+        default="https://www.bijakbeli.web.id",
         description="Base URL for BijakBeli API"
     )
     ingestion_secret: str = Field(

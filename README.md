@@ -1,10 +1,10 @@
 # 🛒 BijakBeli.app
 
-**Beli yang Tepat, di Waktu yang Tepat** — Smart price comparison platform untuk marketplace Indonesia dengan AI-powered insights dan trust-based data validation.
+**Beli yang Tepat, di Waktu yang Tepat** - Smart price comparison platform untuk marketplace Indonesia dengan AI-powered insights dan trust-based data validation.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
-[![Tests](https://img.shields.io/badge/tests-231%20passing-success.svg)](https://github.com/afifghaffarr-source/pricehunt-indonesia)
+[![Tests](https://img.shields.io/badge/tests-487%20passing-success.svg)](https://github.com/afifghaffarr-source/pricehunt-indonesia)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ---
@@ -17,7 +17,7 @@ BijakBeli helps Indonesian shoppers make smarter purchase decisions by:
 - **Recommending buy/wait timing** based on deal scores & price trends
 - **Validating data trust** with confidence scoring (browser collector + AI verification)
 
-**Live:** [bijakbeli.app](https://www.bijakbeli.app) | **Repo:** [GitHub](https://github.com/afifghaffarr-source/pricehunt-indonesia)
+**Live:** [bijakbeli.web.id](https://www.bijakbeli.web.id) | **Repo:** [GitHub](https://github.com/afifghaffarr-source/pricehunt-indonesia)
 
 ---
 
@@ -60,8 +60,8 @@ BijakBeli helps Indonesian shoppers make smarter purchase decisions by:
 | With prices | 64/64 (100%) |
 | Total offers | 165 |
 | Matched offers | 157 (95%) |
-| Tests passing | 231 |
-| Migrations | 120 |
+| Tests passing | 487 |
+| Migrations | 45 |
 
 ---
 
@@ -76,7 +76,7 @@ BijakBeli helps Indonesian shoppers make smarter purchase decisions by:
 | **Auth** | Supabase Auth |
 | **AI** | VexoAPI (product discovery, image search, marketplace data) |
 | **Charts** | Recharts |
-| **Testing** | Vitest (231 tests passing) |
+| **Testing** | Vitest + Playwright (460 unit + 27 E2E = 487 passing) |
 | **Deployment** | Vercel (auto-deploy from Git) |
 | **Collector** | Chrome Extension + Python scripts |
 
@@ -124,7 +124,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # App URL
-NEXT_PUBLIC_APP_URL=https://www.bijakbeli.app
+NEXT_PUBLIC_APP_URL=https://www.bijakbeli.web.id
 ```
 
 ### **Optional (Recommended)**
@@ -188,8 +188,8 @@ bijakbeli-app/
 │   ├── image_populator_ddg.py      # DuckDuckGo fallback
 │   └── use_picsum_images.py        # picsum.photos fallback
 ├── supabase/
-│   └── migrations/       # Database schema (120 migrations)
-├── tests/                # Vitest tests (231 passing)
+│   └── migrations/       # Database schema (45 migration files; 35 unique version numbers — 8 intentional duplicate-version files reconciled in v1.5.10 audit)
+├── tests/                # Vitest + Playwright (460 unit + 27 E2E = 487 passing)
 └── BETA_QUICK_START.md   # Extension beta testing guide
 ```
 
@@ -240,7 +240,7 @@ npm run test:watch  # watch mode
 npm run test -- --coverage
 ```
 
-**Test Stats:** 231 tests passing, 85%+ coverage. CI runs lint → typecheck → test → build dan **gagal memblokir** jika salah satu step gagal (lihat `.github/workflows/ci.yml`).
+**Test Stats:** 487 tests passing (460 unit + 27 E2E), 85%+ coverage. CI runs lint → typecheck → test → build dan **gagal memblokir** jika salah satu step gagal (lihat `.github/workflows/ci.yml`).
 
 ## ⏰ **Cron Jobs**
 
@@ -287,7 +287,7 @@ Key tables:
 - Auto-sync to BijakBeli database
 - Confidence scoring (85% browser-sourced data)
 
-**Download:** [bijakbeli.app/extension](https://www.bijakbeli.app/extension)
+**Download:** [bijakbeli.web.id/extension](https://www.bijakbeli.web.id/extension)
 
 **Setup Guide:** [BETA_QUICK_START.md](BETA_QUICK_START.md)
 
@@ -351,15 +351,22 @@ git push origin master
 **⚠️ Important:**
 - Never run `vercel --prod` manually (causes double deployment)
 - Vercel Git integration handles deployment automatically
-- Wait 2-3 minutes after push, then verify at https://www.bijakbeli.app
+- Wait 2-3 minutes after push, then verify at https://www.bijakbeli.web.id
 
 ---
 
 ## 📚 **Documentation**
 
-- **Beta Testing:** [BETA_QUICK_START.md](BETA_QUICK_START.md)
-- **Monitoring:** [scripts/MONITORING_README.md](scripts/MONITORING_README.md)
-- **Old README:** [README.old.md](README.old.md) (full 650-line version)
+- [Architecture](docs/architecture.md) — system design, layers, key flows
+- [Database](docs/database.md) — schema, migrations, RLS, admin model
+- [API surface](docs/api.md) — public, admin, and cron routes
+- [Testing](docs/testing.md) — Vitest, Playwright, CI gates
+- [Operations runbook](docs/OPERATIONS.md) — alerts, monitoring, recovery
+- [Deployment guide](docs/DEPLOYMENT.md) — Vercel + Supabase setup
+- [Security model](SECURITY.md) — auth, RLS, CSRF, admin role
+- [Admin bootstrap](docs/ADMIN_SEED.md) — how to grant the first admin
+
+Historical audits and one-off reports live in [docs/archive/](docs/archive/).
 
 ---
 
@@ -371,7 +378,7 @@ git push origin master
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open Pull Request
 
-**Tests required:** All PRs must pass 231 existing tests
+**Tests required:** All PRs must pass 487 existing tests
 
 ---
 

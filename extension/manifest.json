@@ -1,19 +1,56 @@
 {
   "manifest_version": 3,
   "name": "BijakBeli.app",
-  "version": "1.0.0",
-  "description": "Bandingkan harga marketplace Indonesia saat browsing",
-  "permissions": ["activeTab", "storage"],
-  "host_permissions": ["https://bijakbeli-app.vercel.app/*"],
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "BijakBeli"
+  "short_name": "BijakBeli",
+  "version": "3.0.1",
+  "description": "Bandingkan harga marketplace Indonesia saat browsing. Auto-scrape produk untuk bantu komunitas.",
+  "author": "BijakBeli Team",
+  "homepage_url": "https://www.bijakbeli.web.id/extension",
+  "minimum_chrome_version": "108",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
   },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnDaC8wp7xde4T1+kxXSNZUHKKjxDc25ME5kZdx10ON2MxxBNrMRPfz+EnHFyztRWJ/kq9O3UFM8gt9yw7cfrCDI4lcniHTZMCRAXOGCeztiTMWDKB0lR8wU353yqx3WitD2bOx95yfv3AMVJsKzhfmaWaiGOkovedXQwH4w7XJNEoFA1RsXT7++HFQEByXM5S87M+g77NcTYlqvsnM7JbQfeOR5GpoYpREqRTn+jZaZf37o1EFsko1y9epPPQrxtoySz5AaN1bU2vjxy5AIz5Q7RCP7CLOQLOxqYPTvF4hPzSFdlej4abE+WTAjuBV7m+eZvW8HYz+YzUgQD4Xh9WwIDAQAB",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
   },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "scripting",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://www.bijakbeli.web.id/*",
+    "https://shopee.co.id/*",
+    "https://*.shopee.co.id/*",
+    "https://www.tokopedia.com/*",
+    "https://www.lazada.co.id/*",
+    "https://www.blibli.com/*",
+    "https://www.bukalapak.com/*",
+    "https://shop.tiktok.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "BijakBeli"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/*.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": [
@@ -21,9 +58,12 @@
         "*://*.shopee.co.id/*",
         "*://*.bukalapak.com/*",
         "*://*.lazada.co.id/*",
-        "*://*.blibli.com/*"
+        "*://*.blibli.com/*",
+        "*://shop.tiktok.com/*"
       ],
-      "js": ["content.js"]
+      "js": ["marketplace-scraper.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ]
 }

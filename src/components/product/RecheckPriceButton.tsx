@@ -24,7 +24,7 @@ export function RecheckPriceButton({
     setStatus("idle");
 
     try {
-      // TODO: Call recheck API after migration 110
+      // Migration 110+ enabled this endpoint: see src/app/api/recheck-request/route.ts
       const response = await fetch("/api/recheck-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

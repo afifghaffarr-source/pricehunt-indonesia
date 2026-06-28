@@ -1,480 +1,505 @@
-# BijakBeli.app - Deployment Guide
+# 🚀 Deployment Guide - BijakBeli.app
 
-Complete guide untuk deploy BijakBeli.app ke production.
-
----
-
-## 📋 Prerequisites
-
-### Required Services
-- **Supabase** (Database + Auth) - [supabase.com](https://supabase.com)
-- **Vercel** (Hosting) - [vercel.com](https://vercel.com)
-
-### Optional Services
-- **OpenAI** - AI Advisor feature
-- **Resend** - Email notifications
-- **VexoAPI** - Product discovery
+**Last Updated**: 2026-06-10  
+**Target**: Production Deployment ke Vercel
 
 ---
 
-## 🗄️ Database Setup
+## ⚠️ Prerequisites
 
-### 1. Create Supabase Project
+Before starting, ensure you have:
+- [x] Code pushed to GitHub
+- [ ] Supabase account (supabase.com)
+- [ ] Vercel account (vercel.com)
+- [ ] Supabase CLI installed
+- [ ] Vercel CLI installed (optional)
 
-1. Login ke [supabase.com/dashboard](https://supabase.com/dashboard)
-2. Create New Project
-3. Note down:
-   - Project URL: `https://xxx.supabase.co`
-   - Anon key (public)
-   - Service role key (secret)
+---
 
-### 2. Run Migrations
+## 📋 Deployment Checklist
 
-**Via Dashboard (Recommended):**
+### Phase 1: Setup Production Supabase Project
 
-1. Go to: SQL Editor
-2. Run migrations in order:
-   ```
-   supabase/migrations/001_initial_schema.sql
-   supabase/migrations/002_performance_indexes.sql
-   supabase/migrations/003_reviews_system.sql
-   ...
-   supabase/migrations/110_enhanced_data_collection.sql
-   ```
-3. Run seed data:
-   ```
-   supabase/seed.sql
-   ```
+#### Step 1.1: Create New Supabase Project
+1. Go to [https://supabase.com/dashboard](https://supabase.com/dashboard)
+2. Click "New Project"
+3. Fill in project details:
+   - **Name**: `bijakbeli-app-prod`
+   - **Database Password**: Generate strong password (SAVE THIS!)
+   - **Region**: Singapore (closest to Indonesia)
+   - **Plan**: Free tier OK untuk start, upgrade nanti jika perlu
+4. Wait ~2 minutes untuk project provisioning
+5. **IMPORTANT**: Save these credentials securely:
+   - Project URL
+   - Project API keys (anon key & service_role key)
+   - Database password
 
-**Via CLI:**
+#### Step 1.2: Get Production Credentials
+Once project ready, go to **Project Settings > API**:
 
 ```bash
-# Install Supabase CLI
-npm install -g supabase
+# You'll need these values:
+NEXT_PUBLIC_SUPABASE_URL=https://[your-project-id].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...  # Public anon key
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...      # Service role key (KEEP SECRET!)
+```
+
+---
+
+### Phase 2: Run Database Migrations
+
+#### Step 2.1: Link CLI to Production Project
+```bash
+# Link Supabase CLI to production project
+supabase link --project-ref [your-project-id]
+
+# Enter database password when prompted
+```
+
+#### Step 2.2: Push All Migrations
+```bash
+# Push all migrations to production database
+supabase db push
+
+# This will run migrations 001-108 including:
+# - Core schema (products, prices, users, etc.)
+# - RLS policies
+# - Rate limiting (106)
+# - Offers & price snapshots (107)
+# - Data ingestion system (108)
+```
+
+#### Step 2.3: Verify Migrations
+```bash
+# Check migration status
+supabase migration list
+
+# All migrations should show as "Applied"
+```
+
+#### Step 2.4: Run Seed Data (Optional)
+```bash
+# If you want to seed initial data:
+psql [your-database-url] < supabase/seed.sql
+
+# Or run individual seeds:
+psql [your-database-url] < supabase/seed_api_registry.sql
+```
+
+**Database URL format:**
+```
+postgresql://postgres:[password]@db.[project-id].supabase.co:5432/postgres
+```
+
+---
+
+### Phase 3: Regenerate Supabase Types
+
+#### Step 3.1: Generate Production Types
+```bash
+# Generate TypeScript types from production schema
+supabase gen types typescript --linked > src/lib/supabase/types.ts
+
+# This updates types based on your actual production schema
+```
+
+#### Step 3.2: Verify Types
+```bash
+# Run TypeScript check
+npm run type-check
+
+# Or build to verify
+npm run build
+```
+
+---
+
+### Phase 4: Setup Environment Variables
+
+#### Step 4.1: Prepare Production Env File
+
+Copy `.env.production.local.example` to `.env.production.local`:
+```bash
+cp .env.production.local.example .env.production.local
+```
+
+#### Step 4.2: Fill in ALL Required Variables
+
+Edit `.env.production.local`:
+
+```bash
+# === SUPABASE (From Step 1.2) ===
+NEXT_PUBLIC_SUPABASE_URL=https://[your-project-id].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...  # NEVER commit this!
+
+# === APP CONFIG ===
+NEXT_PUBLIC_APP_URL=https://www.bijakbeli.web.id
+NODE_ENV=production
+
+# === OPENAI (untuk AI Advisor) ===
+OPENAI_API_KEY=sk-...
+
+# === VEXO (untuk scraping) ===
+VEXO_API_KEY=vexo_...
+
+# === EMAIL (Resend) ===
+RESEND_API_KEY=re_...
+
+# === CRON SECRET (Generate random string) ===
+CRON_SECRET=your-secure-random-string-here
+
+# === WEB PUSH (VAPID keys) ===
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=BM...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:your-email@example.com
+```
+
+#### Step 4.3: Generate Secure Secrets
+
+For `CRON_SECRET`, generate random string:
+```bash
+# On Linux/Mac:
+openssl rand -base64 32
+
+# On Windows PowerShell:
+-join ((48..57) + (65..90) + (97..122) | Get-Random -Count 32 | % {[char]$_})
+```
+
+For VAPID keys (if not generated yet):
+```bash
+# Install web-push if needed
+npm install -g web-push
+
+# Generate VAPID keys
+web-push generate-vapid-keys
+
+# Save the output to your env file
+```
+
+---
+
+### Phase 5: Deploy to Vercel
+
+#### Option A: Vercel Dashboard (Recommended for First Deploy)
+
+1. Go to [https://vercel.com](https://vercel.com)
+2. Click "New Project"
+3. Import your GitHub repository: `afifghaffarr-source/bijakbeli-app`
+4. Configure project:
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `./`
+   - **Build Command**: `npm run build` (auto-detected)
+   - **Output Directory**: `.next` (auto-detected)
+5. **Environment Variables** - Add ALL from Step 4.2:
+   - Click "Environment Variables"
+   - Add each variable one by one
+   - **IMPORTANT**: Mark sensitive keys (SERVICE_ROLE_KEY, API keys) as "Sensitive"
+6. Click "Deploy"
+7. Wait 2-5 minutes
+8. Get your production URL: `https://www.bijakbeli.web.id`
+
+#### Option B: Vercel CLI (Alternative)
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
 
 # Login
-npx supabase login
+vercel login
 
-# Link to your project
-npx supabase link --project-ref your-project-ref
+# Deploy to production
+vercel --prod
 
-# Push all migrations
-npx supabase db push
-
-# Apply seed data
-psql -h db.xxx.supabase.co -U postgres -d postgres -f supabase/seed.sql
+# Follow prompts to set environment variables
 ```
-
-### 3. Configure Auth
-
-**Email Authentication:**
-1. Authentication → Providers → Email
-2. Enable email provider
-3. **Production:** Enable "Confirm email"
-4. **Development:** Disable "Confirm email" for easier testing
-
-**Set Admin User:**
-```sql
--- Replace with your user ID (from auth.users table)
-UPDATE user_profiles 
-SET preferences = '{"is_admin": true}'::jsonb 
-WHERE id = 'YOUR_USER_UUID';
-```
-
-### 4. Enable Row Level Security (RLS)
-
-All tables sudah memiliki RLS policies di migrations. Verify:
-
-```sql
-SELECT tablename, rowsecurity 
-FROM pg_tables 
-WHERE schemaname = 'public';
-```
-
-Semua harus `rowsecurity = true`.
 
 ---
 
-## 🚀 Vercel Deployment
+### Phase 6: Post-Deploy Verification
 
-### 1. Connect Repository
-
-1. Login ke [vercel.com](https://vercel.com)
-2. Import Git Repository
-3. Select: `afifghaffarr-source/bijakbeli-app`
-
-### 2. Configure Build Settings
-
-**Framework Preset:** Next.js  
-**Build Command:** `bun run build` atau `npm run build`  
-**Output Directory:** (leave as default)  
-**Install Command:** `bun install` atau `npm install`
-
-### 3. Environment Variables
-
-Add these in Vercel dashboard → Settings → Environment Variables:
-
+#### Step 6.1: Test Health Endpoints
 ```bash
-# Supabase (Required)
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
-SUPABASE_SERVICE_ROLE_KEY=eyJxxx...
+# Test app health
+curl https://www.bijakbeli.web.id/api/health
 
-# App URL (Required)
-NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
+# Expected response:
+# {"status":"healthy","timestamp":"...","environment":"production"}
 
-# Cron & Security (Required)
-CRON_SECRET=generate-random-64-char-string
-INGESTION_SECRET=generate-random-64-char-string
+# Test database health
+curl https://www.bijakbeli.web.id/api/health/db
 
-# OpenAI (Optional)
-OPENAI_API_KEY=sk-xxx
-
-# Resend (Optional - untuk email alerts)
-RESEND_API_KEY=re_xxx
-
-# VexoAPI (Optional - product discovery)
-VEXO_API_BASE_URL=https://vexoapi.dev
-VEXO_API_KEY=your_vip_key
-VEXO_API_TIMEOUT_MS=10000
-VEXO_CACHE_TTL_SECONDS=3600
-
-# Price Simulation (Production = false)
-ENABLE_PRICE_SIMULATION=false
+# Expected response:
+# {"status":"healthy","database":"connected","responseTime":45,"timestamp":"..."}
 ```
 
-**Generate Random Secrets:**
-```bash
-# Generate CRON_SECRET
-openssl rand -hex 32
+#### Step 6.2: Test Core Pages
+Visit these URLs manually:
+- [ ] Homepage: https://www.bijakbeli.web.id
+- [ ] Search: https://www.bijakbeli.web.id/search
+- [ ] Deals: https://www.bijakbeli.web.id/deals
+- [ ] Sitemap: https://www.bijakbeli.web.id/sitemap.xml
+- [ ] Robots: https://www.bijakbeli.web.id/robots.txt
 
-# Generate INGESTION_SECRET
-openssl rand -hex 32
-```
+#### Step 6.3: Test Authentication
+- [ ] Register new user
+- [ ] Login
+- [ ] Verify email (check Supabase email settings)
 
-### 4. Deploy
-
-Click **Deploy** button. Vercel akan:
-- Install dependencies
-- Run build
-- Deploy to production
-
-**Domain:** `https://your-project.vercel.app`
-
-### 5. Configure Custom Domain (Optional)
-
-1. Vercel Dashboard → Settings → Domains
-2. Add your domain (e.g., `bijakbeli.id`)
-3. Follow DNS configuration instructions
-4. Update `NEXT_PUBLIC_APP_URL` environment variable
+#### Step 6.4: Test Database Operations
+- [ ] Create wishlist item
+- [ ] Create price alert
+- [ ] Add product review
+- [ ] Export user data
 
 ---
 
-## ⚙️ Cron Jobs Setup
+### Phase 7: Setup Vercel Cron Jobs
 
-BijakBeli memiliki 2 cron jobs yang perlu di-setup di Vercel.
-
-**vercel.json** sudah configured:
-
+#### Step 7.1: Configure vercel.json Cron
+Your `vercel.json` already has cron configured:
 ```json
 {
   "crons": [
     {
       "path": "/api/cron/prices",
-      "schedule": "0 */12 * * *"
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/alerts",
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/digest",
-      "schedule": "0 8 * * 0"
+      "schedule": "0 8 * * *"
     }
   ]
 }
 ```
 
-**Manual Trigger (Testing):**
-```bash
-curl https://your-domain.vercel.app/api/cron/prices?secret=YOUR_CRON_SECRET
-curl https://your-domain.vercel.app/api/cron/digest?secret=YOUR_CRON_SECRET
-```
+#### Step 7.2: Set CRON_SECRET in Vercel
+1. Go to Vercel Dashboard > Your Project > Settings > Environment Variables
+2. Add `CRON_SECRET` dengan value yang sama dengan local
+3. Redeploy untuk apply changes
+
+#### Step 7.3: Verify Cron Jobs
+After deploy, Vercel will automatically run crons. Check logs:
+1. Vercel Dashboard > Your Project > Logs
+2. Filter by `/api/cron/`
+3. Verify cron jobs running successfully
 
 ---
 
-## 🤖 Python Browser Collector Setup
+### Phase 8: Setup External Services
 
-Untuk collect data manual via browser collector:
+#### Step 8.1: Google Search Console
+1. Go to [https://search.google.com/search-console](https://search.google.com/search-console)
+2. Add property: `https://www.bijakbeli.web.id`
+3. Verify ownership (Vercel DNS method recommended)
+4. Submit sitemap: `https://www.bijakbeli.web.id/sitemap.xml`
 
-### 1. Setup on VPS/Local
+#### Step 8.2: Supabase Auth Email Templates (Optional)
+1. Supabase Dashboard > Authentication > Email Templates
+2. Customize:
+   - Confirm signup
+   - Magic Link
+   - Password reset
+   - Email change
+3. Update branding dan copy untuk Indonesia
 
-```bash
-cd tools/price-collector
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-playwright install chromium
-
-# Configure
-cp .env.example .env
-```
-
-### 2. Configure .env
-
-```bash
-PRICEHUNT_API_URL=https://your-domain.vercel.app
-INGESTION_SECRET=same-as-vercel-env-var
-DEFAULT_MARKETPLACE=tokopedia
-COLLECTOR_HEADLESS=false
-DEBUG=false
-```
-
-### 3. Test Connection
-
-```bash
-python collector.py test
-# Should output: ✅ API is reachable!
-```
-
-### 4. Collect Data
-
-**Manual Mode:**
-```bash
-python collector.py manual
-```
-
-**URL Mode:**
-```bash
-python collector.py url "https://tokopedia.com/product-url"
-```
-
-**Keyword Mode:**
-```bash
-python collector.py keyword "samsung galaxy s24" --limit 5
-```
+#### Step 8.3: Supabase RLS Verification
+1. Supabase Dashboard > Database > Policies
+2. Verify all RLS policies active:
+   - products (SELECT public)
+   - wishlists (SELECT/INSERT/UPDATE/DELETE for owner)
+   - price_alerts (SELECT/INSERT/UPDATE/DELETE for owner)
+   - reviews (SELECT public, write for owner)
+   - preferences (SELECT/UPDATE for owner)
 
 ---
 
-## 📊 Monitoring & Maintenance
+### Phase 9: Monitoring Setup
 
-### Health Check
+#### Step 9.1: Vercel Analytics (Already Integrated)
+1. Vercel Dashboard > Your Project > Analytics
+2. Enable Analytics (free tier available)
+3. View real-time traffic data
 
+#### Step 9.2: Vercel Speed Insights (Already Integrated)
+1. Vercel Dashboard > Your Project > Speed Insights
+2. Enable Speed Insights
+3. Monitor Web Vitals
+
+#### Step 9.3: Setup Alerts (Optional)
+1. Vercel Dashboard > Your Project > Settings > Notifications
+2. Configure alerts for:
+   - Build failures
+   - High error rates
+   - Performance degradation
+
+#### Step 9.4: Error Tracking - Sentry (Optional)
+If you want advanced error tracking:
 ```bash
-curl https://your-domain.vercel.app/api/health
-```
+npm install @sentry/nextjs
 
-**Expected Response:**
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-06-11T10:00:00.000Z",
-  "database": "connected",
-  "uptime": 123456
-}
-```
-
-### Database Backup
-
-**Automatic (via Supabase):**
-- Supabase provides automatic daily backups
-- Go to: Database → Backups
-
-**Manual Backup (via API):**
-```bash
-curl -H "Authorization: Bearer YOUR_SERVICE_ROLE_KEY" \
-  https://your-domain.vercel.app/api/backup \
-  -o backup-$(date +%Y%m%d).sql
-```
-
-### Monitor Cron Jobs
-
-**Vercel Dashboard:**
-1. Deployments → Functions
-2. Check logs untuk `/api/cron/prices` dan `/api/cron/digest`
-
-**Check Last Run:**
-```sql
-SELECT * FROM job_logs 
-ORDER BY created_at DESC 
-LIMIT 10;
-```
-
-### Price Data Staleness
-
-Check stale offers (not updated > 24 hours):
-
-```sql
-SELECT 
-  o.id,
-  o.title,
-  m.name as marketplace,
-  o.last_checked_at,
-  NOW() - o.last_checked_at as stale_duration
-FROM offers o
-JOIN marketplaces m ON o.marketplace_id = m.id
-WHERE o.last_checked_at < NOW() - INTERVAL '24 hours'
-  AND o.is_available = true
-ORDER BY o.last_checked_at ASC
-LIMIT 20;
+# Follow Sentry setup wizard
+npx @sentry/wizard -i nextjs
 ```
 
 ---
 
 ## 🔒 Security Checklist
 
-### Production Security
+Before going live, verify:
 
-- [ ] `CRON_SECRET` adalah random 64-char string
-- [ ] `INGESTION_SECRET` adalah random 64-char string
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` tidak exposed di client
-- [ ] Email confirmation enabled di Supabase Auth
-- [ ] RLS policies aktif untuk semua tables
-- [ ] CORS configured dengan domain whitelist
-- [ ] Rate limiting enabled untuk public endpoints
-- [ ] `ENABLE_PRICE_SIMULATION=false` di production
-
-### Environment Variables
-
-**NEVER commit to Git:**
-- `.env.local`
-- `.env.production.local`
-- `tools/price-collector/.env`
-
-**Use Vercel secrets for:**
-- Database credentials
-- API keys
-- Service role keys
-- Cron secrets
+- [ ] All API keys in environment variables (not committed)
+- [ ] SUPABASE_SERVICE_ROLE_KEY never exposed to client
+- [ ] RLS policies active on all tables
+- [ ] CRON_SECRET set and secured
+- [ ] Rate limiting enabled (migration 106)
+- [ ] CORS properly configured
+- [ ] SQL injection protection (using parameterized queries)
+- [ ] Auth properly implemented
 
 ---
 
-## 🚨 Troubleshooting
+## 🎯 Performance Checklist
 
-### Build Fails
+Optimization ready:
 
-**Error:** `Type error: ...`
+- [x] Static pages pre-rendered
+- [x] API routes optimized
+- [x] Images optimized (if added later)
+- [x] Loading states implemented
+- [x] Error boundaries active
+- [x] Proper cache headers
+- [x] Sitemap for SEO
+- [x] robots.txt configured
+
+---
+
+## 🐛 Troubleshooting
+
+### Build Fails on Vercel
+
+**Problem**: Build fails with "Module not found"
+**Solution**:
 ```bash
-# Regenerate Supabase types
-npx supabase gen types typescript --project-id YOUR_ID > src/types/supabase.ts
-git add src/types/supabase.ts
-git commit -m "chore: regenerate Supabase types"
-git push
+# Clear cache and rebuild locally
+rm -rf .next node_modules
+npm install
+npm run build
+
+# If successful, push to GitHub and retry Vercel deploy
 ```
 
-### Database Connection Error
+**Problem**: TypeScript errors during build
+**Solution**:
+```bash
+# Check types locally
+npm run type-check
 
-**Error:** `Could not connect to database`
+# Fix any errors, commit, push
+```
 
-1. Check Supabase project status (dashboard)
-2. Verify environment variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-3. Test connection:
-   ```bash
-   curl https://YOUR_PROJECT.supabase.co/rest/v1/
-   ```
+### Database Connection Issues
 
-### Cron Not Running
+**Problem**: "Database connection failed"
+**Solution**:
+1. Verify `NEXT_PUBLIC_SUPABASE_URL` correct
+2. Verify `NEXT_PUBLIC_SUPABASE_ANON_KEY` correct
+3. Check Supabase project status (not paused)
+4. Verify RLS policies not blocking requests
 
-1. Check `vercel.json` is committed
-2. Verify cron path matches API route
-3. Test manual trigger:
-   ```bash
-   curl "https://your-domain.vercel.app/api/cron/prices?secret=YOUR_SECRET"
-   ```
-4. Check Vercel logs (Deployments → Functions)
+### Cron Jobs Not Running
 
-### Collector Connection Fails
+**Problem**: Cron jobs return 401 Unauthorized
+**Solution**:
+1. Verify `CRON_SECRET` set in Vercel
+2. Check Vercel logs for actual error
+3. Verify cron endpoints have proper auth check
 
-**Error:** `❌ Cannot connect to API`
+### Auth Issues
 
-1. Verify Next.js app is running
-2. Check `tools/price-collector/.env`:
-   - `PRICEHUNT_API_URL` correct?
-   - `INGESTION_SECRET` matches Vercel env var?
-3. Test endpoint:
-   ```bash
-   curl -X POST https://your-domain.vercel.app/api/ingestion/offer-snapshot \
-     -H "Authorization: Bearer YOUR_INGESTION_SECRET" \
-     -H "Content-Type: application/json" \
-     -d '{"test": true}'
-   ```
+**Problem**: Users can't register/login
+**Solution**:
+1. Supabase Dashboard > Authentication > Settings
+2. Enable Email provider
+3. Configure Site URL: `https://www.bijakbeli.web.id`
+4. Add redirect URLs for auth callbacks
 
 ---
 
-## 📈 Performance Optimization
+## 📊 Monitoring After Deploy
 
-### Database Indexes
+### Daily Checks (First Week)
+- [ ] Check Vercel error logs
+- [ ] Verify cron jobs running
+- [ ] Check database usage (Supabase dashboard)
+- [ ] Monitor API response times
+- [ ] Check user signups/activity
 
-All critical indexes already created in migrations:
-- `products(name)`
-- `products(category)`
-- `offers(product_id, marketplace_id)`
-- `price_snapshots(offer_id, captured_at)`
-- `crawl_targets(next_crawl_at, priority_score)`
-
-### Caching Strategy
-
-**API Routes:**
-- `/api/products` - Cache 5 minutes
-- `/api/search` - Cache 10 minutes
-- `/api/vexo/*` - Cache 1 hour
-
-**Static Pages:**
-- Homepage - ISR 60 seconds
-- Product pages - ISR 300 seconds
-
-### Image Optimization
-
-**Next.js Image Component:**
-- Automatic WebP conversion
-- Lazy loading
-- Responsive sizes
-- CDN caching via Vercel
+### Weekly Checks
+- [ ] Review analytics data
+- [ ] Check database size growth
+- [ ] Review error patterns
+- [ ] Verify email delivery (Resend)
+- [ ] Check API rate limits
 
 ---
 
-## 📞 Support & Resources
+## 🚀 Going Live
 
-**Documentation:**
-- Main README: `/README.md`
-- Phase 1 Complete: `/docs/PHASE_1_COMPLETE.md`
-- Phase 2 Complete: `/docs/PHASE_2_COMPLETE.md`
-- Progress Tracker: `/docs/PROGRESS.md`
-- Collector Guide: `/tools/price-collector/README.md`
+### Soft Launch
+1. Deploy to production
+2. Test all features yourself
+3. Invite beta testers (friends/colleagues)
+4. Fix any critical issues
+5. Monitor for 1-2 days
 
-**External Resources:**
-- Next.js: https://nextjs.org/docs
-- Supabase: https://supabase.com/docs
-- Vercel: https://vercel.com/docs
-- Playwright: https://playwright.dev/python/
-
-**Repository:**
-- GitHub: https://github.com/afifghaffarr-source/bijakbeli-app
-
----
-
-## ✅ Post-Deployment Checklist
-
-After deployment, verify:
-
-- [ ] App accessible at production URL
-- [ ] Health check returns `"status": "ok"`
-- [ ] Login/register works
-- [ ] Product search works
-- [ ] Price history chart displays
-- [ ] Admin dashboard accessible (untuk admin users)
-- [ ] Cron jobs running (check logs after scheduled time)
-- [ ] Browser collector can connect and send data
-- [ ] Email alerts work (jika Resend configured)
-- [ ] Push notifications work (jika enabled)
-- [ ] Database backup dapat di-download
-- [ ] All environment variables correct
+### Public Launch
+1. Announce on social media
+2. Submit to directories:
+   - ProductHunt
+   - Hacker News (Show HN)
+   - Reddit /r/Indonesia
+   - Kaskus
+3. Monitor traffic spikes
+4. Scale up Supabase if needed
 
 ---
 
-**Last Updated:** 2026-06-11  
-**Version:** 1.2.0  
-**Status:** Production-Ready MVP
+## 📞 Support Resources
+
+- **Vercel Docs**: https://vercel.com/docs
+- **Supabase Docs**: https://supabase.com/docs
+- **Next.js Docs**: https://nextjs.org/docs
+
+---
+
+## ✅ Final Deployment Command Summary
+
+```bash
+# 1. Link Supabase production
+supabase link --project-ref [your-project-id]
+
+# 2. Push migrations
+supabase db push
+
+# 3. Generate types
+supabase gen types typescript --linked > src/lib/supabase/types.ts
+
+# 4. Verify build
+npm run build
+
+# 5. Deploy to Vercel (via dashboard or CLI)
+vercel --prod
+
+# 6. Test health
+curl https://your-domain.vercel.app/api/health
+curl https://your-domain.vercel.app/api/health/db
+```
+
+---
+
+**Ready to deploy?** Follow steps 1-9 above. Good luck! 🚀

@@ -12,7 +12,7 @@ import {
   Trash2, 
   TrendingDown,
   Package
-} from 'lucide-react';
+} from "lucide-react";
 
 interface PriceAlert {
   id: string;

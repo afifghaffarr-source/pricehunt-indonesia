@@ -51,41 +51,51 @@ export function AuthButton() {
         <button
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
-          className={buttonVariants({ variant: "ghost", size: "icon" })}
+          aria-label="Menu akun"
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          // Mobile a11y (P8): explicit 40px tap target + visible focus ring.
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <User className="h-4 w-4" />
-          <span className="sr-only">Menu</span>
+          <User className="h-5 w-5" aria-hidden="true" />
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border bg-popover py-1 shadow-md">
+          <div
+            role="menu"
+            aria-label="Akun"
+            className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border bg-popover py-1 shadow-md"
+          >
             <p className="px-3 py-1.5 text-xs text-muted-foreground truncate">
               {user.email}
             </p>
-            <div className="border-t" />
+            <div className="border-t" role="separator" />
             <Link
               href="/dashboard"
               onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
+              role="menuitem"
+              className="flex min-h-[44px] items-center gap-2 rounded-sm px-3 text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
             >
-              <LayoutDashboard className="h-4 w-4" />
+              <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
               Dashboard
             </Link>
             <Link
               href="/settings"
               onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
+              role="menuitem"
+              className="flex min-h-[44px] items-center gap-2 rounded-sm px-3 text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
             >
-              <Settings className="h-4 w-4" />
+              <Settings className="h-4 w-4" aria-hidden="true" />
               Pengaturan
             </Link>
-            <div className="border-t" />
+            <div className="border-t" role="separator" />
             <form action={logout}>
               <button
                 type="submit"
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent"
+                role="menuitem"
+                className="flex min-h-[44px] w-full items-center gap-2 rounded-sm px-3 text-sm text-destructive hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4" aria-hidden="true" />
                 Keluar
               </button>
             </form>

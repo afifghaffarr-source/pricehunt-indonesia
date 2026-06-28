@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { ResetPasswordForm } from "./ResetPasswordForm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Reset Password - BijakBeli.app",
   description: "Buat password baru untuk akun Anda",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/auth/reset-password" },
 };
 
 export default function ResetPasswordPage() {

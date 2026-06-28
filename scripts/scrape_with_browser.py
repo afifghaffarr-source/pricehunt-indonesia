@@ -135,7 +135,7 @@ def ingest_offer(offer_data: Dict) -> Dict:
     if not ingestion_secret:
         raise ValueError("INGESTION_SECRET environment variable not set")
     
-    api_url = "https://www.bijakbeli.app/api/ingestion/offer-snapshot"
+    api_url = "https://www.bijakbeli.web.id/api/ingestion/offer-snapshot"
     headers = {
         'Authorization': f'Bearer {ingestion_secret}',
         'Content-Type': 'application/json'

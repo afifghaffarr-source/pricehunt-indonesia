@@ -3,6 +3,9 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service - BijakBeli.app",
   description: "Syarat dan ketentuan penggunaan layanan BijakBeli.app.",
+  alternates: {
+    canonical: "/legal/terms",
+  },
 };
 
 export default function TermsOfServicePage() {

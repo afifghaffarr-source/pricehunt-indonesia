@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,21 +34,16 @@ export function AIRecommendations({ productId }: { productId?: string }) {
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>({});
 
-  useEffect(() => {
-    loadRecommendations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productId]);
-
-  const loadRecommendations = async () => {
+  const loadRecommendations = useCallback(async () => {
     setLoading(true);
     try {
-      const url = productId 
+      const url = productId
         ? `/api/recommendations?product_id=${productId}`
         : '/api/recommendations';
-      
+
       const response = await fetch(url);
       const result = await response.json();
-      
+
       if (result.success) {
         setRecommendations(result.data);
       }
@@ -57,7 +52,11 @@ export function AIRecommendations({ productId }: { productId?: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
+
+  useEffect(() => {
+    loadRecommendations();
+  }, [loadRecommendations]);
 
   const submitFeedback = async (recId: string, type: 'up' | 'down') => {
     setFeedback(prev => ({ ...prev, [recId]: type }));
@@ -150,10 +149,10 @@ export function AIRecommendations({ productId }: { productId?: string }) {
                   <Image
                     src={rec.product_image}
                     alt={rec.product_name}
-                    width={400}
-                    height={400}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className="object-cover"
                     unoptimized
-                    className="object-cover w-full h-full"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">

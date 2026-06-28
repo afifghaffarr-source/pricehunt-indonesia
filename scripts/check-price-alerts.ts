@@ -178,7 +178,7 @@ function formatAlertReport(alerts: TriggeredAlert[]): string {
         report += `   ├─ Link: ${alert.marketplace_url}\n`;
       }
       
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bijakbeli.app';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bijakbeli.web.id';
       report += `   └─ View: ${appUrl}/product/${alert.product_slug}\n\n`;
     }
 

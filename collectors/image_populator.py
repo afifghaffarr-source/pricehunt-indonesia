@@ -18,7 +18,7 @@ load_dotenv(Path(__file__).parent.parent / '.env.local')
 SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 VEXO_API_KEY = os.getenv('VEXO_API_KEY')
-API_BASE_URL = 'https://www.bijakbeli.app'
+API_BASE_URL = 'https://www.bijakbeli.web.id'
 
 if not all([SUPABASE_URL, SUPABASE_KEY, VEXO_API_KEY]):
     print("❌ Missing credentials!")

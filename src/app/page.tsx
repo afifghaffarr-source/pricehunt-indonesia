@@ -23,8 +23,16 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import type { Metadata } from "next";
+import { JsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default async function HomePage() {
   const [allProducts, categories] = await Promise.all([
@@ -35,7 +43,10 @@ export default async function HomePage() {
   const trendingProducts = allProducts.slice(0, 4);
 
   return (
-    <div>
+    <>
+      <JsonLd data={organizationJsonLd()} key="organization" />
+      <JsonLd data={websiteJsonLd()} key="website" />
+      <div>
       <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50 via-background to-background dark:from-emerald-950/20">
         {/* Animated gradient orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -143,7 +154,7 @@ export default async function HomePage() {
                 <h3 className="text-lg font-semibold">iPhone 15 Pro Max 256GB</h3>
                 <p className="text-sm text-muted-foreground">Contoh analisis real-time</p>
               </div>
-              <Badge className="bg-green-600 text-white">
+              <Badge className="bg-green-700 text-white">
                 Deal Score: 87/100
               </Badge>
             </div>
@@ -567,7 +578,7 @@ export default async function HomePage() {
           <h2 className="text-2xl font-bold sm:text-3xl">
             Belanja Cerdas, Hemat Waktu & Uang
           </h2>
-          <p className="mx-auto mt-3 max-w-lg text-primary-foreground/80">
+          <p className="mx-auto mt-3 max-w-lg text-primary-foreground">
             Dirancang untuk membantu pembeli Indonesia membandingkan harga dengan lebih cerdas, jujur, dan berbasis data.
           </p>
           <Link
@@ -578,6 +589,7 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

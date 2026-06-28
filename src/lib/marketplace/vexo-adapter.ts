@@ -98,7 +98,7 @@ export async function getAIInsight(
   const prompts: Record<VexoAIIntent, string> = {
     "smart-search": `Analisis query pencarian ini dan ekstrak keyword, kategori, dan harga maksimum jika ada. Query: "${context}". Balas dalam format JSON: {"keyword":"...", "category":"...", "maxPrice": number|null}`,
     "product-summary": `Ringkas produk ini dalam 1 kalimat singkat dan informatif dalam bahasa Indonesia: ${context}`,
-    "deal-verdict": `Berdasarkan data berikut, apakah produk ini layak dibeli sekarang atau tunggu? Jawab 2-3 kalimat dalam bahasa Indonesia: ${context}`,
+    "deal-verdict": `Berdasarkan data harga produk berikut, berikan rekomendasi singkat dalam 1-2 kalimat bahasa Indonesia: apakah layak dibeli sekarang, pantau, atau tunggu. JANGAN sebutkan nama marketplace atau toko spesifik karena tidak tersedia di data. Data: ${context}`,
     "product-matcher": `Apakah dua produk berikut kemungkinan produk yang sama? Jawab ya/tidak dengan alasan singkat: ${context}`,
     "general": context,
   };

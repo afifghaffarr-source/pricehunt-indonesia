@@ -7,7 +7,7 @@
  * This route now updates the correct column.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/auth";
 import { z } from "@/lib/validation";
@@ -21,7 +21,7 @@ const resolveSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const guard = await requireAdmin(request);
-  if (guard) return guard;
+  if (!guard.ok) return guard.response;
 
   let body: unknown;
   try {

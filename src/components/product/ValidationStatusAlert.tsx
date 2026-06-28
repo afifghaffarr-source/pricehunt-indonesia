@@ -10,6 +10,7 @@ interface ValidationStatusAlertProps {
 
 export function ValidationStatusAlert({
   status,
+  productName: _productName,
 }: ValidationStatusAlertProps) {
   if (status === "verified") return null; // Don't show alert for verified items
 

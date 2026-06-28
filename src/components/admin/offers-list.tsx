@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { RefreshCw, ExternalLink, CheckCircle, XCircle, Check, X, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { csrfFetch } from "@/lib/admin-csrf";
@@ -39,12 +39,18 @@ type Offer = {
   url: string | null;
 };
 
+type ActionState = "idle" | "approving" | "rejecting";
+
 export function OffersList() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [marketplaceFilter, setMarketplaceFilter] = useState("all");
+  // Per-row action state so we can disable buttons on the row under
+  // mutation without blocking the rest of the table. Key is offer.id.
+  const [pendingAction, setPendingAction] = useState<Record<string, ActionState>>({});
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const loadOffers = useCallback(async () => {
     setLoading(true);
@@ -70,6 +76,47 @@ export function OffersList() {
   useEffect(() => {
     loadOffers();
   }, [loadOffers]);
+
+  /**
+   * Approve or reject an offer via PATCH /api/admin/data-collection/offers/[id]/validate.
+   * On success, refresh the list so the row reflects the new status badge.
+   * The endpoint is admin-only (requireAdmin guard server-side) and writes
+   * an admin_audit_log row with from→to status diff.
+   */
+  const decideOffer = useCallback(
+    async (offer: Offer, action: "approve" | "reject") => {
+      if (pendingAction[offer.id]) return; // already in-flight
+      setActionError(null);
+      setPendingAction((p) => ({ ...p, [offer.id]: action === "approve" ? "approving" : "rejecting" }));
+      try {
+        const targetStatus = action === "approve" ? "valid" : "rejected";
+        const res = await csrfFetch(
+          `/api/admin/data-collection/offers/${offer.id}/validate`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: targetStatus }),
+          },
+        );
+        const json = (await res.json()) as { success?: boolean; error?: string };
+        if (!res.ok || !json.success) {
+          setActionError(json.error ?? `Failed to ${action} offer (HTTP ${res.status})`);
+          return;
+        }
+        await loadOffers();
+      } catch (err) {
+        console.error(`Failed to ${action} offer:`, err);
+        setActionError(err instanceof Error ? err.message : `Failed to ${action} offer`);
+      } finally {
+        setPendingAction((p) => {
+          const next = { ...p };
+          delete next[offer.id];
+          return next;
+        });
+      }
+    },
+    [pendingAction, loadOffers],
+  );
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
@@ -125,12 +172,20 @@ export function OffersList() {
               <SelectItem value="bukalapak">Bukalapak</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={loadOffers} variant="outline" size="icon">
+          <Button onClick={loadOffers} variant="outline" size="icon" aria-label="Refresh offers list">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
+        {actionError && (
+          <div
+            role="alert"
+            className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
+            <strong className="font-semibold">Action failed:</strong> {actionError}
+          </div>
+        )}
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading...</div>
         ) : offers.length === 0 ? (
@@ -183,16 +238,59 @@ export function OffersList() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {offer.url && (
-                      <a
-                        href={offer.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {/* Approve / Reject buttons only for pending offers. The
+                          server-side allowlist also restricts the action other
+                          admins can take; we just hide UI affordances in
+                          already-decided states to reduce noise. */}
+                      {offer.validation_status === "pending" && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Approve ${offer.title}`}
+                            title="Approve"
+                            disabled={!!pendingAction[offer.id]}
+                            onClick={() => decideOffer(offer, "approve")}
+                            className="h-9 w-9 text-green-600 hover:bg-green-500/10 hover:text-green-700"
+                          >
+                            {pendingAction[offer.id] === "approving" ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Reject ${offer.title}`}
+                            title="Reject"
+                            disabled={!!pendingAction[offer.id]}
+                            onClick={() => decideOffer(offer, "reject")}
+                            className="h-9 w-9 text-red-600 hover:bg-red-500/10 hover:text-red-700"
+                          >
+                            {pendingAction[offer.id] === "rejecting" ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <X className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </>
+                      )}
+                      {offer.url && (
+                        <a
+                          href={offer.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9"
+                          aria-label={`Open ${offer.title} on marketplace`}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

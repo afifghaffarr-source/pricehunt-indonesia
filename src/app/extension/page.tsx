@@ -1,36 +1,166 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Download, 
-  Package, 
-  Zap, 
-  Shield, 
-  TrendingUp, 
+import {
+  Download,
+  Package,
+  Zap,
+  Shield,
+  TrendingUp,
   CheckCircle2,
-  MousePointerClick
+  MousePointerClick,
+  ExternalLink,
+  HelpCircle,
+  Rocket,
 } from "lucide-react";
 import Link from "next/link";
+import { CHROME_WEB_STORE_URL, isLiveOnChromeWebStore } from "@/lib/extension-links";
+import { cookies } from "next/headers";
+import { DevBannerToolbar } from "@/components/dev-preview-toolbar";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Chrome Extension - BijakBeli.app",
-  description: "Download ekstensi Chrome BijakBeli untuk mengumpulkan data produk dengan satu klik dari Tokopedia, Shopee, dan Bukalapak.",
+  description: "Download ekstensi Chrome BijakBeli v3.0.1 - auto-scrape marketplace Indonesia (Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop) untuk membantu komunitas.",
+  alternates: {
+    canonical: "/extension",
+  },
 };
 
-export default function ExtensionPage() {
+export default async function ExtensionPage() {
+  const isLive = isLiveOnChromeWebStore;
+  const cwsUrl = CHROME_WEB_STORE_URL;
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // Banner mode is decided by:
+  //   1) preview cookie set by DevBannerToolbar (dev only), wins over env
+  //   2) NEXT_PUBLIC_CWS_PUBLISHED env var on production (once officially live)
+  //   3) Default to "draft" when env vars unset
+  const cookieStore = await cookies();
+  const previewOverride = cookieStore.get("bijakbeli_banner_preview")?.value ?? null;
+
+  let bannerMode: "live" | "legacy" | "draft";
+  if (previewOverride === "live" || previewOverride === "legacy" || previewOverride === "draft") {
+    bannerMode = previewOverride;
+  } else if (isLive && cwsUrl) {
+    bannerMode = "live";
+  } else {
+    bannerMode = "draft";
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Post-launch banner, one of three variants. See
+          src/components/banner-preview.tsx for the dev-only preview switcher
+          (gated by NODE_ENV check; never ships to production). */}
+      {bannerMode === "live" && cwsUrl && (
+        <div
+          data-banner="live"
+          className="mb-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 sm:flex-row sm:p-5"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-emerald-900 dark:text-emerald-200">
+                Sekarang live di Chrome Web Store
+              </p>
+              <p className="text-sm text-emerald-800/80 dark:text-emerald-300/80">
+                Install langsung dari CWS, tidak perlu download manual.
+              </p>
+            </div>
+          </div>
+          <a href={cwsUrl} target="_blank" rel="noopener noreferrer">
+            <Button className="bg-emerald-700 hover:bg-emerald-800">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Buka di CWS
+            </Button>
+          </a>
+        </div>
+      )}
+
+      {bannerMode === "legacy" && (
+        <div
+          data-banner="legacy"
+          role="status"
+          className="mb-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 sm:flex-row sm:p-5"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+              <Download className="h-5 w-5 text-amber-700" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                Masih versi beta, install via file .tar.gz
+              </p>
+              <p className="text-sm text-amber-800/80 dark:text-amber-300/80">
+                Chrome Web Store akan menyusul setelah masa beta sekitar 2-4 minggu.
+              </p>
+            </div>
+          </div>
+          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
+            <Button variant="outline" className="border-amber-500/40 text-amber-900 hover:bg-amber-500/10 dark:text-amber-100">
+              <Download className="mr-2 h-4 w-4" />
+              Download .tar.gz
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {bannerMode === "draft" && (
+        <div
+          data-banner="draft"
+          className="mb-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-zinc-300 bg-zinc-100/80 p-4 sm:flex-row sm:p-5 dark:border-zinc-700 dark:bg-zinc-900"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-300/60 dark:bg-zinc-800">
+              <Rocket className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
+            </div>
+            <div>
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                Segera rilis di Chrome Web Store
+              </p>
+              <p className="text-sm text-zinc-700 dark:text-zinc-400">
+                Sementara waktu, install via .tar.gz di bawah. Submit ke CWS sedang berlangsung.
+              </p>
+            </div>
+          </div>
+          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
+            <Button variant="outline" className="border-zinc-400 dark:border-zinc-700">
+              <Download className="mr-2 h-4 w-4" />
+              Download .tar.gz
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {/* Dev-only preview switcher for the banner variants above. */}
+      {/* Hidden in production builds via the NODE_ENV guard below. */}
+      {!isProduction && <DevBannerToolbar />}
+
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4 border-primary/20">
-          Initial Beta v2.0.2
+          v3.0.1 - Auto-Scrape
         </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
         </h1>
         <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-          Kumpulkan data produk dari marketplace favorit dengan satu klik.
-          Bantu kami membangun database harga terlengkap di Indonesia! 🇮🇩
+          Browsing marketplace = otomatis bantu BijakBeli. Setiap halaman produk
+          yang kamu lihat, data harganya otomatis terkirim ke database kami.
+          Bantu ribuan pembeli Indonesia! 🇮🇩
+        </p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          <Link href="/blog/bijakbeli-extension-launch" className="hover:text-foreground hover:underline">
+            Baca pengumuman peluncuran v3 →
+          </Link>
+          <span className="mx-2 text-border">·</span>
+          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            Price drop alerts segera hadir, Q3 2026
+          </span>
         </p>
       </div>
 
@@ -42,51 +172,57 @@ export default function ExtensionPage() {
           </div>
           <CardTitle className="text-2xl">Download Extension</CardTitle>
           <CardDescription>
-            Versi Beta - Gratis untuk semua pengguna
+            v3.0.1 - Gratis untuk semua pengguna
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v2.0.2-beta.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
             <Button size="lg" className="w-full text-lg">
-              <Download className="mr-2 h-5 w-5" />
-              Download Extension (14 KB)
+              <Download className="mr-2 h-5 w-5" /> Download Extension
             </Button>
           </Link>
           <p className="text-center text-sm text-muted-foreground">
-            SHA256: <code className="text-xs">1d5f620d...efb926</code>
+            Manifest V3 • ~50 KB • 6 marketplace support
           </p>
         </CardContent>
       </Card>
 
-      {/* Beta Secret Card */}
+      {/* Beta Testing Card, secret is delivered out-of-band via the
+          extension's first-run onboarding flow (popup form + secure
+          channel). NEVER embed secrets in public HTML. The previous
+          version of this section (commits ≤ 1866f78) hard-coded the
+          INGESTION_SECRET in plain text on the page, which was a
+          critical credential leak. See CHANGELOG v1.5.28. */}
       <Card className="mx-auto mb-12 max-w-2xl border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
             <Shield className="h-6 w-6 text-amber-600" />
           </div>
-          <CardTitle className="text-xl">Beta Testing Secret</CardTitle>
+          <CardTitle className="text-xl">Beta Testing - Bagaimana Caranya</CardTitle>
           <CardDescription>
-            Ingestion secret untuk beta testers - simpan baik-baik!
+            Cara konfigurasi ingestion key untuk beta testers
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg bg-muted p-4">
-            <p className="mb-2 text-sm font-medium">Ingestion Secret:</p>
-            <code className="block break-all rounded bg-background p-3 text-xs font-mono">
-              8f38f6acaafb1d3f5dc0e2f60f07e7e731ca67c4ed15b9dee7ff8094ec9eebc0
-            </code>
+          <div className="rounded-lg bg-muted p-4 text-sm text-foreground">
+            <p className="mb-2 text-foreground">
+              <strong>Cara pakai:</strong>
+            </p>
+            <ol className="ml-4 list-decimal space-y-1">
+              <li>Install extension dari link download di atas</li>
+              <li>Klik icon extension di toolbar Chrome → buka Settings</li>
+              <li>
+                Ingestion key akan diminta pada first-run. Kami kirim key via
+                secure channel (bukan via halaman publik), lihat
+                <code className="mx-1 rounded bg-background px-1 text-xs">README</code>
+                repo extension atau hubungi maintainer untuk onboarding beta.
+              </li>
+              <li>Paste key di field &quot;Ingestion Key&quot; lalu klik Save</li>
+            </ol>
           </div>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              <strong>Cara pakai:</strong> Copy secret di atas, paste di popup extension saat konfigurasi (Step 3)
-            </p>
-            <p>
-              <strong>Keamanan:</strong> Secret ini hanya untuk beta testers. Jangan share di public!
-            </p>
-            <p className="text-xs">
-              Secret ini akan diganti saat launch publik ke Chrome Web Store
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Secret key dirotasi berkala. Versi publik extension (Chrome Web Store) tidak akan membutuhkan key, semuanya lewat proxy server kami.
+          </p>
         </CardContent>
       </Card>
 
@@ -97,31 +233,41 @@ export default function ExtensionPage() {
           <CardDescription>Update terbaru extension</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="border-l-2 border-red-500 pl-4">
+          <div className="border-l-2 border-primary pl-4">
             <div className="mb-1 flex items-center gap-2">
-              <Badge variant="default" className="bg-red-500">v2.0.2</Badge>
-              <span className="text-xs text-muted-foreground">2026-06-13 (Latest)</span>
+              <Badge variant="default">v3.0.1</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-27 (Latest)</span>
             </div>
-            <p className="text-sm font-medium text-foreground">Critical Database Error Fix</p>
+            <p className="text-sm font-medium text-foreground">URL Collision Fix</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>&bull; Fixed &quot;API error: 500 - OFFER_UPSERT_FAILED&quot;</li>
-              <li>&bull; Changed source value: &apos;chrome-extension&apos; → &apos;extension_snapshot&apos;</li>
-              <li>• Database CHECK constraint now accepts the correct value</li>
+              <li>• Fixed URL collision di Lazada, Blibli, Bukalapak search results</li>
+              <li>• Marketplace scraper improved product URL extraction</li>
             </ul>
-            <p className="mt-2 text-xs text-red-600">
-              <strong>Wajib update!</strong> Versi 2.0.1 tidak bisa save data ke database.
-            </p>
           </div>
           <div className="border-l-2 border-muted pl-4">
             <div className="mb-1 flex items-center gap-2">
-              <Badge variant="outline">v2.0.1</Badge>
-              <span className="text-xs text-muted-foreground">2026-06-12</span>
+              <Badge variant="outline">v3.0.0</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-23</span>
             </div>
-            <p className="text-sm font-medium text-muted-foreground">Critical Bug Fix</p>
+            <p className="text-sm font-medium text-muted-foreground">Auto-Scrape Mode</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>&bull; Fixed &quot;Failed to fetch&quot; error saat klik button</li>
-              <li>• Manifest V3 CORS issue resolved via message passing</li>
-              <li>• API calls sekarang via background worker (lebih stabil)</li>
+              <li>• Auto-scrape PDP & search results dari 6 marketplace</li>
+              <li>• Background service worker (Manifest V3 compliant)</li>
+              <li>• SPA-aware: handle dynamic loading (Shopee, Tokopedia)</li>
+              <li>• Side panel dengan stats & history</li>
+              <li>• Dedupe otomatis (1 jam per URL)</li>
+              <li>• JSON-LD fallback untuk marketplace tanpa selector</li>
+            </ul>
+          </div>
+          <div className="border-l-2 border-muted pl-4">
+            <div className="mb-1 flex items-center gap-2">
+              <Badge variant="outline">v2.0.2</Badge>
+              <span className="text-xs text-muted-foreground">2026-06-13</span>
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">Critical Database Error Fix</p>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>• Fixed &quot;API error: 500 - OFFER_UPSERT_FAILED&quot;</li>
+              <li>• Changed source value: &apos;chrome-extension&apos; → &apos;extension_snapshot&apos;</li>
             </ul>
           </div>
           <div className="border-l-2 border-muted pl-4">
@@ -130,11 +276,6 @@ export default function ExtensionPage() {
               <span className="text-xs text-muted-foreground">2026-06-12</span>
             </div>
             <p className="text-sm font-medium text-muted-foreground">Initial Beta Release</p>
-            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>• Support Tokopedia, Shopee, Bukalapak</li>
-              <li>• One-click data collection</li>
-              <li>• Auto-sync to BijakBeli database</li>
-            </ul>
           </div>
         </CardContent>
       </Card>
@@ -200,7 +341,7 @@ export default function ExtensionPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Marketplace yang Didukung</CardTitle>
           <CardDescription>
-            Extension otomatis mendeteksi marketplace dan mengekstrak data produk
+            Extension otomatis deteksi marketplace dan scrape PDP + search results
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -208,22 +349,43 @@ export default function ExtensionPage() {
             <div className="flex items-center gap-3 rounded-lg border p-4">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
-                <p className="font-medium">Tokopedia</p>
-                <p className="text-sm text-muted-foreground">Semua produk</p>
+                <p className="font-medium">Shopee</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-lg border p-4">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
-                <p className="font-medium">Shopee</p>
-                <p className="text-sm text-muted-foreground">Semua produk</p>
+                <p className="font-medium">Tokopedia</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="font-medium">Lazada</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="font-medium">Blibli</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-lg border p-4">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
                 <p className="font-medium">Bukalapak</p>
-                <p className="text-sm text-muted-foreground">Semua produk</p>
+                <p className="text-sm text-muted-foreground">PDP + search</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="font-medium">TikTok Shop</p>
+                <p className="text-sm text-muted-foreground">via JSON-LD</p>
               </div>
             </div>
           </div>
@@ -245,10 +407,10 @@ export default function ExtensionPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Download file <code className="rounded bg-muted px-1 py-0.5">.tar.gz</code> di atas
+                Download file <code className="rounded bg-muted px-1 py-0.5 text-foreground">.tar.gz</code> di atas
               </p>
               <p className="text-sm text-muted-foreground">
-                Extract dengan: <code className="rounded bg-muted px-1 py-0.5">tar -xzf bijakbeli-extension-*.tar.gz</code>
+                Extract dengan: <code className="rounded bg-muted px-1 py-0.5 text-foreground">tar -xzf bijakbeli-extension-*.tar.gz</code>
               </p>
             </CardContent>
           </Card>
@@ -262,13 +424,13 @@ export default function ExtensionPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Buka <code className="rounded bg-muted px-1 py-0.5">chrome://extensions/</code>
+                Buka <code className="rounded bg-muted px-1 py-0.5 text-foreground">chrome://extensions/</code>
               </p>
               <p className="text-sm text-muted-foreground">
                 Enable <strong>Developer mode</strong> (toggle kanan atas)
               </p>
               <p className="text-sm text-muted-foreground">
-                Klik <strong>&quot;Load unpacked&quot;</strong> → pilih folder <code className="rounded bg-muted px-1 py-0.5">chrome/</code>
+                Klik <strong>&quot;Load unpacked&quot;</strong> → pilih folder <code className="rounded bg-muted px-1 py-0.5 text-foreground">chrome/</code>
               </p>
             </CardContent>
           </Card>
@@ -298,9 +460,9 @@ export default function ExtensionPage() {
       {/* How it Works */}
       <Card className="mb-12 border-primary/20">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Cara Menggunakan</CardTitle>
+          <CardTitle className="text-xl">Cara Kerja Auto-Scrape</CardTitle>
           <CardDescription>
-            Sangat mudah, bahkan untuk pemula sekalipun!
+            Browsing biasa = kontribusi otomatis ke database BijakBeli
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -310,33 +472,31 @@ export default function ExtensionPage() {
                 1
               </div>
               <div>
-                <p className="font-medium">Buka halaman produk</p>
+                <p className="font-medium">Browsing seperti biasa</p>
                 <p className="text-sm text-muted-foreground">
-                  Kunjungi produk apa saja di Tokopedia, Shopee, atau Bukalapak
+                  Buka halaman produk di Shopee, Tokopedia, Lazada, Blibli, Bukalapak, atau TikTok Shop
                 </p>
               </div>
             </div>
-
             <div className="flex gap-4">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                 2
               </div>
               <div>
-                <p className="font-medium">Klik tombol floating</p>
+                <p className="font-medium">Auto-detect & scrape</p>
                 <p className="text-sm text-muted-foreground">
-                  Tombol <strong>Add to BijakBeli</strong> muncul di pojok kanan bawah
+                  Extension otomatis scrape nama, harga, rating, seller, dan kirim ke BijakBeli
                 </p>
               </div>
             </div>
-
             <div className="flex gap-4">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                 3
               </div>
               <div>
-                <p className="font-medium">Selesai!</p>
+                <p className="font-medium">Masuk database BijakBeli</p>
                 <p className="text-sm text-muted-foreground">
-                  Tombol berubah jadi <strong>Saved!</strong> dan notifikasi muncul. Data sudah masuk database!
+                  Data membantu ribuan pembeli lain mendapat harga terbaik. Cek history di side panel!
                 </p>
               </div>
             </div>
@@ -427,7 +587,7 @@ export default function ExtensionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v2.0.2-beta.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
             <Button size="lg" className="text-lg">
               <Download className="mr-2 h-5 w-5" />
               Download Extension Sekarang
@@ -438,6 +598,33 @@ export default function ExtensionPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Footer: Privacy + Source */}
+      <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t pt-6 text-sm text-muted-foreground">
+        <Link
+          href="/extension/privacy-policy"
+          className="hover:text-foreground hover:underline"
+        >
+          <Shield className="mr-1 inline h-3.5 w-3.5" />
+          Privacy Policy
+        </Link>
+        <Link
+          href="/extension/faq"
+          className="hover:text-foreground hover:underline"
+        >
+          <HelpCircle className="mr-1 inline h-3.5 w-3.5" />
+          FAQ
+        </Link>
+        <a
+          href="https://github.com/afifghaffarr-source/pricehunt-indonesia"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-foreground hover:underline"
+        >
+          Source Code (GitHub)
+        </a>
+        <span>v3.0.1 · Manifest V3</span>
+      </div>
     </div>
   );
 }

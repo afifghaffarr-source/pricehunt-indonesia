@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Pre-existing `any` usages; tracked under Phase 5 type-safety backlog.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,15 +16,21 @@ describe('Deal Score Calculation Optimization', () => {
 
   it('should have products with price history', async () => {
     if (!supabase) return; // env-missing skip
+    // P7-Post: `price_history` was dropped in migration 129. The legacy
+    // embed is replaced with a direct `price_snapshots` join (via
+    // `offers!inner(product_id)`). We still sanity-check that products
+    // have at least one snapshot in the last 30 days.
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split('T')[0];
     const { data, error } = await supabase
-      .from('products')
-      .select('id, name, price_history(price, recorded_at)')
-      .not('lowest_price', 'is', null)
+      .from('price_snapshots')
+      .select('current_price, captured_at, offers!inner(product_id)')
+      .gte('captured_at', thirtyDaysAgo)
       .limit(5);
 
     expect(error).toBeNull();
     expect(data).toBeTruthy();
-    // @ts-expect-error - Supabase type inference issue with complex queries
     expect(data?.length).toBeGreaterThan(0);
   });
 
@@ -109,6 +113,10 @@ describe('Deal Score Calculation Optimization', () => {
 
   it('should fetch products with all required data for deal scoring', async () => {
     if (!supabase) return; // env-missing skip
+    // P7-Post: dropped the `price_history` PostgREST embed (legacy table
+    // dropped in migration 129). Deal-score stats are now derived from
+    // `price_snapshots` in the route handler. This integration test
+    // only verifies that products + offers loads correctly.
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -116,27 +124,38 @@ describe('Deal Score Calculation Optimization', () => {
         name,
         slug,
         lowest_price,
-        prices (
-          price,
+        offers (
+          current_price,
           seller_rating,
-          in_stock,
+          stock_status,
           marketplaces (name)
-        ),
-        price_history (
-          price,
-          recorded_at
         )
       `)
       .not('lowest_price', 'is', null)
       .limit(3);
 
-    // Supabase type inference issue with complex queries - cast to any
-    const products = data as any;
+    // Type for the products+offers+marketplaces join. Supabase's typed client
+    // doesn't infer nested embed shapes for complex selects; we declare the
+    // shape explicitly here so the test still gets type checking on the
+    // fields it actually reads (id, name, offers[].current_price, etc.).
+    type DealTestProduct = {
+      id: string;
+      name: string;
+      slug: string;
+      lowest_price: number | null;
+      offers: Array<{
+        current_price: number;
+        seller_rating: number | null;
+        stock_status: string;
+        marketplaces: { name: string } | null;
+      }> | null;
+    };
+    const products = data as unknown as DealTestProduct[] | null;
 
     expect(error).toBeNull();
     expect(products).toBeTruthy();
     expect(Array.isArray(products) && products.length).toBeGreaterThan(0);
-    
+
     if (Array.isArray(products) && products.length > 0) {
       const product = products[0];
       expect(product.id).toBeDefined();
