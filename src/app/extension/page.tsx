@@ -38,6 +38,15 @@ export default function ExtensionPage() {
           yang kamu lihat, data harganya otomatis terkirim ke database kami.
           Bantu ribuan pembeli Indonesia! 🇮🇩
         </p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          <Link href="/blog/bijakbeli-extension-launch" className="hover:text-foreground hover:underline">
+            Baca pengumuman peluncuran v3 →
+          </Link>
+          <span className="mx-2 text-border">·</span>
+          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            Price drop alerts segera hadir — Q3 2026
+          </span>
+        </p>
       </div>
 
       {/* Download Card */}
