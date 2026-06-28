@@ -54,6 +54,8 @@ const ALLOWLIST = new Set([
   "114_upgrade_offers_schema.sql",
   "114_upgrade_offers_schema_v3.sql",
   "115_upgrade_price_snapshots.sql",
+  "128_drop_legacy_prices_table.sql",
+  "129_drop_price_history_table.sql",
 ]);
 
 // ---------------------------------------------------------------------------
