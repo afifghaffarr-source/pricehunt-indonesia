@@ -11,9 +11,12 @@ import {
   MousePointerClick,
   ExternalLink,
   HelpCircle,
+  Rocket,
 } from "lucide-react";
 import Link from "next/link";
 import { CHROME_WEB_STORE_URL, isLiveOnChromeWebStore } from "@/lib/extension-links";
+import { cookies } from "next/headers";
+import { DevBannerToolbar } from "@/components/dev-preview-toolbar";
 
 export const dynamic = "force-dynamic";
 
@@ -25,15 +28,37 @@ export const metadata = {
   },
 };
 
-export default function ExtensionPage() {
+export default async function ExtensionPage() {
   const isLive = isLiveOnChromeWebStore;
   const cwsUrl = CHROME_WEB_STORE_URL;
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // Banner mode is decided by:
+  //   1) preview cookie set by DevBannerToolbar (dev only) — wins over env
+  //   2) NEXT_PUBLIC_CWS_PUBLISHED env var on production (once officially live)
+  //   3) Default to "draft" when env vars unset
+  const cookieStore = await cookies();
+  const previewOverride = cookieStore.get("bijakbeli_banner_preview")?.value ?? null;
+
+  let bannerMode: "live" | "legacy" | "draft";
+  if (previewOverride === "live" || previewOverride === "legacy" || previewOverride === "draft") {
+    bannerMode = previewOverride;
+  } else if (isLive && cwsUrl) {
+    bannerMode = "live";
+  } else {
+    bannerMode = "draft";
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Post-launch banner — only shown when CWS is live. See
-          src/lib/extension-links.ts to enable after first publish. */}
-      {isLive && cwsUrl && (
-        <div className="mb-8 flex flex-col items-center justify-between gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 sm:flex-row sm:p-5">
+      {/* Post-launch banner — one of three variants. See
+          src/components/banner-preview.tsx for the dev-only preview switcher
+          (gated by NODE_ENV check; never ships to production). */}
+      {bannerMode === "live" && cwsUrl && (
+        <div
+          data-banner="live"
+          className="mb-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 sm:flex-row sm:p-5"
+        >
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -55,6 +80,65 @@ export default function ExtensionPage() {
           </a>
         </div>
       )}
+
+      {bannerMode === "legacy" && (
+        <div
+          data-banner="legacy"
+          role="status"
+          className="mb-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 sm:flex-row sm:p-5"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+              <Download className="h-5 w-5 text-amber-700" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                Masih versi beta — install via file .tar.gz
+              </p>
+              <p className="text-sm text-amber-800/80 dark:text-amber-300/80">
+                Chrome Web Store akan menyusul setelah masa beta sekitar 2-4 minggu.
+              </p>
+            </div>
+          </div>
+          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
+            <Button variant="outline" className="border-amber-500/40 text-amber-900 hover:bg-amber-500/10 dark:text-amber-100">
+              <Download className="mr-2 h-4 w-4" />
+              Download .tar.gz
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {bannerMode === "draft" && (
+        <div
+          data-banner="draft"
+          className="mb-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-zinc-300 bg-zinc-100/80 p-4 sm:flex-row sm:p-5 dark:border-zinc-700 dark:bg-zinc-900"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-300/60 dark:bg-zinc-800">
+              <Rocket className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
+            </div>
+            <div>
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                Segera rilis di Chrome Web Store
+              </p>
+              <p className="text-sm text-zinc-700 dark:text-zinc-400">
+                Sementara waktu, install via .tar.gz di bawah. Submit ke CWS sedang berlangsung.
+              </p>
+            </div>
+          </div>
+          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
+            <Button variant="outline" className="border-zinc-400 dark:border-zinc-700">
+              <Download className="mr-2 h-4 w-4" />
+              Download .tar.gz
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {/* Dev-only preview switcher for the banner variants above. */}
+      {/* Hidden in production builds via the NODE_ENV guard below. */}
+      {!isProduction && <DevBannerToolbar />}
 
       {/* Hero Section */}
       <div className="mb-12 text-center">

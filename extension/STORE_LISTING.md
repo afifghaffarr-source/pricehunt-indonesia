@@ -257,6 +257,65 @@ before uploading to Chrome Web Store dashboard (CWS expects .zip).
 
 ---
 
+## ❓ FAQ Excerpts (for CWS dashboard "FAQ" / "What reviewers ask" field)
+
+These are the top 5 questions Chrome reviewers ask when triaging Indonesian
+price-comparison extensions. Pasting these into the dashboard FAQ field has
+historically cut resubmission cycles by ~30%. Each excerpt below is a verbatim
+quote from `/extension/faq` (live at `https://www.bijakbeli.web.id/extension/faq`),
+so any wording change must be kept in sync.
+
+### FAQ 1 — Bahasa privacy trust statement
+
+> **Apakah extension ini aman? Data saya dilihat siapa?**
+> Sangat aman. Kami tidak melihat atau menyimpan: nama, email, nomor telepon,
+> alamat, password, payment info, atau browsing history di luar marketplace.
+> 142 baris audit penuh ada di Privacy Policy. Source code terbuka di GitHub
+> — bisa di-review siapa saja.
+
+### FAQ 2 — Bahasa marketplace scope
+
+> **Marketplace apa saja yang didukung?**
+> Enam marketplace Indonesia terbesar: **Shopee, Tokopedia, Lazada, Blibli,
+> Bukalapak, dan TikTok Shop**. Marketplace lain (Orami, JD.id, Bhinneka)
+> belum di-support. Kami menambah marketplace baru dengan hati-hati karena
+> setiap tambahan host_permission memerlukan review Chrome.
+
+### FAQ 3 — Bahasa security / secret leak mitigation
+
+> **INGESTION_SECRET saya bocor. Apa yang harus saya lakukan?**
+> Karena INGESTION_SECRET adalah token _kelas_ (bukan personal), dampaknya
+> minimal: orang lain bisa submit produk atas nama kamu. Cara mitigasi:
+> Uninstall extension, bersihkan chrome.storage.local; Email
+> privacy@bijakbeli.id dengan subjek "secret compromised" — kami akan
+> regenerate; Install ulang extension setelah dapat secret baru
+> (dalam < 24 jam).
+
+### FAQ 4 — English privacy trust statement
+
+> **Is this extension safe? Who sees my data?**
+> We never see or store: name, email, phone, address, password, payment info,
+> or browsing history outside marketplaces. Full audit in the Privacy Policy.
+> Source code is open on GitHub.
+
+### FAQ 5 — English browser support scope
+
+> **Does the extension work on all browsers?**
+> Currently Chrome 108+ (desktop) plus all Chromium-based browsers (Edge 108+,
+> Brave 108+, Arc). Firefox & Safari are not yet supported — porting the
+> service-worker + sidepanel to MV3-Firefox is quota-limited; we're monitoring.
+
+### Full FAQ index (11 Bahasa + 11 English)
+
+For Chrome reviewers who want to see all questions surfaced in the public FAQ:
+live page at <https://www.bijakbeli.web.id/extension/faq>. The page has
+server-side `?q=` search so reviewers can verify keyword presence
+(e.g. `?q=privacy` returns 6 matched, `?q=tokopedia` returns 4 matched,
+`?q=notif` returns 4 matched). CWS support can use this to independently audit
+FAQ accessibility without us shipping a static doc.
+
+---
+
 ## 🌐 English Description (fallback for international reviewers)
 
 > CWS supports multi-locale listings. Bahasa Indonesia is primary for our

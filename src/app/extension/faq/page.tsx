@@ -8,6 +8,8 @@ import {
   Settings,
   AlertTriangle,
   Mail,
+  Search,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -18,11 +20,51 @@ export const metadata: Metadata = {
   alternates: { canonical: "/extension/faq" },
 };
 
-const FAQ_GROUPS = [
+// Server-side filter via `?q=` requires dynamic rendering — without this,
+// Next.js prerenders the page once with empty searchParams and serves the
+// cached HTML for every query.
+export const dynamic = "force-dynamic";
+
+type QA = { q: string; a: React.ReactNode; id: string };
+
+type Group = {
+  icon: typeof HelpCircle;
+  title: string;
+  questions: QA[];
+};
+
+// Lightweight slugify for stable FAQ anchors + search highlighting.
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+// Strip HTML / component tree to plain text for case-insensitive keyword
+// search. We use this server-side (no JS hydration needed).
+function txt(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+  if (Array.isArray(node)) return node.map(txt).join(" ");
+  if (node && typeof node === "object" && "props" in node) {
+    // @ts-expect-error — React.ReactElement shape
+    return txt(node.props.children);
+  }
+  return "";
+}
+
+function withIds<T extends { q: string }>(arr: readonly T[]): (T & { id: string })[] {
+  return arr.map((item) => ({ ...item, id: slugify(item.q) }));
+}
+
+const BAHASA_GROUPS: Group[] = [
   {
     icon: Settings,
     title: "Setup & Installation",
-    questions: [
+    questions: withIds([
       {
         q: "Apa itu INGESTION_SECRET dan bagaimana cara mendapatkannya?",
         a: (
@@ -65,12 +107,12 @@ const FAQ_GROUPS = [
           </>
         ),
       },
-    ],
+    ]),
   },
   {
     icon: Shield,
     title: "Privacy & Keamanan",
-    questions: [
+    questions: withIds([
       {
         q: "Apakah extension ini aman? Data saya dilihat siapa?",
         a: (
@@ -117,12 +159,12 @@ const FAQ_GROUPS = [
         q: "Apakah extension mengirim data ke pihak ketiga?",
         a: "Tidak. Submission hanya ke server BijakBeli (Supabase + Vercel). Tidak ada Google Analytics di extension, tidak ada telemetri ke server pihak ketiga. Lihat Section 6 Privacy Policy.",
       },
-    ],
+    ]),
   },
   {
     icon: Wallet,
     title: "Marketplace Support",
-    questions: [
+    questions: withIds([
       {
         q: "Marketplace apa saja yang didukung?",
         a: (
@@ -169,12 +211,12 @@ const FAQ_GROUPS = [
           </>
         ),
       },
-    ],
+    ]),
   },
   {
     icon: Bell,
     title: "Notifikasi & Watchlist",
-    questions: [
+    questions: withIds([
       {
         q: "Saya tidak mau terima notifikasi sama sekali.",
         a: (
@@ -210,11 +252,116 @@ const FAQ_GROUPS = [
           </>
         ),
       },
-    ],
+    ]),
   },
 ];
 
-export default function FAQPage() {
+// English version (for non-Bahasa users + Chrome reviewers) — same content,
+// concise answers, kept as flat string array so search works uniformly.
+const EN_GROUPS: { title: string; qa: QA[] }[] = [
+  {
+    title: "Setup & Installation",
+    qa: withIds([
+      {
+        q: "What is INGESTION_SECRET and how do I get one?",
+        a: "A shared authentication token for product submissions to the BijakBeli database. Currently issued to enrolled beta testers. Public sign-up opens Q3 2026.",
+      },
+      {
+        q: "I installed the extension but the popup only shows an empty form.",
+        a: 'That means the install succeeded. The popup prompts for INGESTION_SECRET on first run. Click the "Get INGESTION_SECRET" link to open the setup page.',
+      },
+      {
+        q: "Does the extension work on all browsers?",
+        a: "Currently Chrome 108+ (desktop) plus all Chromium-based browsers (Edge 108+, Brave 108+, Arc). Firefox & Safari are not yet supported — porting the service-worker + sidepanel to MV3-Firefox is quota-limited; we're monitoring.",
+      },
+    ]),
+  },
+  {
+    title: "Privacy & Security",
+    qa: withIds([
+      {
+        q: "Is this extension safe? Who sees my data?",
+        a: "We never see or store: name, email, phone, address, password, payment info, or browsing history outside marketplaces. Full audit in the Privacy Policy. Source code is open on GitHub.",
+      },
+      {
+        q: "My INGESTION_SECRET was leaked. What now?",
+        a: "It's a class token, so impact is minimal: someone else can submit products as you. Mitigation: uninstall extension, clear chrome.storage.local, email privacy@bijakbeli.id with 'secret compromised' (we regenerate within 24h), then reinstall.",
+      },
+      {
+        q: "Does the extension send data to third parties?",
+        a: "No. Submissions only to BijakBeli servers (Supabase + Vercel). No Google Analytics in the extension, no third-party telemetry.",
+      },
+    ]),
+  },
+  {
+    title: "Marketplace Support",
+    qa: withIds([
+      {
+        q: "Which marketplaces are supported?",
+        a: "Six major Indonesian marketplaces: Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop. Others (Orami, JD.id, Bhinneka) are not yet supported — adding a marketplace requires Chrome CWS review.",
+      },
+      {
+        q: "Why doesn't the extension scrape prices on my Tokopedia page?",
+        a: "Common causes: (1) the URL is actually dynamic content (popup, modal — content script skips these); (2) SPA navigation after page load — hard refresh (Ctrl/Cmd+Shift+R) usually fixes; (3) deduplication — same URL submitted within 1 hour is silently skipped.",
+      },
+      {
+        q: "Will you support Amazon/eBay/non-Indonesian marketplaces?",
+        a: "Not yet. Focus is Indonesian marketplaces for the community-pricing database. Open a GitHub issue for a feature request.",
+      },
+    ]),
+  },
+  {
+    title: "Notifications & Watchlist",
+    qa: withIds([
+      {
+        q: "I don't want to receive any notifications.",
+        a: "Three options: (1) don't add any product to your watchlist (default behavior); (2) chrome://extensions → BijakBeli → Site settings → set Notifications to Block; (3) chrome://settings/notifications → find BijakBeli → toggle Off.",
+      },
+      {
+        q: "Why isn't a notification firing even though the price dropped?",
+        a: "Per-product cooldown is 24 hours. If you already received a notification for product X in the last 24h, none will fire even if the price drops further (anti-spam). Background worker checks every 30 minutes.",
+      },
+    ]),
+  },
+];
+
+const TOTAL_PERTANYAAN =
+  BAHASA_GROUPS.reduce((sum, g) => sum + g.questions.length, 0) +
+  EN_GROUPS.reduce((sum, g) => sum + g.qa.length, 0);
+
+interface FAQPageProps {
+  searchParams?: Promise<{ q?: string }> | { q?: string };
+}
+
+export default async function FAQPage({ searchParams }: FAQPageProps) {
+  const sp =
+    searchParams && typeof (searchParams as Promise<unknown>).then === "function"
+      ? await (searchParams as Promise<{ q?: string }>)
+      : (searchParams as { q?: string } | undefined);
+  const query = (sp?.q ?? "").trim().toLowerCase();
+  const hasQuery = query.length >= 2;
+  const tokens = hasQuery ? query.split(/\s+/).filter(Boolean) : [];
+
+  function matches(item: QA): boolean {
+    if (!hasQuery) return true;
+    const haystack = (item.q + " " + txt(item.a)).toLowerCase();
+    return tokens.every((t) => haystack.includes(t));
+  }
+
+  const filteredBahasa = BAHASA_GROUPS.map((g) => ({
+    ...g,
+    questions: g.questions.filter(matches),
+  })).filter((g) => g.questions.length > 0);
+
+  const filteredEn = EN_GROUPS.map((g) => ({
+    ...g,
+    qa: g.qa.filter(matches),
+  })).filter((g) => g.qa.length > 0);
+
+  const matchCount =
+    filteredBahasa.reduce((s, g) => s + g.questions.length, 0) +
+    filteredEn.reduce((s, g) => s + g.qa.length, 0);
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 font-sans sm:px-6 lg:px-8">
       <div className="mb-10 text-center">
@@ -230,6 +377,74 @@ export default function FAQPage() {
         </p>
       </div>
 
+      {/* Search bar — server-rendered form, posts via GET with ?q= hook.
+          No client JS / hydration needed. */}
+      <form
+        method="GET"
+        action="/extension/faq"
+        className="mx-auto mb-4 max-w-xl"
+        role="search"
+      >
+        <label htmlFor="faq-search" className="sr-only">
+          Cari FAQ
+        </label>
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400"
+            aria-hidden="true"
+          />
+          <input
+            id="faq-search"
+            data-testid="faq-search"
+            type="search"
+            name="q"
+            defaultValue={query}
+            placeholder={`Cari di antara ${TOTAL_PERTANYAAN} pertanyaan…`}
+            autoComplete="off"
+            className="w-full rounded-md border border-zinc-300 bg-white py-2 pr-10 pl-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+          />
+          {hasQuery ? (
+            <Link
+              href="/extension/faq"
+              aria-label="Reset pencarian"
+              className="absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            >
+              <X className="h-4 w-4" />
+            </Link>
+          ) : null}
+        </div>
+      </form>
+
+      {/* Telemetry-style match counter — server-rendered count of ?q= hits.
+          Useful for power users to validate keyword presence at a glance. */}
+      <div
+        className="mx-auto mb-8 max-w-xl text-center text-xs text-zinc-500 dark:text-zinc-400"
+        data-testid="faq-match-count"
+        aria-live="polite"
+      >
+        {hasQuery ? (
+          matchCount === 0 ? (
+            <>Tidak ada pertanyaan cocok untuk &quot;{query}&quot;.</>
+          ) : (
+            <>
+              <strong className="text-emerald-600 dark:text-emerald-400">
+                {matchCount}
+              </strong>{" "}
+              dari {TOTAL_PERTANYAAN} pertanyaan cocok untuk &quot;
+              {query}&quot;.
+            </>
+          )
+        ) : (
+          <>
+            {TOTAL_PERTANYAAN} pertanyaan · tekan{" "}
+            <kbd className="rounded border border-zinc-300 px-1 text-[10px] dark:border-zinc-700">
+              /
+            </kbd>{" "}
+            untuk fokus pencarian
+          </>
+        )}
+      </div>
+
       <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
         <Badge variant="secondary">
           <Shield className="mr-1 h-3 w-3" /> Open-source
@@ -242,7 +457,22 @@ export default function FAQPage() {
         </Badge>
       </div>
 
-      {FAQ_GROUPS.map((group) => {
+      {/* Bahasa sections */}
+      {filteredBahasa.length === 0 && hasQuery ? (
+        <div className="mb-10 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+          Coba kata kunci lain (mis. &quot;INGESTION_SECRET&quot;,
+          &quot;Tokopedia&quot;, &quot;notifikasi&quot;).<br />
+          Atau{" "}
+          <Link
+            href="/extension/faq"
+            className="text-emerald-600 underline underline-offset-2 hover:text-emerald-700"
+          >
+            reset pencarian
+          </Link>
+          .
+        </div>
+      ) : null}
+      {filteredBahasa.map((group) => {
         const Icon = group.icon;
         return (
           <section key={group.title} className="mb-10">
@@ -251,9 +481,10 @@ export default function FAQPage() {
               {group.title}
             </h2>
             <div className="space-y-2">
-              {group.questions.map(({ q, a }) => (
+              {group.questions.map(({ q, a, id }) => (
                 <details
-                  key={q}
+                  key={id}
+                  id={id}
                   className="group overflow-hidden rounded-lg border border-zinc-200 bg-white transition-colors open:bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:open:bg-zinc-900/40 dark:hover:border-zinc-700"
                 >
                   <summary className="flex cursor-pointer list-none items-center justify-between p-4 font-medium text-zinc-900 select-none dark:text-zinc-100">
@@ -351,104 +582,54 @@ export default function FAQPage() {
 
       {/* English translation section — for international Chrome reviewers
           and non-Bahasa users. Same questions, concise answers. */}
-      <section className="mt-12 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-        <h2 className="mb-2 flex items-center gap-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-          <span className="text-xl">🌐</span>
-          English Version
-        </h2>
-        <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
-          Same questions, concise answers for non-Bahasa speakers and
-          Chrome Web Store reviewers.
-        </p>
+      {(filteredEn.length > 0 || !hasQuery) && (
+        <section className="mt-12 border-t border-zinc-200 pt-10 dark:border-zinc-800">
+          <h2 className="mb-2 flex items-center gap-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+            <span className="text-xl">🌐</span>
+            English Version
+          </h2>
+          <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
+            Same questions, concise answers for non-Bahasa speakers and
+            Chrome Web Store reviewers.
+          </p>
 
-        {[
-          {
-            title: "Setup & Installation",
-            qa: [
-              {
-                q: "What is INGESTION_SECRET and how do I get one?",
-                a: "A shared authentication token for product submissions to the BijakBeli database. Currently issued to enrolled beta testers. Public sign-up opens Q3 2026.",
-              },
-              {
-                q: "I installed the extension but the popup only shows an empty form.",
-                a: 'That means the install succeeded. The popup prompts for INGESTION_SECRET on first run. Click the "Get INGESTION_SECRET" link to open the setup page.',
-              },
-              {
-                q: "Does the extension work on all browsers?",
-                a: "Currently Chrome 108+ (desktop) plus all Chromium-based browsers (Edge 108+, Brave 108+, Arc). Firefox & Safari are not yet supported — porting the service-worker + sidepanel to MV3-Firefox is quota-limited; we're monitoring.",
-              },
-            ],
-          },
-          {
-            title: "Privacy & Security",
-            qa: [
-              {
-                q: "Is this extension safe? Who sees my data?",
-                a: "We never see or store: name, email, phone, address, password, payment info, or browsing history outside marketplaces. Full audit in the Privacy Policy. Source code is open on GitHub.",
-              },
-              {
-                q: "My INGESTION_SECRET was leaked. What now?",
-                a: "It's a class token, so impact is minimal: someone else can submit products as you. Mitigation: uninstall extension, clear chrome.storage.local, email privacy@bijakbeli.id with 'secret compromised' (we regenerate within 24h), then reinstall.",
-              },
-              {
-                q: "Does the extension send data to third parties?",
-                a: "No. Submissions only to BijakBeli servers (Supabase + Vercel). No Google Analytics in the extension, no third-party telemetry.",
-              },
-            ],
-          },
-          {
-            title: "Marketplace Support",
-            qa: [
-              {
-                q: "Which marketplaces are supported?",
-                a: "Six major Indonesian marketplaces: Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop. Others (Orami, JD.id, Bhinneka) are not yet supported — adding a marketplace requires Chrome CWS review.",
-              },
-              {
-                q: "Why doesn't the extension scrape prices on my Tokopedia page?",
-                a: "Common causes: (1) the URL is actually dynamic content (popup, modal — content script skips these); (2) SPA navigation after page load — hard refresh (Ctrl/Cmd+Shift+R) usually fixes; (3) deduplication — same URL submitted within 1 hour is silently skipped.",
-              },
-              {
-                q: "Will you support Amazon/eBay/non-Indonesian marketplaces?",
-                a: "Not yet. Focus is Indonesian marketplaces for the community-pricing database. Open a GitHub issue for a feature request.",
-              },
-            ],
-          },
-          {
-            title: "Notifications & Watchlist",
-            qa: [
-              {
-                q: "I don't want to receive any notifications.",
-                a: "Three options: (1) don't add any product to your watchlist (default behavior); (2) chrome://extensions → BijakBeli → Site settings → set Notifications to Block; (3) chrome://settings/notifications → find BijakBeli → toggle Off.",
-              },
-              {
-                q: "Why isn't a notification firing even though the price dropped?",
-                a: "Per-product cooldown is 24 hours. If you already received a notification for product X in the last 24h, none will fire even if the price drops further (anti-spam). Background worker checks every 30 minutes.",
-              },
-            ],
-          },
-        ].map((group) => (
-          <div key={group.title} className="mb-6">
-            <h3 className="mb-3 text-lg font-semibold text-zinc-800 dark:text-zinc-200">
-              {group.title}
-            </h3>
-            <div className="space-y-2">
-              {group.qa.map(({ q, a }) => (
-                <details
-                  key={q}
-                  className="rounded-lg border border-zinc-200 bg-white transition-colors open:bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:open:bg-zinc-900/40 dark:hover:border-zinc-700"
-                >
-                  <summary className="flex cursor-pointer list-none items-center p-3 text-sm font-medium text-zinc-800 select-none dark:text-zinc-200">
-                    <span className="pr-3">{q}</span>
-                  </summary>
-                  <p className="border-t border-zinc-200 px-3 py-2 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
-                    {a}
-                  </p>
-                </details>
-              ))}
+          {filteredEn.length === 0 && hasQuery ? (
+            <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+              No English matches for that query.
             </div>
-          </div>
-        ))}
-      </section>
+          ) : null}
+          {filteredEn.map((group) => {
+            const IconBahasa = BAHASA_GROUPS.find(
+              (b) => b.title.split(" ")[0] === group.title.split(" ")[0]
+            )?.icon;
+            const Icon = IconBahasa ?? HelpCircle;
+            return (
+              <div key={group.title} className="mb-6">
+                <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-zinc-800 dark:text-zinc-200">
+                  <Icon className="h-5 w-5 text-emerald-600" />
+                  {group.title}
+                </h3>
+                <div className="space-y-2">
+                  {group.qa.map(({ q, a, id }) => (
+                    <details
+                      key={id}
+                      id={id}
+                      className="rounded-lg border border-zinc-200 bg-white transition-colors open:bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:open:bg-zinc-900/40 dark:hover:border-zinc-700"
+                    >
+                      <summary className="flex cursor-pointer list-none items-center p-3 text-sm font-medium text-zinc-800 select-none dark:text-zinc-200">
+                        <span className="pr-3">{q}</span>
+                      </summary>
+                      <p className="border-t border-zinc-200 px-3 py-2 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
+                        {a}
+                      </p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
     </main>
   );
 }

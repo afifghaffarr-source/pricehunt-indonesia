@@ -176,6 +176,108 @@ try {
     assert(privLinkCount >= 1, `FAQ links to privacy policy (got ${privLinkCount})`);
     await page.close();
   });
+
+  await test("FAQ search input filters by keyword (server-side ?q=)", async ({ assert }) => {
+    const page = await browser.newPage();
+    // Empty: search form + match counter present
+    const resp = await page.goto(`${BASE}/extension/faq`, { waitUntil: "domcontentloaded" });
+    assert(resp?.status() === 200, `200 OK (got ${resp?.status()})`);
+    assert(
+      await pollCount(page, page.locator('[data-testid="faq-search"]')),
+      "search input rendered"
+    );
+    assert(
+      await pollCount(page, page.locator('[data-testid="faq-match-count"]')),
+      "match counter rendered"
+    );
+
+    // Filter via ?q=tokopedia: Tokopedia is mentioned in marketplace-support
+    // and EN QA. Should narrow to those sections only.
+    const filterResp = await page.goto(`${BASE}/extension/faq?q=tokopedia`, {
+      waitUntil: "domcontentloaded",
+    });
+    assert(filterResp?.status() === 200, `filtered 200 OK (got ${filterResp?.status()})`);
+    assert(
+      await pollText(page, /Tidak ada pertanyaan cocok|\d+ dari \d+\s*pertanyaan cocok/i, {
+        timeout: 30_000,
+      }),
+      "match counter updates with filter text"
+    );
+    // With ?q=tokopedia rendered: Setup & Installation (no Tokopedia mention)
+    // may be empty. The page should still render Privacy/Marketplace/EN sections
+    // that matched.
+    assert(
+      await pollText(page, /Marketplace Support/i, { timeout: 30_000 }),
+      "Marketplace Support still visible when filtering by 'tokopedia'"
+    );
+
+    // Filter with no match: ?q=xyzpdqlapnull
+    const noMatch = await page.goto(`${BASE}/extension/faq?q=xyzpdqlapnull`, {
+      waitUntil: "domcontentloaded",
+    });
+    assert(noMatch?.status() === 200, `no-match 200 OK (got ${noMatch?.status()})`);
+    assert(
+      await pollText(page, /Tidak ada pertanyaan cocok|"No English matches"/i, {
+        timeout: 30_000,
+      }),
+      "page shows 'no matches' empty state for unrelated query"
+    );
+
+    await page.close();
+  });
+
+  await test("FAQ search resets when ?q= is empty / removed", async ({ assert }) => {
+    const page = await browser.newPage();
+    // First filtered, then unfiltered (?q=)
+    await page.goto(`${BASE}/extension/faq?q=privacy`, {
+      waitUntil: "domcontentloaded",
+    });
+    assert(await pollText(page, /\d+ dari \d+\s*pertanyaan cocok/i, { timeout: 30_000 }), "filtered counter visible");
+    await page.goto(`${BASE}/extension/faq?q=`, { waitUntil: "domcontentloaded" });
+    assert(
+      await pollText(page, /\d+ pertanyaan · tekan/i, { timeout: 30_000 }),
+      "default counter (11 pertanyaan · tekan) restored when q is empty"
+    );
+    await page.close();
+  });
+
+  await test("dev preview toolbar can switch banner variant via cookie (dev only)", async ({
+    assert,
+  }) => {
+    const page = await browser.newPage();
+    // Default (no cookie, no env) → "draft" banner
+    await page.goto(`${BASE}/extension`, { waitUntil: "domcontentloaded" });
+    const draft = await page
+      .locator('[data-banner="draft"]')
+      .count();
+    assert(draft >= 1, `default banner is 'draft' (got ${draft} elements)`);
+    const toolbar = await page
+      .locator('[data-testid="dev-preview-toolbar"]')
+      .count();
+    assert(toolbar >= 1, `dev toolbar visible in dev mode (got ${toolbar})`);
+    await page.close();
+
+    // Cookie "legacy" → "legacy" banner variant
+    const page2 = await browser.newPage();
+    await page2.context().addCookies([
+      {
+        name: "bijakbeli_banner_preview",
+        value: "legacy",
+        domain: "localhost",
+        path: "/",
+      },
+    ]);
+    await page2.goto(`${BASE}/extension`, { waitUntil: "domcontentloaded" });
+    const legacy = await page2
+      .locator('[data-banner="legacy"]')
+      .count();
+    assert(legacy >= 1, `cookie 'legacy' → legacy banner (got ${legacy})`);
+    const legacyText = await pollText(page2, /Masih versi beta/i, {
+      timeout: 30_000,
+    });
+    assert(legacyText, "legacy banner copy 'Masih versi beta' visible");
+    await page2.close();
+  });
 } finally {
   await browser.close();
 }

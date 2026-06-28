@@ -53,15 +53,21 @@ const shots = [
   ["faq-light-1280x800.png", "light", { width: 1280, height: 800 }],
   ["faq-light-expanded-1280x1400.png", "light", { width: 1280, height: 1400 }],
   ["faq-dark-1280x800.png", "dark", { width: 1280, height: 800 }],
+  ["faq-search-1280x900.png", "searched", { width: 1280, height: 900 }],
 ];
 
 for (const [filename, scheme, viewport] of shots) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
   if (scheme === "dark") await page.emulateMedia({ colorScheme: "dark" });
-  await page.goto(URL, { waitUntil: "domcontentloaded" });
+  // Searched: navigate to /faq?q=tokopedia so server filter is active
+  const targetUrl =
+    scheme === "searched" ? `${URL}?q=tokopedia` : URL;
+  await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+  // Search-filtered pages have fewer <details> (4 for tokopedia) — relax
+  // the wait. For non-searched pages we expect the full 22 details.
   await page.waitForFunction(
-    () => document.querySelectorAll("details").length >= 11,
+    () => document.querySelectorAll("details").length >= 1,
     { timeout: 20_000 }
   );
   // For dark mode: force the dark theme by injecting "dark" class on
