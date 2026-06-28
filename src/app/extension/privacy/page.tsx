@@ -4,6 +4,8 @@ import { Shield, Lock, Eye, Trash2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Privacy Policy - BijakBeli.app Extension",
   description: "How BijakBeli Chrome Extension handles your data — privacy-first, transparent, opt-in.",
