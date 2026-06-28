@@ -162,7 +162,7 @@ export default function LaunchBlogPost() {
         <section className="not-prose mt-12 border-t pt-6">
           <p className="text-sm text-muted-foreground">
             Kontak: <a href="mailto:hello@bijakbeli.web.id">hello@bijakbeli.web.id</a>{" "}
-            · <Link href="/legal#privacy">Privacy Policy</Link> ·{" "}
+            · <Link href="/extension/privacy-policy">Privacy Policy</Link> ·{" "}
             <Link href="/extension">Extension</Link>
           </p>
         </section>

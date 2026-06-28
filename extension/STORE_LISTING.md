@@ -70,7 +70,7 @@ Kalau kamu tidak pakai watchlist, kamu tidak akan pernah menerima notifikasi dar
   kecuali kamu konfigurasi INGESTION_SECRET
 • 100% gratis, 100% open, 100% no-ads
 • Lihat Privacy Policy lengkap di:
-  https://www.bijakbeli.web.id/legal#privacy
+  https://www.bijakbeli.web.id/extension/privacy-policy
 
 ### Untuk siapa extension ini:
 
@@ -213,7 +213,7 @@ If CWS still flags this as sensitive, we are happy to ship the price-watch featu
 
 ## 🛡️ Privacy Policy URL
 
-**Live URL:** https://www.bijakbeli.web.id/legal#privacy
+**Live URL:** https://www.bijakbeli.web.id/extension/privacy-policy
 
 ## 🧪 Test Account Instructions (for CWS review)
 

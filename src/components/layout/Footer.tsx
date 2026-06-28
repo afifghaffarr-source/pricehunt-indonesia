@@ -73,7 +73,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/legal#privacy" className="hover:text-foreground transition-colors">
+                <Link href="/extension/privacy-policy" className="hover:text-foreground transition-colors">
                   Kebijakan Privasi
                 </Link>
               </li>
