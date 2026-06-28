@@ -242,11 +242,117 @@ If reviewer wants to test:
 - [x] No remote code execution ✅
 - [x] No obfuscation ✅
 - [x] No suspicious permissions ✅
-- [ ] Screenshots captured (TODO before publish)
-- [ ] Promotional tile captured (optional)
-- [ ] Tarball zipped as `.zip` (not `.tar.gz`) per CWS upload requirement
+- [x] Screenshots captured (5 base + 3 polished + 3 real) ✅
+- [x] Promotional tiles captured ✅
+- [x] Build via `extension/build-zip.sh` ✅
+- [x] Pre-flight script passes 7/7 ✅
+- [x] CHANGELOG present ✅
+- [x] Stable extension ID via manifest `key` ✅
+- [x] MV3 `content_security_policy` + `minimum_chrome_version` ✅
 
 ## 📦 Submission tarball
 
 Rename `bijakbeli-extension-v3.0.1.tar.gz` → `bijakbeli-extension-v3.0.1.zip`
 before uploading to Chrome Web Store dashboard (CWS expects .zip).
+
+---
+
+## 🌐 English Description (fallback for international reviewers)
+
+> CWS supports multi-locale listings. Bahasa Indonesia is primary for our
+> Indonesian user base. Submit the Indonesian version above as the default,
+> then add this English variant under "Manage languages" → "Add translation"
+> in the Developer Dashboard.
+
+### Short Description (EN, 113 chars)
+
+> Compare Indonesian marketplace prices while you shop. Auto-track Shopee, Tokopedia, Bukalapak, Lazada, Blibli, TikTok Shop. Free, open-source, no ads.
+
+### Detailed Description (EN, ~3000 chars)
+
+BijakBeli is a community-driven price intelligence extension for Indonesian
+online shoppers. It runs silently while you shop across 6 major Indonesian
+marketplaces, collecting product data you already see and contributing it
+to a community-priced database that helps fellow shoppers find better deals.
+
+### What this extension does:
+
+🛒 **Auto-detect products** — When you visit a product page on Shopee,
+   Tokopedia, Lazada, Blibli, Bukalapak, or TikTok Shop, the extension reads
+   the product title, price, and seller rating
+
+📊 **Submit to community database** — Data is sent to our Supabase-backed
+   database with 1-hour deduplication (you won't submit the same URL twice
+   within an hour)
+
+🔄 **Auto-retry on failure** — Failed submissions queue locally, retried
+   every 5 minutes (max 3 attempts)
+
+📈 **View your history** — Side panel shows your submission count per
+   marketplace, success rate, and pending queue
+
+📥 **CSV export** — Download your submission history as a CSV for offline
+   analysis
+
+🎯 **Price Watchlist (optional)** — Add a product URL + target price; the
+   background service checks every 30 minutes and fires a desktop
+   notification when the price drops to your target (max 1 per product
+   per 24 hours, anti-spam)
+
+### What this extension does NOT do:
+
+❌ Does NOT collect personal data (name, email, phone)
+❌ Does NOT track browsing history outside the 6 supported marketplaces
+❌ Does NOT show ads or monetize your data
+❌ Does NOT access passwords, payment info, or login credentials
+❌ Does NOT sell data to third parties
+❌ Does NOT send notifications without explicit opt-in (watchlist is opt-in,
+   per-product, with 24-hour cooldown)
+❌ Does NOT perform background tracking — all processing is local
+
+### Notifications policy:
+
+The extension requests `notifications` permission **solely** for the
+watchlist feature. Behaviour:
+- You opt in by adding a product to your watchlist
+- Notifications fire only when a watched product's price drops to your target
+- Each product is limited to 1 notification per 24 hours (anti-spam)
+- Clicking the notification opens the product's marketplace page
+
+If you never add to your watchlist, you will never receive a single
+notification from this extension.
+
+### Privacy & Trust:
+
+• Open-source code on GitHub: github.com/afifghaffarr-source/pricehunt-indonesia
+• All data stored locally (`chrome.storage.local`); no transmission unless
+  you configure an INGESTION_SECRET
+• 100% free, 100% open, 100% ad-free
+• Full privacy policy: https://www.bijakbeli.web.id/extension/privacy-policy
+
+### Who is this extension for:
+
+• Beta testers in the BijakBeli community-pricing program
+• Researchers / analysts interested in Indonesian marketplace price trends
+• Online shoppers who want to contribute to a community-priced database
+
+### Permissions rationale:
+
+`activeTab` — Triggered only when you click the extension's scrape-action
+`storage` — Persists your watchlist + submission history locally
+`tabs` — Detects SPA URL changes on Shopee/Tokopedia to re-scrape after
+  client-side navigation
+`scripting` — Single-shot content script that extracts visible price text
+  (no eval, no remote code, no innerHTML)
+`alarms` — Schedules periodic watchlist re-checks using `chrome.alarms`
+  (the MV3-recommended pattern; `setInterval` gets throttled in service
+  workers)
+`notifications` — Fires only when a watched product hits its target price
+  (limit 1/product/24h, opt-in only)
+
+### Permissions NOT requested:
+
+✗ No `history` permission (would scan full browsing history)
+✗ No `cookies` permission (would expose session tokens)
+✗ No `webRequest` / `webRequestBlocking` (would intercept network traffic)
+✗ No `<all_urls>` host permission (scoped to 6 specific marketplaces)
