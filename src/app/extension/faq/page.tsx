@@ -1,10 +1,4 @@
 import type { Metadata } from "next";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   HelpCircle,
@@ -227,10 +221,10 @@ export default function FAQPage() {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
           <HelpCircle className="h-8 w-8 text-emerald-600" />
         </div>
-        <h1 className="mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
+        <h1 className="mb-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl dark:text-zinc-50">
           Pertanyaan yang Sering Ditanyakan
         </h1>
-        <p className="mx-auto max-w-2xl text-base text-muted-foreground">
+        <p className="mx-auto max-w-2xl text-base text-zinc-600 dark:text-zinc-400">
           FAQ tentang BijakBeli Chrome Extension — setup, keamanan,
           marketplace, watchlist, dan uninstall.
         </p>
@@ -256,18 +250,25 @@ export default function FAQPage() {
               <Icon className="h-6 w-6 text-emerald-600" />
               {group.title}
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {group.questions.map(({ q, a }) => (
-                <Card key={q} className="border-zinc-200 dark:border-zinc-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-medium leading-snug">
-                      {q}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                <details
+                  key={q}
+                  className="group overflow-hidden rounded-lg border border-zinc-200 bg-white transition-colors open:bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:open:bg-zinc-900/40 dark:hover:border-zinc-700"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between p-4 font-medium text-zinc-900 select-none dark:text-zinc-100">
+                    <span className="pr-4">{q}</span>
+                    <span
+                      aria-hidden="true"
+                      className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-sm font-bold text-emerald-600 transition-transform group-open:rotate-45 dark:text-emerald-400"
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <div className="border-t border-zinc-200 px-4 py-3 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
                     {a}
-                  </CardContent>
-                </Card>
+                  </div>
+                </details>
               ))}
             </div>
           </section>
@@ -347,6 +348,107 @@ export default function FAQPage() {
           Kembali ke extension hub
         </Link>
       </p>
+
+      {/* English translation section — for international Chrome reviewers
+          and non-Bahasa users. Same questions, concise answers. */}
+      <section className="mt-12 border-t border-zinc-200 pt-10 dark:border-zinc-800">
+        <h2 className="mb-2 flex items-center gap-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+          <span className="text-xl">🌐</span>
+          English Version
+        </h2>
+        <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
+          Same questions, concise answers for non-Bahasa speakers and
+          Chrome Web Store reviewers.
+        </p>
+
+        {[
+          {
+            title: "Setup & Installation",
+            qa: [
+              {
+                q: "What is INGESTION_SECRET and how do I get one?",
+                a: "A shared authentication token for product submissions to the BijakBeli database. Currently issued to enrolled beta testers. Public sign-up opens Q3 2026.",
+              },
+              {
+                q: "I installed the extension but the popup only shows an empty form.",
+                a: 'That means the install succeeded. The popup prompts for INGESTION_SECRET on first run. Click the "Get INGESTION_SECRET" link to open the setup page.',
+              },
+              {
+                q: "Does the extension work on all browsers?",
+                a: "Currently Chrome 108+ (desktop) plus all Chromium-based browsers (Edge 108+, Brave 108+, Arc). Firefox & Safari are not yet supported — porting the service-worker + sidepanel to MV3-Firefox is quota-limited; we're monitoring.",
+              },
+            ],
+          },
+          {
+            title: "Privacy & Security",
+            qa: [
+              {
+                q: "Is this extension safe? Who sees my data?",
+                a: "We never see or store: name, email, phone, address, password, payment info, or browsing history outside marketplaces. Full audit in the Privacy Policy. Source code is open on GitHub.",
+              },
+              {
+                q: "My INGESTION_SECRET was leaked. What now?",
+                a: "It's a class token, so impact is minimal: someone else can submit products as you. Mitigation: uninstall extension, clear chrome.storage.local, email privacy@bijakbeli.id with 'secret compromised' (we regenerate within 24h), then reinstall.",
+              },
+              {
+                q: "Does the extension send data to third parties?",
+                a: "No. Submissions only to BijakBeli servers (Supabase + Vercel). No Google Analytics in the extension, no third-party telemetry.",
+              },
+            ],
+          },
+          {
+            title: "Marketplace Support",
+            qa: [
+              {
+                q: "Which marketplaces are supported?",
+                a: "Six major Indonesian marketplaces: Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop. Others (Orami, JD.id, Bhinneka) are not yet supported — adding a marketplace requires Chrome CWS review.",
+              },
+              {
+                q: "Why doesn't the extension scrape prices on my Tokopedia page?",
+                a: "Common causes: (1) the URL is actually dynamic content (popup, modal — content script skips these); (2) SPA navigation after page load — hard refresh (Ctrl/Cmd+Shift+R) usually fixes; (3) deduplication — same URL submitted within 1 hour is silently skipped.",
+              },
+              {
+                q: "Will you support Amazon/eBay/non-Indonesian marketplaces?",
+                a: "Not yet. Focus is Indonesian marketplaces for the community-pricing database. Open a GitHub issue for a feature request.",
+              },
+            ],
+          },
+          {
+            title: "Notifications & Watchlist",
+            qa: [
+              {
+                q: "I don't want to receive any notifications.",
+                a: "Three options: (1) don't add any product to your watchlist (default behavior); (2) chrome://extensions → BijakBeli → Site settings → set Notifications to Block; (3) chrome://settings/notifications → find BijakBeli → toggle Off.",
+              },
+              {
+                q: "Why isn't a notification firing even though the price dropped?",
+                a: "Per-product cooldown is 24 hours. If you already received a notification for product X in the last 24h, none will fire even if the price drops further (anti-spam). Background worker checks every 30 minutes.",
+              },
+            ],
+          },
+        ].map((group) => (
+          <div key={group.title} className="mb-6">
+            <h3 className="mb-3 text-lg font-semibold text-zinc-800 dark:text-zinc-200">
+              {group.title}
+            </h3>
+            <div className="space-y-2">
+              {group.qa.map(({ q, a }) => (
+                <details
+                  key={q}
+                  className="rounded-lg border border-zinc-200 bg-white transition-colors open:bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:open:bg-zinc-900/40 dark:hover:border-zinc-700"
+                >
+                  <summary className="flex cursor-pointer list-none items-center p-3 text-sm font-medium text-zinc-800 select-none dark:text-zinc-200">
+                    <span className="pr-3">{q}</span>
+                  </summary>
+                  <p className="border-t border-zinc-200 px-3 py-2 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
+                    {a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
     </main>
   );
 }
