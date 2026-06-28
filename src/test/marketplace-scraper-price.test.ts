@@ -38,7 +38,7 @@ function loadParsePriceIDR(): (text: unknown) => number | null {
   // Walk braces from the opening `{` after `parsePriceIDR(text)` to find
   // the matching `}`. Strings/regexes inside can contain `{` so we
   // approximate: count `{` vs `}` ignoring those inside `'`/`"`/`/`/regex.
-  let braceStart = src.indexOf("{", start);
+  const braceStart = src.indexOf("{", start);
   let depth = 0;
   let i = braceStart;
   let inString: false | "'" | '"' | "`" | "/" = false;
