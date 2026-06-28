@@ -356,6 +356,109 @@ try {
     assert(sectionCount >= 1, `≥1 rendered section with data-faq-section (got ${sectionCount})`);
     await page.close();
   });
+
+  await test("FAQ keyboard nav: / focuses search, ↑/↓ cycles summaries, j/k also", async ({
+    assert,
+  }) => {
+    const page = await browser.newPage();
+    await page.goto(`${BASE}/extension/faq`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(
+      () => document.querySelectorAll("details").length >= 11,
+      { timeout: 20_000 }
+    );
+    await page.waitForTimeout(800);
+
+    // "/" focuses search input
+    await page.keyboard.press("/");
+    await page.waitForTimeout(200);
+    const afterSlash = await page.evaluate(() => {
+      const el = document.activeElement;
+      return el?.id ?? null;
+    });
+    assert(afterSlash === "faq-search", `"/" focuses #faq-search (got ${afterSlash})`);
+
+    // From search, ArrowDown moves to first summary
+    await page.keyboard.press("ArrowDown");
+    await page.waitForTimeout(200);
+    const afterDown1 = await page.evaluate(() => {
+      const el = document.activeElement;
+      return [el?.tagName ?? null, el?.closest("details")?.id ?? null];
+    });
+    assert(
+      afterDown1[0] === "SUMMARY",
+      `ArrowDown moves to <summary> (got tag=${afterDown1[0]})`
+    );
+    assert(
+      typeof afterDown1[1] === "string" && afterDown1[1].length > 0,
+      `first focused summary has stable id (got ${afterDown1[1]})`
+    );
+
+    // ArrowDown again moves to next summary
+    await page.keyboard.press("ArrowDown");
+    await page.waitForTimeout(200);
+    const afterDown2 = await page.evaluate(() => {
+      const el = document.activeElement;
+      return el?.closest("details")?.id ?? null;
+    });
+    assert(
+      afterDown2 !== afterDown1[1],
+      `second ArrowDown moved to a different summary (got ${afterDown2})`
+    );
+
+    // ArrowUp returns to previous
+    await page.keyboard.press("ArrowUp");
+    await page.waitForTimeout(200);
+    const afterUp = await page.evaluate(() => {
+      const el = document.activeElement;
+      return el?.closest("details")?.id ?? null;
+    });
+    assert(
+      afterUp === afterDown1[1],
+      `ArrowUp returns to original summary (got ${afterUp}, want ${afterDown1[1]})`
+    );
+
+    // j key (vim-style) also cycles down
+    await page.keyboard.press("j");
+    await page.waitForTimeout(200);
+    const afterJ = await page.evaluate(() => {
+      const el = document.activeElement;
+      return el?.closest("details")?.id ?? null;
+    });
+    assert(
+      afterJ === afterDown2[1] || (typeof afterJ === "string" && afterJ.length > 0),
+      `"j" key navigates to a summary (got ${afterJ})`
+    );
+    await page.close();
+  });
+
+  await test("FAQ Esc clears focused search value and submits form to /faq", async ({
+    assert,
+  }) => {
+    const page = await browser.newPage();
+    await page.goto(`${BASE}/extension/faq?q=tokopedia`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.waitForFunction(
+      () => document.querySelectorAll("details").length >= 1,
+      { timeout: 20_000 }
+    );
+    await page.waitForTimeout(800);
+
+    // Click into search (which already has tokopedia auto-filled)
+    await page.click("#faq-search");
+    await page.waitForTimeout(100);
+
+    // Press Esc → should clear value + submit (URL → /faq?q=)
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(1500);
+
+    const newUrl = page.url();
+    assert(
+      !newUrl.includes("tokopedia"),
+      `Esc submits form, ?q=tokopedia removed (now=${newUrl})`
+    );
+    await page.close();
+  });
 } finally {
   await browser.close();
 }

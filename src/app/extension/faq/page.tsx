@@ -21,6 +21,7 @@ import {
   type FAQEntry,
 } from "@/app/extension/faq/data";
 import { BAHASA_HTML, ENGLISH_HTML } from "@/app/extension/faq/html";
+import { FaqKeyboardNav } from "@/components/faq-keyboard-nav";
 
 export const metadata: Metadata = {
   title: "FAQ — BijakBeli Chrome Extension",
@@ -145,6 +146,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
 
   return (
     <>
+      <FaqKeyboardNav />
       {/* JSON-LD structured data — for Google rich snippets + AI ingestion
           (ChatGPT/Perplexity/Gemini will pick this up directly). */}
       {jsonLd.map((schema, i) => (
@@ -189,6 +191,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
             <input
               id="faq-search"
               data-testid="faq-search"
+              data-faq-search-input="1"
               data-faq-query={query}
               type="search"
               name="q"
@@ -236,7 +239,14 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
               <kbd className="rounded border border-zinc-300 px-1 text-[10px] dark:border-zinc-700">
                 /
               </kbd>{" "}
-              untuk fokus pencarian
+              untuk fokus pencarian ·{" "}
+              <kbd className="rounded border border-zinc-300 px-1 text-[10px] dark:border-zinc-700">
+                ↑
+              </kbd>
+              <kbd className="ml-0.5 rounded border border-zinc-300 px-1 text-[10px] dark:border-zinc-700">
+                ↓
+              </kbd>{" "}
+              untuk navigasi pertanyaan
             </>
           )}
         </div>
