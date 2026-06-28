@@ -1,6 +1,6 @@
 # Axe-core WCAG 2.1 AA — BijakBeli /extension/*
 
-Generated 2026-06-28T11:29:41.174Z
+Generated 2026-06-28T13:20:17.508Z
 
 ## Summary
 

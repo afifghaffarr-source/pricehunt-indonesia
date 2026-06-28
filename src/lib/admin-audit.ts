@@ -28,6 +28,7 @@ export type AdminAuditAction =
   | "manual_offer_update"
   | "recheck_dispatch"
   | "recheck_decision"
+  | "offer_decision"
   | "admin_login"
   | "admin_promote"
   | "admin_demote";
