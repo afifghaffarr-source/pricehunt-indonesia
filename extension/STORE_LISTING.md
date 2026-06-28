@@ -12,7 +12,8 @@ Submission-ready text for Chrome Web Store Developer Dashboard.
 
 ## 📋 Detailed Description (max 15000 chars)
 
-**Final:** ~2700 chars.
+**Final (Updated w/ watchlist + notifications policy):** ~3200 chars
+(was 2700, +500 for the watchlist feature + notifications transparency block)
 
 BijakBeli.app is a community-driven price intelligence extension for Indonesian
 online shoppers. It works silently while you shop on Shopee, Tokopedia, Lazada,
@@ -36,6 +37,12 @@ and contributing it to a community-priced database.
 📥 **Export CSV** — Klik tombol di sidepanel untuk download history sebagai
    CSV (untuk analisis lebih lanjut)
 
+🎯 **Price Watchlist (optional)** — Tambahkan URL produk + target harga ke
+   watchlist. Sistem cek setiap 30 menit, dan kasih notifikasi desktop
+   kalau harga turun ke angka yang kamu mau (max 1× per produk per 24 jam)
+
+📥 **CSV export** di popup & side panel
+
 ### Apa yang TIDAK dilakukan extension ini:
 
 ❌ Tidak.Collect personal data (nama, email, telepon)
@@ -43,6 +50,18 @@ and contributing it to a community-priced database.
 ❌ Tidak.Show iklan atau monetize data kamu
 ❌ Tidak.Access password atau payment info
 ❌ Tidak.Sell data ke third party
+❌ Tidak.Send notifikasi tanpa izin kamu (watchlist = opt-in)
+❌ Tidak.Lakukan background tracking — semua pemrosesan lokal di device
+
+### Notifications policy:
+
+Extension **hanya** minta izin `notifications` untuk fitur watchlist. Cara kerjanya:
+- Kamu opt-in dengan menambahkan produk ke watchlist
+- Notifikasi fire cuma kalau harga produk yang kamu watch sudah ≤ target
+- Setiap produk max **1 notifikasi per 24 jam** (anti-spam)
+- Klik notifikasi → buka halaman produk yang lagi kamu pantau
+
+Kalau kamu tidak pakai watchlist, kamu tidak akan pernah menerima notifikasi dari extension ini.
 
 ### Privacy & Trust:
 
@@ -74,6 +93,11 @@ Extension ini cocok untuk:
 > The extension's single purpose is helping Indonesian shoppers contribute
 > to a community price intelligence database by capturing product data
 > (title, price, seller info) from marketplace product pages they already view.
+> Per the user's request, the same data is also re-used locally to power the
+> optional "price watch" feature, which compares the latest known price for a
+> product against the user's target price and notifies them when the threshold
+> is reached. Both flows read from and write to the same locally-stored
+> submission history; no extra endpoint, no additional data collection.
 
 ## 📂 Category
 
@@ -110,6 +134,8 @@ For store listing only:
 3. **History list with error messages + CSV export** (1280×800 PNG)
 4. **Marketplace stats breakdown** (1280×800 PNG)
 5. **Privacy consent / setup onboarding** (1280×800 PNG)
+6. **Side panel watchlist section with a watched product + target price**
+   (640×800 PNG — extra, since watchlist is a flagship opt-in feature)
 
 File size: < 1 MB each. Use PNG or JPEG.
 
@@ -125,10 +151,24 @@ File size: < 1 MB each. Use PNG or JPEG.
 | Permission | Why Needed |
 |-----------|------------|
 | `activeTab` | Access current tab only when user explicitly clicks "Scrape this page" button |
-| `storage` | Save submission history, retry queue, and stats on user's local device |
-| `tabs` | Detect tab URL/title changes to trigger re-scraping on SPA navigation |
+| `storage` | Save submission history, retry queue, watchlist, and stats on user's local device |
+| `tabs` | Detect tab URL/title changes to trigger **re-scraping on SPA navigation** (Shopee/Tokopedia/Lazada are SPAs — re-renders don't always change URL, so we re-scrape on tab focus + after history.pushState) |
 | `scripting` | Inject marketplace-scraper.js into matching marketplace pages |
-| `alarms` | Schedule periodic retry flush of failed submissions every 5 minutes |
+| `alarms` | Schedule two periodic tasks: (a) retry flush of failed submissions every 5 minutes, (b) price-watch check every 30 minutes so the watchlist feature can compare current vs target prices |
+| `notifications` | Show a desktop notification **only** when a product the user added to their price watchlist drops to (or below) their target price. Each watch item produces at most one notification per 24-hour window regardless of how many price drops occur. The user clicks the notification to open the product URL in a new tab. We never use this permission for marketing, badges, tips, or any other prompt. |
+
+### Why we use `notifications` (CWS justification)
+
+The `notifications` permission is one of the permissions Chrome Web Store flags for enhanced review. Here is what we actually do with it:
+
+1. **Trigger:** A user has explicitly added a product URL to the watchlist in the side panel and set a target price they are willing to pay.
+2. **Condition:** Our background service worker checks current marketplace price against the user's target price once every 30 minutes (via `chrome.alarms`, no spam).
+3. **Cooldown:** We persist `lastNotifiedAt` per watch item. A new notification for the same item is suppressed for 24 hours after the previous one, regardless of how many subsequent price drops occur.
+4. **Payload:** Title = product name. Body = "Harga turun ke Rp<current> (target Rp<target>)". Click → opens product URL in a new tab.
+5. **Off by default:** Users must opt in by adding an item. There is no notification on install, no sample/demo notification, no upsell.
+6. **No background data collection:** The notification is purely a UI surface — the price-comparison logic is local (reads from `chrome.storage.local`). Notifications never carry personal data, analytics, tracking IDs, or payloads that leave the device.
+
+If CWS still flags this as sensitive, we are happy to ship the price-watch feature without system notifications and fall back to a red badge on the extension icon instead.
 
 ### Host permissions
 
@@ -153,6 +193,7 @@ File size: < 1 MB each. Use PNG or JPEG.
 - ✅ Submission timestamps
 - ✅ Marketplace identifier
 - ✅ User-provided INGESTION_SECRET (write key, never transmitted in plain text outside POST headers)
+- ✅ User-initiated watchlist entries (URL + user-set target price, stored locally only)
 
 ### Data NOT collected:
 
@@ -161,6 +202,7 @@ File size: < 1 MB each. Use PNG or JPEG.
 - ❌ Payment information
 - ❌ Health, financial, or location data
 - ❌ Web browsing history outside marketplace sites
+- ❌ Notification interaction telemetry (we never measure open/click/dismiss rates on notifications)
 
 ### Data usage:
 
@@ -192,7 +234,9 @@ If reviewer wants to test:
 - [x] Manifest V3 ✅
 - [x] Icons 16/48/128 ✅
 - [x] Description ≤ 132 chars ✅
-- [x] Permissions justified ✅
+- [x] Permissions justified ✅ (incl. `notifications` with detailed rationale + opt-in commitment)
+- [x] Watchlist feature documented ✅
+- [x] Notifications policy disclosed ✅
 - [x] Host permissions scoped to specific marketplaces ✅
 - [x] Privacy policy URL live ✅
 - [x] No remote code execution ✅
