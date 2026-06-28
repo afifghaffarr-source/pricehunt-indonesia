@@ -113,7 +113,7 @@ export default function SetupPage() {
                 4
               </span>
               <p className="text-sm">
-                Klik &quot;Save&quot; — extension siap digunakan!
+                Klik &quot;Save&quot;, extension siap digunakan!
               </p>
             </li>
           </ol>

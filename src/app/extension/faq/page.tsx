@@ -25,18 +25,18 @@ import { FaqKeyboardNav } from "@/components/faq-keyboard-nav";
 import { CopySearchLinkButton } from "@/app/extension/faq/copy-search-link-button";
 
 export const metadata: Metadata = {
-  title: "FAQ — BijakBeli Chrome Extension",
+  title: "FAQ - BijakBeli Chrome Extension",
   description:
     "Pertanyaan yang sering ditanyakan tentang BijakBeli Chrome Extension: setup, keamanan, watchlist, marketplace yang didukung, dan uninstall.",
   alternates: { canonical: "/extension/faq" },
 };
 
-// Server-side filter via `?q=` requires dynamic rendering — without this,
+// Server-side filter via `?q=` requires dynamic rendering, without this,
 // Next.js prerenders the page once with empty searchParams and serves the
 // cached HTML for every query.
 export const dynamic = "force-dynamic";
 
-// Helpers — server-side text extraction from JSX, plus filter logic
+// Helpers, server-side text extraction from JSX, plus filter logic
 function txt(node: unknown): string {
   if (typeof node === "string" || typeof node === "number") {
     return String(node);
@@ -136,7 +136,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
     filteredBahasa.reduce((s, g) => s + g.entries.length, 0) +
     filteredEn.reduce((s, g) => s + g.entries.length, 0);
 
-  // JSON-LD schemas — Bahasa always emitted; EN only when Bahasa has matches
+  // JSON-LD schemas, Bahasa always emitted; EN only when Bahasa has matches
   // OR when filter is wide enough to surface EN-only items.
   const jsonLd = hasQuery
     ? [
@@ -148,7 +148,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
   return (
     <>
       <FaqKeyboardNav />
-      {/* JSON-LD structured data — for Google rich snippets + AI ingestion
+      {/* JSON-LD structured data, for Google rich snippets + AI ingestion
           (ChatGPT/Perplexity/Gemini will pick this up directly). */}
       {jsonLd.map((schema, i) => (
         <script
@@ -171,12 +171,12 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
             Pertanyaan yang Sering Ditanyakan
           </h1>
           <p className="mx-auto max-w-2xl text-base text-zinc-600 dark:text-zinc-400">
-            FAQ tentang BijakBeli Chrome Extension — setup, keamanan,
+            FAQ tentang BijakBeli Chrome Extension, setup, keamanan,
             marketplace, watchlist, dan uninstall.
           </p>
         </div>
 
-        {/* Search bar — server-rendered form, posts via GET with ?q= hook.
+        {/* Search bar, server-rendered form, posts via GET with ?q= hook.
             No client JS / hydration needed. data-* hooks for analytics. */}
         <form
           method="GET"
@@ -217,7 +217,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
           </div>
         </form>
 
-        {/* Telemetry-style match counter — server-rendered count of ?q= hits.
+        {/* Telemetry-style match counter, server-rendered count of ?q= hits.
             Useful for power users to validate keyword presence at a glance.
             data-faq-count exposes the result count for analytics.
             data-faq-hint="0" when the active search yields zero matches so
@@ -259,7 +259,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
           )}
         </div>
 
-        {/* Share permalink — visible only when an active query narrows the
+        {/* Share permalink, visible only when an active query narrows the
             page so the launcher can give someone a direct search URL. Pure
             client component (~30 LOC) that wraps navigator.clipboard. */}
         {hasQuery ? (

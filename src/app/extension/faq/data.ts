@@ -17,7 +17,7 @@ export interface FAQEntry {
   group: string;
 }
 
-// Stable slugify — must match html.tsx keys and <details id={id}>.
+// Stable slugify, must match html.tsx keys and <details id={id}>.
 function slugify(s: string): string {
   return s
     .toLowerCase()
@@ -45,21 +45,21 @@ export const BAHASA_FAQ: FAQEntry[] = [
     id: slugify("Apakah extension jalan di semua browser?"),
     q: "Apakah extension jalan di semua browser?",
     a:
-      "Saat ini hanya Chrome (desktop, Chrome 108+) dan semua browser Chromium-based (Edge 108+, Brave 108+, Arc, dll). Firefox & Safari belum didukung — code base extension bisa di-port tapi sidepanel behavior di MV3-Firefox masih quota-limited, kami monitor ecosystem dulu.",
+      "Saat ini hanya Chrome (desktop, Chrome 108+) dan semua browser Chromium-based (Edge 108+, Brave 108+, Arc, dll). Firefox & Safari belum didukung, code base extension bisa di-port tapi sidepanel behavior di MV3-Firefox masih quota-limited, kami monitor ecosystem dulu.",
     group: "Setup & Installation",
   },
   {
     id: slugify("Apakah extension ini aman? Data saya dilihat siapa?"),
     q: "Apakah extension ini aman? Data saya dilihat siapa?",
     a:
-      "Sangat aman. Kami tidak melihat atau menyimpan: nama, email, nomor telepon, alamat, password, payment info, atau browsing history di luar marketplace. 142 baris audit penuh ada di Privacy Policy. Source code terbuka di GitHub — bisa di-review siapa saja.",
+      "Sangat aman. Kami tidak melihat atau menyimpan: nama, email, nomor telepon, alamat, password, payment info, atau browsing history di luar marketplace. 142 baris audit penuh ada di Privacy Policy. Source code terbuka di GitHub, bisa di-review siapa saja.",
     group: "Privacy & Keamanan",
   },
   {
     id: slugify("INGESTION_SECRET saya bocor. Apa yang harus saya lakukan?"),
     q: "INGESTION_SECRET saya bocor. Apa yang harus saya lakukan?",
     a:
-      "Karena INGESTION_SECRET adalah token kelas (bukan personal), dampaknya minimal: orang lain bisa submit produk atas nama kamu. Cara mitigasi: 1) Uninstall extension, bersihkan chrome.storage.local; 2) Email privacy@bijakbeli.id dengan subjek \"secret compromised\" — kami akan regenerate dalam < 24 jam; 3) Install ulang extension setelah dapat secret baru.",
+      "Karena INGESTION_SECRET adalah token kelas (bukan personal), dampaknya minimal: orang lain bisa submit produk atas nama kamu. Cara mitigasi: 1) Uninstall extension, bersihkan chrome.storage.local; 2) Email privacy@bijakbeli.id dengan subjek \"secret compromised\", kami akan regenerate dalam < 24 jam; 3) Install ulang extension setelah dapat secret baru.",
     group: "Privacy & Keamanan",
   },
   {
@@ -80,14 +80,14 @@ export const BAHASA_FAQ: FAQEntry[] = [
     id: slugify("Kenapa extension tidak scrape harga di halaman Tokopedia saya?"),
     q: "Kenapa extension tidak scrape harga di halaman Tokopedia saya?",
     a:
-      "Sebab umum: URL tersebut sebenarnya promo/dynamic-content (popup-inline, modal review) — content script skip; SPA navigation setelah page-load (Tokopedia sering ganti URL tanpa reload) — refresh halaman (F5) biasanya fix; Sudah pernah di-submit dalam 1 jam terakhir (deduplication) — tunggu 60 menit, atau buka variant produk. Kalau tetap tidak jalan, email kami URL produk + screenshot Console output di popup.",
+      "Sebab umum: URL tersebut sebenarnya promo/dynamic-content (popup-inline, modal review), content script skip; SPA navigation setelah page-load (Tokopedia sering ganti URL tanpa reload), refresh halaman (F5) biasanya fix; Sudah pernah di-submit dalam 1 jam terakhir (deduplication), tunggu 60 menit, atau buka variant produk. Kalau tetap tidak jalan, email kami URL produk + screenshot Console output di popup.",
     group: "Marketplace Support",
   },
   {
     id: slugify("Akan mendukung Amazon / eBay / marketplace luar negeri?"),
     q: "Akan mendukung Amazon / eBay / marketplace luar negeri?",
     a:
-      "Belum. Fokus saat ini adalah marketplace Indonesia — kami masih mengumpulkan data untuk community-pricing database lokal dulu. Tambahkan feature request di GitHub issues.",
+      "Belum. Fokus saat ini adalah marketplace Indonesia, kami masih mengumpulkan data untuk community-pricing database lokal dulu. Tambahkan feature request di GitHub issues.",
     group: "Marketplace Support",
   },
   {
@@ -101,7 +101,7 @@ export const BAHASA_FAQ: FAQEntry[] = [
     id: slugify("Kenapa notifikasi tidak muncul padahal harga sudah turun?"),
     q: "Kenapa notifikasi tidak muncul padahal harga sudah turun?",
     a:
-      "Cooldown per produk adalah 24 jam — kalau sudah pernah dapat notifikasi untuk produk X dalam 24 jam terakhir, tidak akan muncul lagi meskipun harga turun lebih jauh. Ini anti-spam. Background worker cek setiap 30 menit (bukan real-time).",
+      "Cooldown per produk adalah 24 jam, kalau sudah pernah dapat notifikasi untuk produk X dalam 24 jam terakhir, tidak akan muncul lagi meskipun harga turun lebih jauh. Ini anti-spam. Background worker cek setiap 30 menit (bukan real-time).",
     group: "Notifikasi & Watchlist",
   },
 ];
@@ -125,7 +125,7 @@ export const ENGLISH_FAQ: FAQEntry[] = [
     id: slugify("Does the extension work on all browsers?"),
     q: "Does the extension work on all browsers?",
     a:
-      "Currently Chrome 108+ (desktop) plus all Chromium-based browsers (Edge 108+, Brave 108+, Arc). Firefox & Safari are not yet supported — porting the service-worker + sidepanel to MV3-Firefox is quota-limited; we're monitoring.",
+      "Currently Chrome 108+ (desktop) plus all Chromium-based browsers (Edge 108+, Brave 108+, Arc). Firefox & Safari are not yet supported, porting the service-worker + sidepanel to MV3-Firefox is quota-limited; we're monitoring.",
     group: "Setup & Installation",
   },
   {
@@ -153,14 +153,14 @@ export const ENGLISH_FAQ: FAQEntry[] = [
     id: slugify("Which marketplaces are supported?"),
     q: "Which marketplaces are supported?",
     a:
-      "Six major Indonesian marketplaces: Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop. Others (Orami, JD.id, Bhnineka) are not yet supported — adding a marketplace requires Chrome CWS review.",
+      "Six major Indonesian marketplaces: Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop. Others (Orami, JD.id, Bhnineka) are not yet supported, adding a marketplace requires Chrome CWS review.",
     group: "Marketplace Support",
   },
   {
     id: slugify("Why doesn't the extension scrape prices on my Tokopedia page?"),
     q: "Why doesn't the extension scrape prices on my Tokopedia page?",
     a:
-      "Common causes: (1) the URL is actually dynamic content (popup, modal — content script skips these); (2) SPA navigation after page load — hard refresh (Ctrl/Cmd+Shift+R) usually fixes; (3) deduplication — same URL submitted within 1 hour is silently skipped.",
+      "Common causes: (1) the URL is actually dynamic content (popup, modal, content script skips these); (2) SPA navigation after page load, hard refresh (Ctrl/Cmd+Shift+R) usually fixes; (3) deduplication, same URL submitted within 1 hour is silently skipped.",
     group: "Marketplace Support",
   },
   {
@@ -186,7 +186,7 @@ export const ENGLISH_FAQ: FAQEntry[] = [
   },
 ];
 
-// Group ordering — must match page.tsx section iteration order.
+// Group ordering, must match page.tsx section iteration order.
 export const BAHASA_GROUP_ORDER = [
   "Setup & Installation",
   "Privacy & Keamanan",

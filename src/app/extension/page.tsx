@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Chrome Extension - BijakBeli.app",
-  description: "Download ekstensi Chrome BijakBeli v3.0.1 — auto-scrape marketplace Indonesia (Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop) untuk membantu komunitas.",
+  description: "Download ekstensi Chrome BijakBeli v3.0.1 - auto-scrape marketplace Indonesia (Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop) untuk membantu komunitas.",
   alternates: {
     canonical: "/extension",
   },
@@ -34,7 +34,7 @@ export default async function ExtensionPage() {
   const isProduction = process.env.NODE_ENV === "production";
 
   // Banner mode is decided by:
-  //   1) preview cookie set by DevBannerToolbar (dev only) — wins over env
+  //   1) preview cookie set by DevBannerToolbar (dev only), wins over env
   //   2) NEXT_PUBLIC_CWS_PUBLISHED env var on production (once officially live)
   //   3) Default to "draft" when env vars unset
   const cookieStore = await cookies();
@@ -51,7 +51,7 @@ export default async function ExtensionPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Post-launch banner — one of three variants. See
+      {/* Post-launch banner, one of three variants. See
           src/components/banner-preview.tsx for the dev-only preview switcher
           (gated by NODE_ENV check; never ships to production). */}
       {bannerMode === "live" && cwsUrl && (
@@ -68,7 +68,7 @@ export default async function ExtensionPage() {
                 Sekarang live di Chrome Web Store
               </p>
               <p className="text-sm text-emerald-800/80 dark:text-emerald-300/80">
-                Install langsung dari CWS — tidak perlu download manual.
+                Install langsung dari CWS, tidak perlu download manual.
               </p>
             </div>
           </div>
@@ -93,7 +93,7 @@ export default async function ExtensionPage() {
             </div>
             <div>
               <p className="font-semibold text-amber-900 dark:text-amber-200">
-                Masih versi beta — install via file .tar.gz
+                Masih versi beta, install via file .tar.gz
               </p>
               <p className="text-sm text-amber-800/80 dark:text-amber-300/80">
                 Chrome Web Store akan menyusul setelah masa beta sekitar 2-4 minggu.
@@ -143,7 +143,7 @@ export default async function ExtensionPage() {
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4 border-primary/20">
-          v3.0.1 — Auto-Scrape
+          v3.0.1 - Auto-Scrape
         </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
@@ -159,7 +159,7 @@ export default async function ExtensionPage() {
           </Link>
           <span className="mx-2 text-border">·</span>
           <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-            Price drop alerts segera hadir — Q3 2026
+            Price drop alerts segera hadir, Q3 2026
           </span>
         </p>
       </div>
@@ -172,7 +172,7 @@ export default async function ExtensionPage() {
           </div>
           <CardTitle className="text-2xl">Download Extension</CardTitle>
           <CardDescription>
-            v3.0.1 — Gratis untuk semua pengguna
+            v3.0.1 - Gratis untuk semua pengguna
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -187,7 +187,7 @@ export default async function ExtensionPage() {
         </CardContent>
       </Card>
 
-      {/* Beta Testing Card — secret is delivered out-of-band via the
+      {/* Beta Testing Card, secret is delivered out-of-band via the
           extension's first-run onboarding flow (popup form + secure
           channel). NEVER embed secrets in public HTML. The previous
           version of this section (commits ≤ 1866f78) hard-coded the
@@ -198,7 +198,7 @@ export default async function ExtensionPage() {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
             <Shield className="h-6 w-6 text-amber-600" />
           </div>
-          <CardTitle className="text-xl">Beta Testing — Bagaimana Caranya</CardTitle>
+          <CardTitle className="text-xl">Beta Testing - Bagaimana Caranya</CardTitle>
           <CardDescription>
             Cara konfigurasi ingestion key untuk beta testers
           </CardDescription>
@@ -213,7 +213,7 @@ export default async function ExtensionPage() {
               <li>Klik icon extension di toolbar Chrome → buka Settings</li>
               <li>
                 Ingestion key akan diminta pada first-run. Kami kirim key via
-                secure channel (bukan via halaman publik) — lihat
+                secure channel (bukan via halaman publik), lihat
                 <code className="mx-1 rounded bg-background px-1 text-xs">README</code>
                 repo extension atau hubungi maintainer untuk onboarding beta.
               </li>
@@ -221,7 +221,7 @@ export default async function ExtensionPage() {
             </ol>
           </div>
           <p className="text-xs text-muted-foreground">
-            Secret key dirotasi berkala. Versi publik extension (Chrome Web Store) tidak akan membutuhkan key — semuanya lewat proxy server kami.
+            Secret key dirotasi berkala. Versi publik extension (Chrome Web Store) tidak akan membutuhkan key, semuanya lewat proxy server kami.
           </p>
         </CardContent>
       </Card>

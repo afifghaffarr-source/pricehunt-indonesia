@@ -44,7 +44,7 @@ export const BAHASA_HTML: HtmlMap = {
     <>
       Saat ini hanya Chrome (desktop, Chrome 108+) dan semua browser
       Chromium-based (Edge 108+, Brave 108+, Arc, dll). Firefox & Safari
-      belum didukung — code base extension bisa di-port tapi sidepanel
+      belum didukung, code base extension bisa di-port tapi sidepanel
       behavior di MV3-Firefox masih quota-limited, kami monitor ecosystem
       dulu.
     </>
@@ -61,7 +61,7 @@ export const BAHASA_HTML: HtmlMap = {
       >
         Privacy Policy
       </Link>
-      . Source code terbuka di GitHub — bisa di-review siapa saja.
+      . Source code terbuka di GitHub, bisa di-review siapa saja.
     </>
   ),
   "ingestion-secret-saya-bocor-apa-yang-harus-saya-lakukan": (
@@ -73,7 +73,7 @@ export const BAHASA_HTML: HtmlMap = {
         <li>Uninstall extension, bersihkan <code>chrome.storage.local</code></li>
         <li>
           Email <code>privacy@bijakbeli.id</code> dengan subjek
-          &quot;secret compromised&quot; — kami akan regenerate dalam &lt; 24 jam
+          &quot;secret compromised&quot;, kami akan regenerate dalam &lt; 24 jam
         </li>
         <li>Install ulang extension setelah dapat secret baru</li>
       </ol>
@@ -103,14 +103,14 @@ export const BAHASA_HTML: HtmlMap = {
       <ul className="mt-2 list-disc space-y-1 pl-5">
         <li>
           URL tersebut sebenarnya promo/dynamic-content (popup-inline, modal
-          review) — content script skip
+          review), content script skip
         </li>
         <li>
           SPA navigation setelah page-load (Tokopedia sering ganti URL tanpa
-          reload) — refresh halaman (F5) biasanya fix
+          reload), refresh halaman (F5) biasanya fix
         </li>
         <li>
-          Sudah pernah di-submit dalam 1 jam terakhir (deduplication) —
+          Sudah pernah di-submit dalam 1 jam terakhir (deduplication) -
           tunggu 60 menit, atau buka variant produk
         </li>
       </ul>
@@ -120,7 +120,7 @@ export const BAHASA_HTML: HtmlMap = {
   ),
   "akan-mendukung-amazon-ebay-marketplace-luar-negeri": (
     <>
-      Belum. Fokus saat ini adalah marketplace Indonesia — kami masih
+      Belum. Fokus saat ini adalah marketplace Indonesia, kami masih
       mengumpulkan data untuk community-pricing database lokal dulu.
       Tambahkan feature request di GitHub issues.
     </>
@@ -148,7 +148,7 @@ export const BAHASA_HTML: HtmlMap = {
   ),
   "kenapa-notifikasi-tidak-muncul-padahal-harga-sudah-turun": (
     <>
-      Cooldown per produk adalah 24 jam — kalau sudah pernah dapat notifikasi
+      Cooldown per produk adalah 24 jam, kalau sudah pernah dapat notifikasi
       untuk produk X dalam 24 jam terakhir, tidak akan muncul lagi meskipun
       harga turun lebih jauh. Ini anti-spam. Background worker cek setiap 30
       menit (bukan real-time).
@@ -156,7 +156,7 @@ export const BAHASA_HTML: HtmlMap = {
   ),
 };
 
-// English map — covers the entries that benefit from list formatting.
+// English map, covers the entries that benefit from list formatting.
 export const ENGLISH_HTML: HtmlMap = {
   "i-installed-the-extension-but-the-popup-only-shows-an-empty-form": (
     <>
@@ -168,7 +168,7 @@ export const ENGLISH_HTML: HtmlMap = {
   "does-the-extension-work-on-all-browsers": (
     <>
       Currently Chrome 108+ (desktop) plus all Chromium-based browsers (Edge
-      108+, Brave 108+, Arc). Firefox &amp; Safari are not yet supported —
+      108+, Brave 108+, Arc). Firefox &amp; Safari are not yet supported -
       porting the service-worker + sidepanel to MV3-Firefox is quota-limited;
       we&apos;re monitoring.
     </>
@@ -199,9 +199,9 @@ export const ENGLISH_HTML: HtmlMap = {
     <>
       Common causes:
       <ol className="mt-2 list-decimal space-y-1 pl-5">
-        <li>the URL is actually dynamic content (popup, modal — content script skips these)</li>
-        <li>SPA navigation after page load — hard refresh (Ctrl/Cmd+Shift+R) usually fixes</li>
-        <li>deduplication — same URL submitted within 1 hour is silently skipped</li>
+        <li>the URL is actually dynamic content (popup, modal, content script skips these)</li>
+        <li>SPA navigation after page load, hard refresh (Ctrl/Cmd+Shift+R) usually fixes</li>
+        <li>deduplication, same URL submitted within 1 hour is silently skipped</li>
       </ol>
     </>
   ),

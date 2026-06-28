@@ -54,7 +54,7 @@ export default function InstalledPage() {
             <div>
               <h3 className="mb-1 font-semibold">Browse Marketplace</h3>
               <p className="text-sm text-muted-foreground">
-                Buka Shopee, Tokopedia, Lazada, dll — extension otomatis scrape harga
+                Buka Shopee, Tokopedia, Lazada, dll, extension otomatis scrape harga
               </p>
             </div>
           </div>
@@ -66,7 +66,7 @@ export default function InstalledPage() {
             <div>
               <h3 className="mb-1 font-semibold">Track Progress</h3>
               <p className="text-sm text-muted-foreground">
-                Lihat stats di side panel — jumlah produk scraped, success rate, dll
+                Lihat stats di side panel, jumlah produk scraped, success rate, dll
               </p>
             </div>
           </div>

@@ -2,7 +2,7 @@
   {
     "url": "http://localhost:3000/extension",
     "violations": [],
-    "passes": 22
+    "passes": 23
   },
   {
     "url": "http://localhost:3000/extension/faq",

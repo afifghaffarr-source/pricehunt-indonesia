@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — BijakBeli Chrome Extension",
+  title: "Privacy Policy - BijakBeli Chrome Extension",
   description:
     "Bagaimana BijakBeli Chrome Extension mengumpulkan, menyimpan, dan menggunakan data Anda. Kebijakan privasi lengkap untuk versi 3.x.",
   alternates: {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function ExtensionPrivacyPolicyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 font-sans">
-      <h1 className="mb-2 text-3xl font-bold">Privacy Policy — BijakBeli Chrome Extension</h1>
+      <h1 className="mb-2 text-3xl font-bold">Privacy Policy - BijakBeli Chrome Extension</h1>
       <p className="mb-8 text-sm text-muted-foreground">
         Berlaku untuk ekstensi <strong>v3.0.1</strong> dan seterusnya · Terakhir diperbarui: 28 Juni 2026
       </p>
@@ -70,7 +70,7 @@ export default function ExtensionPrivacyPolicyPage() {
               <tr className="border-t border-zinc-200 dark:border-zinc-800">
                 <td className="px-3 py-2 font-medium">Health information</td>
                 <td className="px-3 py-2 text-green-700 dark:text-green-400 font-semibold">Tidak dikumpulkan</td>
-                <td className="px-3 py-2">—</td>
+                <td className="px-3 py-2">-</td>
               </tr>
               <tr className="border-t border-zinc-200 dark:border-zinc-800">
                 <td className="px-3 py-2 font-medium">Financial information</td>
@@ -121,7 +121,7 @@ export default function ExtensionPrivacyPolicyPage() {
           Setiap kali Anda membuka halaman produk di Shopee, Tokopedia, Lazada, Blibli,
           Bukalapak, atau TikTok Shop, ekstensi membaca informasi yang <strong>sudah ditampilkan
           oleh marketplace</strong> di halaman tersebut: judul produk, harga saat ini, nama toko,
-          rating seller, dan URL halaman. Kami hanya membaca — kami tidak pernah menulis
+          rating seller, dan URL halaman. Kami hanya membaca, kami tidak pernah menulis
           atau mengubah apapun di halaman marketplace.
         </p>
 
@@ -193,8 +193,8 @@ export default function ExtensionPrivacyPolicyPage() {
 
         <h3 className="mb-2 mt-4 text-xl font-semibold">4.1 Penyimpanan lokal (browser)</h3>
         <p className="leading-relaxed">
-          Semua data pengguna — INGESTION_SECRET Anda, history submission lokal, watchlist,
-          retry queue — disimpan di <code>chrome.storage.local</code> pada browser Anda.
+          Semua data pengguna, INGESTION_SECRET Anda, history submission lokal, watchlist,
+          retry queue, disimpan di <code>chrome.storage.local</code> pada browser Anda.
           Data ini tidak dienkripsi di sisi kami, namun Chrome mengenkripsinya di disk
           untuk profil browser. Uninstall ekstensi akan menghapus semua data lokal.
         </p>
@@ -225,28 +225,28 @@ export default function ExtensionPrivacyPolicyPage() {
         </p>
         <ul className="space-y-3 pl-0 leading-relaxed">
           <li>
-            <strong>activeTab</strong> — Akses tab saat ini hanya saat Anda klik tombol
+            <strong>activeTab</strong>, Akses tab saat ini hanya saat Anda klik tombol
             &quot;Scrape this page&quot;. Tidak ada akses baca otomatis untuk semua tab.
           </li>
           <li>
-            <strong>storage</strong> — Menyimpan history submission, retry queue, watchlist,
+            <strong>storage</strong>, Menyimpan history submission, retry queue, watchlist,
             dan INGESTION_SECRET di <code>chrome.storage.local</code>.
           </li>
           <li>
-            <strong>tabs</strong> — Mendeteksi perubahan URL/judul tab untuk memicu
-            scrape ulang di SPA (Shopee, Tokopedia, Lazada adalah SPA — render ulang tidak
+            <strong>tabs</strong>, Mendeteksi perubahan URL/judul tab untuk memicu
+            scrape ulang di SPA (Shopee, Tokopedia, Lazada adalah SPA, render ulang tidak
             selalu ubah URL).
           </li>
           <li>
-            <strong>scripting</strong> — Menyisipkan <code>marketplace-scraper.js</code> ke
+            <strong>scripting</strong>, Menyisipkan <code>marketplace-scraper.js</code> ke
             halaman marketplace yang match dengan pola host_permissions.
           </li>
           <li>
-            <strong>alarms</strong> — Menjadwalkan dua task periodik: (a) retry flush
+            <strong>alarms</strong>, Menjadwalkan dua task periodik: (a) retry flush
             submission gagal setiap 5 menit, (b) price-watch check setiap 30 menit.
           </li>
           <li>
-            <strong>notifications</strong> — <strong>Hanya</strong> menampilkan notifikasi
+            <strong>notifications</strong>, <strong>Hanya</strong> menampilkan notifikasi
             desktop saat produk di watchlist Anda turun ke target harga. Aturan detail ada
             di Section 7.
           </li>
@@ -264,7 +264,7 @@ export default function ExtensionPrivacyPolicyPage() {
           <li>
             <strong>Supabase (database hosting):</strong> Submission produk masuk ke
             tabel di project Supabase kami untuk agregasi. Supabase hanya menyimpan
-            data — mereka tidak memiliki akses baca ke field individual.
+            data, mereka tidak memiliki akses baca ke field individual.
           </li>
           <li>
             <strong>Vercel (hosting & CDN):</strong> Web app di-host di Vercel. Request
@@ -320,7 +320,7 @@ export default function ExtensionPrivacyPolicyPage() {
         <h2 className="mb-4 text-2xl font-semibold">8. Cookies & Tracking</h2>
         <p className="leading-relaxed">
           Ekstensi BijakBeli sendiri tidak menggunakan cookies. Marketplace yang Anda
-          kunjungi mungkin menggunakan cookies sendiri (Shopee, Tokopedia, dll) — itu
+          kunjungi mungkin menggunakan cookies sendiri (Shopee, Tokopedia, dll), itu
           adalah cookies mereka, bukan kami. Kami tidak menanam tracking pixel, analytics
           script, atau fingerprinting apapun di halaman web manapun.
         </p>
@@ -332,7 +332,7 @@ export default function ExtensionPrivacyPolicyPage() {
         <p className="mb-3 leading-relaxed">Anda memiliki hak untuk:</p>
         <ul className="list-disc space-y-2 pl-6 leading-relaxed">
           <li>
-            <strong>Menghapus semua data lokal:</strong> Uninstall ekstensi Chrome —
+            <strong>Menghapus semua data lokal:</strong> Uninstall ekstensi Chrome -
             semua data di <code>chrome.storage.local</code> hilang otomatis.
           </li>
           <li>
@@ -353,7 +353,7 @@ export default function ExtensionPrivacyPolicyPage() {
             history lokal Anda.
           </li>
           <li>
-            <strong>Review source code:</strong> Selalu tersedia di GitHub — semua logic
+            <strong>Review source code:</strong> Selalu tersedia di GitHub, semua logic
             terlihat, tidak ada obfuscation.
           </li>
         </ul>
@@ -371,7 +371,7 @@ export default function ExtensionPrivacyPolicyPage() {
         </p>
         <p className="mt-3 leading-relaxed">
           Tidak ada sistem yang 100% aman. Jika Anda menemukan kerentanan keamanan,
-          hubungi kami via email di bawah — kami merespons dalam 72 jam.
+          hubungi kami via email di bawah, kami merespons dalam 72 jam.
         </p>
       </section>
 
