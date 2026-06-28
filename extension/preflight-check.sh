@@ -82,6 +82,17 @@ else
   green "OK: privacy policy is $priv_size bytes"
 fi
 
+# --- 8. FAQ page reachable ---
+hdr "8. FAQ page reachable"
+faq_status=$(curl -sIL -o /dev/null -w '%{http_code}' --max-time 10 \
+  "$BASE_URL/extension/faq" || echo "000")
+if [ "$faq_status" = "200" ]; then
+  green "OK: $BASE_URL/extension/faq returns 200"
+else
+  red "FAIL: FAQ page returned HTTP $faq_status"
+  fail=1
+fi
+
 echo
 if [ "$fail" -eq 0 ]; then
   green "ALL PRE-FLIGHT CHECKS PASSED ✓"

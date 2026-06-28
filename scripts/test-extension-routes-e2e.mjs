@@ -148,6 +148,34 @@ try {
     );
     await page.close();
   });
+
+  await test("FAQ page covers 4 user-facing topics (post-launch)", async ({ assert }) => {
+    const page = await browser.newPage();
+    const resp = await page.goto(`${BASE}/extension/faq`, { waitUntil: "domcontentloaded" });
+    assert(resp?.status() === 200, `200 OK (got ${resp?.status()})`);
+    assert(
+      await pollText(page, /Pertanyaan yang Sering Ditanyakan/i, { timeout: 30_000 }),
+      "FAQ heading visible"
+    );
+    // Each category must render
+    for (const topic of [
+      /Setup & Installation/i,
+      /Privacy & Keamanan/i,
+      /Marketplace Support/i,
+      /Notifikasi & Watchlist/i,
+    ]) {
+      assert(
+        await pollText(page, topic, { timeout: 30_000 }),
+        `FAQ has section "${topic}"`
+      );
+    }
+    // Cross-link to privacy
+    const privLinkCount = await page
+      .locator('a[href="/extension/privacy-policy"]')
+      .count();
+    assert(privLinkCount >= 1, `FAQ links to privacy policy (got ${privLinkCount})`);
+    await page.close();
+  });
 } finally {
   await browser.close();
 }

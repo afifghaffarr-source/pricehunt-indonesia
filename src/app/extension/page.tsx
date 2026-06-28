@@ -1,16 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Download, 
-  Package, 
-  Zap, 
-  Shield, 
-  TrendingUp, 
+import {
+  Download,
+  Package,
+  Zap,
+  Shield,
+  TrendingUp,
   CheckCircle2,
-  MousePointerClick
+  MousePointerClick,
+  ExternalLink,
+  HelpCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { CHROME_WEB_STORE_URL, isLiveOnChromeWebStore } from "@/lib/extension-links";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +26,36 @@ export const metadata = {
 };
 
 export default function ExtensionPage() {
+  const isLive = isLiveOnChromeWebStore;
+  const cwsUrl = CHROME_WEB_STORE_URL;
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Post-launch banner — only shown when CWS is live. See
+          src/lib/extension-links.ts to enable after first publish. */}
+      {isLive && cwsUrl && (
+        <div className="mb-8 flex flex-col items-center justify-between gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 sm:flex-row sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-emerald-900 dark:text-emerald-200">
+                Sekarang live di Chrome Web Store
+              </p>
+              <p className="text-sm text-emerald-800/80 dark:text-emerald-300/80">
+                Install langsung dari CWS — tidak perlu download manual.
+              </p>
+            </div>
+          </div>
+          <a href={cwsUrl} target="_blank" rel="noopener noreferrer">
+            <Button className="bg-emerald-600 hover:bg-emerald-700">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Buka di CWS
+            </Button>
+          </a>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4 border-primary/20">
@@ -492,6 +523,13 @@ export default function ExtensionPage() {
         >
           <Shield className="mr-1 inline h-3.5 w-3.5" />
           Privacy Policy
+        </Link>
+        <Link
+          href="/extension/faq"
+          className="hover:text-foreground hover:underline"
+        >
+          <HelpCircle className="mr-1 inline h-3.5 w-3.5" />
+          FAQ
         </Link>
         <a
           href="https://github.com/afifghaffarr-source/pricehunt-indonesia"
