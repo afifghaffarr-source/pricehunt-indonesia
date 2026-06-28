@@ -96,7 +96,7 @@ async function makeCall(request: unknown) {
       get: (k: string) =>
         (r.headers?.get?.(k) ?? null) ||
         (k.toLowerCase() === "authorization" && r.headers
-          ? (r.headers as Record<string, string>)["authorization"] ?? null
+          ? (r.headers as unknown as Record<string, string>)["authorization"] ?? null
           : null),
     },
     nextUrl,

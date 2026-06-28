@@ -43,6 +43,17 @@ async function renderMain() {
 
   const { stats = { totalSubmitted: 0, lastSubmissionAt: null, byMarketplace: {} }, recentHistory = [], pendingCount = 0, pendingQueue = [] } =
     await sendMessage("BIJAKBELI_GET_STATS");
+  const { list: watchlist = [] } = await sendMessage("BIJAKBELI_GET_WATCHLIST");
+
+  // P3 empty-state: unified welcome for brand-new users (no data anywhere)
+  if (
+    (stats.totalSubmitted ?? 0) === 0 &&
+    watchlist.length === 0 &&
+    pendingCount === 0
+  ) {
+    renderNewUserWelcome(app);
+    return;
+  }
 
   // Instructions banner if no submissions yet
   if (stats.totalSubmitted === 0) {
@@ -163,7 +174,6 @@ async function renderMain() {
   app.appendChild(mpSection);
 
   // Watchlist section (P5: price drop alerts)
-  const { list: watchlist = [] } = await sendMessage("BIJAKBELI_GET_WATCHLIST");
   const watchSection = el("div", { class: "section" });
   watchSection.appendChild(
     el("div", { class: "section-title", style: "color:#92400e" }, "🎯 Pantau Harga")
@@ -499,6 +509,58 @@ function renderSetup() {
     "Cara mendapatkan INGESTION_SECRET →"
   );
   app.appendChild(helpLink);
+}
+
+/**
+ * P3 empty-state — unified first-launch hero for brand-new users.
+ * Replaces the cramped 6-section empty layout with a single clear CTA.
+ */
+function renderNewUserWelcome(app) {
+  const hero = el("div", { style: "text-align:center;padding:36px 20px 16px" });
+  hero.appendChild(el("div", { style: "font-size:48px;margin-bottom:12px" }, "🛒"));
+  hero.appendChild(
+    el("div", { style: "font-size:18px;font-weight:700;color:#111827;margin-bottom:6px" },
+      "Selamat Datang di BijakBeli!")
+  );
+  hero.appendChild(
+    el("div", { style: "font-size:13px;color:#6b7280;margin-bottom:24px;line-height:1.5" },
+      "Buka halaman produk di Shopee, Tokopedia, Lazada, atau Blibli. " +
+      "Extension otomatis scrape harga dan kirim ke dashboard komunitas.")
+  );
+  app.appendChild(hero);
+
+  const scrapeBtn = el("button", { class: "btn" }, "🔄 Scrape Halaman Ini Sekarang");
+  scrapeBtn.onclick = async () => {
+    scrapeBtn.disabled = true;
+    scrapeBtn.textContent = "⏳ Mengirim...";
+    const result = await sendMessage("BIJAKBELI_MANUAL_SCRAPE");
+    scrapeBtn.disabled = false;
+    scrapeBtn.textContent = "🔄 Scrape Halaman Ini Sekarang";
+    if (result.error) {
+      alert(`Gagal: ${result.error}`);
+    } else if (result.accepted > 0) {
+      renderMain();
+    } else if (result.deduplicated) {
+      alert("Sudah pernah dikirim dalam 1 jam terakhir");
+    } else {
+      alert("Tidak ada produk di halaman ini. Buka halaman produk marketplace (Shopee/Tokopedia/Lazada/Blibli).");
+    }
+  };
+  app.appendChild(scrapeBtn);
+
+  const hint = el(
+    "div",
+    { style: "margin-top:16px;padding:10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:12px;color:#78350f;text-align:center;line-height:1.4" },
+    "💡 Tip: Setelah scrape pertama, kamu bisa tambah pantau harga di section 🎯 Pantau Harga."
+  );
+  app.appendChild(hint);
+
+  const link = el("a", {
+    href: "https://www.bijakbeli.web.id/extension",
+    target: "_blank",
+    style: "display:block;margin-top:16px;text-align:center;color:#3b82f6;font-size:12px",
+  }, "📈 Lihat Dashboard BijakBeli →");
+  app.appendChild(link);
 }
 
 document.addEventListener("DOMContentLoaded", renderMain);
