@@ -72,6 +72,10 @@ async function getPendingQueue() {
   const { pendingQueue = [] } = await chrome.storage.local.get("pendingQueue");
   return pendingQueue;
 }
+// Contract: this must mirror extension/lib/queue.js getPendingQueue
+// (storage adapter = chrome.storage.local). Tests live in
+// src/test/extension-retry-queue.test.ts. To use the extracted module,
+// wire background.js via importScripts('lib/queue.js').
 
 async function addToPendingQueue(payload, marketplace) {
   const queue = await getPendingQueue();
