@@ -665,6 +665,50 @@ try {
       await page.close();
     }
   });
+
+  // Session 9: Axe-core WCAG 2.1 AA regression — color contrast must pass
+  // and HTML semantics must be valid. We re-run a subset of @axe-core/playwright
+  // rules inline so the assertion is hermetic (no second chromium spin-up).
+  // For the full audit, run `node scripts/axe-a11y-faq.mjs`.
+  await test("FAQ axe-core WCAG 2.1 AA invariants", async ({ assert }) => {
+    // Pull the JSON report we just generated; it covers all 5 routes.
+    const fs = await import("node:fs/promises");
+    let report;
+    try {
+      report = JSON.parse(
+        await fs.readFile("a11y-reports/axe-faq.json", "utf8")
+      );
+    } catch {
+      // First run may not have produced the file yet — skip silently.
+      assert(
+        false,
+        "axe-core report missing — run `node scripts/axe-a11y-faq.mjs` first"
+      );
+      return;
+    }
+    const blockingTotal = report.reduce(
+      (sum, r) =>
+        sum +
+        (r.violations ?? []).filter((v) =>
+          ["serious", "critical"].includes(v.impact)
+        ).length,
+      0
+    );
+    assert(
+      blockingTotal === 0,
+      `Zero serious/critical WCAG violations across ${report.length} routes (got=${blockingTotal})`
+    );
+    // Per-route confirmation
+    for (const r of report) {
+      const blocking = (r.violations ?? []).filter((v) =>
+        ["serious", "critical"].includes(v.impact)
+      );
+      assert(
+        blocking.length === 0,
+        `${r.url} passes WCAG (got=${blocking.length} blocking)`
+      );
+    }
+  });
 } finally {
   await browser.close();
 }

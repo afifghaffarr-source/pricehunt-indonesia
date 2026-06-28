@@ -110,7 +110,7 @@ export function DevBannerToolbar() {
           onClick={() => applyMode(m)}
           aria-pressed={mode === m}
           data-active={mode === m}
-          className="rounded px-2 py-0.5 transition-colors data-[active=true]:bg-amber-600 data-[active=true]:text-white hover:bg-amber-200/70 dark:hover:bg-amber-800/60"
+          className="rounded px-2 py-0.5 transition-colors data-[active=true]:bg-amber-700 data-[active=true]:text-white hover:bg-amber-200/70 dark:hover:bg-amber-800/60 aria-pressed:bg-amber-700 aria-pressed:text-white"
         >
           {m}
         </button>
@@ -125,7 +125,7 @@ export function DevBannerToolbar() {
         onClick={() => setTheme("light")}
         aria-pressed={theme === "light"}
         data-active={theme === "light"}
-        className="flex items-center gap-1 rounded px-2 py-0.5 transition-colors data-[active=true]:bg-amber-600 data-[active=true]:text-white hover:bg-amber-200/70 dark:hover:bg-amber-800/60"
+        className="flex items-center gap-1 rounded px-2 py-0.5 transition-colors data-[active=true]:bg-amber-700 data-[active=true]:text-white hover:bg-amber-200/70 dark:hover:bg-amber-800/60 aria-pressed:bg-amber-700 aria-pressed:text-white"
       >
         <Sun className="h-3 w-3" aria-hidden="true" />
         light
@@ -135,7 +135,7 @@ export function DevBannerToolbar() {
         onClick={() => setTheme("dark")}
         aria-pressed={theme === "dark"}
         data-active={theme === "dark"}
-        className="flex items-center gap-1 rounded px-2 py-0.5 transition-colors data-[active=true]:bg-amber-600 data-[active=true]:text-white hover:bg-amber-200/70 dark:hover:bg-amber-800/60"
+        className="flex items-center gap-1 rounded px-2 py-0.5 transition-colors data-[active=true]:bg-amber-700 data-[active=true]:text-white hover:bg-amber-200/70 dark:hover:bg-amber-800/60 aria-pressed:bg-amber-700 aria-pressed:text-white"
       >
         <Moon className="h-3 w-3" aria-hidden="true" />
         dark

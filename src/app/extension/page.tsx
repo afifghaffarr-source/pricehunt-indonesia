@@ -73,7 +73,7 @@ export default async function ExtensionPage() {
             </div>
           </div>
           <a href={cwsUrl} target="_blank" rel="noopener noreferrer">
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="bg-emerald-700 hover:bg-emerald-800">
               <ExternalLink className="mr-2 h-4 w-4" />
               Buka di CWS
             </Button>
@@ -204,7 +204,7 @@ export default async function ExtensionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+          <div className="rounded-lg bg-muted p-4 text-sm text-foreground">
             <p className="mb-2 text-foreground">
               <strong>Cara pakai:</strong>
             </p>
@@ -407,10 +407,10 @@ export default async function ExtensionPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Download file <code className="rounded bg-muted px-1 py-0.5">.tar.gz</code> di atas
+                Download file <code className="rounded bg-muted px-1 py-0.5 text-foreground">.tar.gz</code> di atas
               </p>
               <p className="text-sm text-muted-foreground">
-                Extract dengan: <code className="rounded bg-muted px-1 py-0.5">tar -xzf bijakbeli-extension-*.tar.gz</code>
+                Extract dengan: <code className="rounded bg-muted px-1 py-0.5 text-foreground">tar -xzf bijakbeli-extension-*.tar.gz</code>
               </p>
             </CardContent>
           </Card>
@@ -424,13 +424,13 @@ export default async function ExtensionPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Buka <code className="rounded bg-muted px-1 py-0.5">chrome://extensions/</code>
+                Buka <code className="rounded bg-muted px-1 py-0.5 text-foreground">chrome://extensions/</code>
               </p>
               <p className="text-sm text-muted-foreground">
                 Enable <strong>Developer mode</strong> (toggle kanan atas)
               </p>
               <p className="text-sm text-muted-foreground">
-                Klik <strong>&quot;Load unpacked&quot;</strong> → pilih folder <code className="rounded bg-muted px-1 py-0.5">chrome/</code>
+                Klik <strong>&quot;Load unpacked&quot;</strong> → pilih folder <code className="rounded bg-muted px-1 py-0.5 text-foreground">chrome/</code>
               </p>
             </CardContent>
           </Card>

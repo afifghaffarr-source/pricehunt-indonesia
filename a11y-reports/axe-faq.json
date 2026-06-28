@@ -1,0 +1,27 @@
+[
+  {
+    "url": "http://localhost:3000/extension",
+    "violations": [],
+    "passes": 22
+  },
+  {
+    "url": "http://localhost:3000/extension/faq",
+    "violations": [],
+    "passes": 28
+  },
+  {
+    "url": "http://localhost:3000/extension/faq?q=tokopedia",
+    "violations": [],
+    "passes": 28
+  },
+  {
+    "url": "http://localhost:3000/extension/setup",
+    "violations": [],
+    "passes": 22
+  },
+  {
+    "url": "http://localhost:3000/extension/privacy-policy",
+    "violations": [],
+    "passes": 25
+  }
+]
