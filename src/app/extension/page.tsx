@@ -478,7 +478,7 @@ export default function ExtensionPage() {
       {/* Footer: Privacy + Source */}
       <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t pt-6 text-sm text-muted-foreground">
         <Link
-          href="/extension/privacy"
+          href="/extension/privacy-policy"
           className="hover:text-foreground hover:underline"
         >
           <Shield className="mr-1 inline h-3.5 w-3.5" />
