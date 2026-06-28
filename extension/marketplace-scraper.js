@@ -631,6 +631,18 @@
     return false;
   });
 
+  // Cleanup: disconnect observers on page unload to prevent memory leak
+  function cleanup() {
+    if (observer) observer.disconnect();
+    if (urlObserver) urlObserver.disconnect();
+    if (scrapeTimer) clearTimeout(scrapeTimer);
+  }
+
+  // beforeunload fires before page navigates away
+  window.addEventListener("beforeunload", cleanup);
+  // pagehide fires when page goes into bfcache (back/forward cache)
+  window.addEventListener("pagehide", cleanup);
+
   console.log(
     `[BijakBeli] Scraper loaded for ${detectMarketplace()} (${isPDP() ? "PDP" : isSearchPage() ? "search" : "page"})`
   );

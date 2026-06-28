@@ -18,10 +18,15 @@ const SUBMIT_ENDPOINT = `${BIJAKBELI_API}/api/ingestion/offer-snapshot`;
 const DEDUPE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const MAX_HISTORY = 200;
 const FLUSH_ALARM = "bijakbeli-flush";
+const MAX_CONCURRENT_SUBMISSIONS = 10; // Global limit across all tabs
 
 // In-memory pending queue (lost on service worker idle — that's OK, we flush via storage)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for future enhancement (queue persistence)
 const pendingQueue = new Map(); // url → product payload
+
+// Global semaphore for rate limiting
+let activeSubmissions = 0;
+const submissionQueue = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -63,38 +68,108 @@ async function bumpStats(marketplace, success) {
   }
 }
 
+async function getPendingQueue() {
+  const { pendingQueue = [] } = await chrome.storage.local.get("pendingQueue");
+  return pendingQueue;
+}
+
+async function addToPendingQueue(payload, marketplace) {
+  const queue = await getPendingQueue();
+  // Dedupe: don't add if already in queue
+  if (queue.some((item) => item.payload.product_url === payload.product_url)) {
+    return;
+  }
+  queue.push({
+    payload,
+    marketplace,
+    addedAt: new Date().toISOString(),
+    retryCount: 0,
+  });
+  await chrome.storage.local.set({ pendingQueue: queue });
+  await updateBadge();
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for future enhancement
+async function removeFromPendingQueue(urls) {
+  const queue = await getPendingQueue();
+  const filtered = queue.filter((item) => !urls.includes(item.payload.product_url));
+  await chrome.storage.local.set({ pendingQueue: filtered });
+}
+
+async function getPendingCount() {
+  const queue = await getPendingQueue();
+  return queue.length;
+}
+
+async function updateBadge() {
+  const count = await getPendingCount();
+  if (count > 0) {
+    await chrome.action.setBadgeText({ text: String(count) });
+    await chrome.action.setBadgeBackgroundColor({ color: "#f59e0b" }); // amber-500
+  } else {
+    await chrome.action.setBadgeText({ text: "" });
+  }
+}
+
 // ─── Submission ──────────────────────────────────────────────────────────
+
+/**
+ * Rate-limited wrapper: ensures at most MAX_CONCURRENT_SUBMISSIONS active.
+ * Queues excess submissions and processes them sequentially.
+ */
+async function withRateLimit(fn) {
+  // Wait for slot to open
+  while (activeSubmissions >= MAX_CONCURRENT_SUBMISSIONS) {
+    await new Promise((resolve) => {
+      submissionQueue.push(resolve);
+    });
+  }
+
+  activeSubmissions++;
+  try {
+    return await fn();
+  } finally {
+    activeSubmissions--;
+    // Release next waiting submission
+    if (submissionQueue.length > 0) {
+      const next = submissionQueue.shift();
+      next();
+    }
+  }
+}
 
 /**
  * POST a single product to the offer-snapshot endpoint.
  */
 async function submitProduct(payload) {
-  const secret = await getIngestionSecret();
-  if (!secret) {
-    return { ok: false, error: "INGESTION_SECRET belum dikonfigurasi" };
-  }
+  return withRateLimit(async () => {
+    const secret = await getIngestionSecret();
+    if (!secret) {
+      return { ok: false, error: "INGESTION_SECRET belum dikonfigurasi" };
+    }
 
-  try {
-    const res = await fetch(SUBMIT_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${secret}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch(SUBMIT_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${secret}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    const data = await res.json().catch(() => ({}));
-    return {
-      ok: res.ok,
-      status: res.status,
-      offerId: data.offer_id,
-      confidence: data.confidence_score,
-      message: data.message,
-    };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
-  }
+      const data = await res.json().catch(() => ({}));
+      return {
+        ok: res.ok,
+        status: res.status,
+        offerId: data.offer_id,
+        confidence: data.confidence_score,
+        message: data.message,
+      };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  });
 }
 
 /**
@@ -128,6 +203,11 @@ async function submitBatch(products, marketplace) {
 
         const result = await submitProduct(payload);
         await bumpStats(product.marketplace || marketplace, result.ok);
+
+        // Add to retry queue if failed (network error, 500, 503, etc)
+        if (!result.ok && result.status !== 400 && result.status !== 401) {
+          await addToPendingQueue(payload, product.marketplace || marketplace);
+        }
 
         return {
           url: product.url,
@@ -254,8 +334,58 @@ chrome.alarms.create(FLUSH_ALARM, { periodInMinutes: 5 });
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== FLUSH_ALARM) return;
 
-  // Nothing to flush currently — pendingQueue is in-memory only.
-  // Kept for future enhancement (queue persistence).
+  const queue = await getPendingQueue();
+  if (queue.length === 0) return;
+
+  console.log(`[BijakBeli] Flushing ${queue.length} pending submissions...`);
+
+  const MAX_RETRIES = 3;
+  const successfulUrls = [];
+  const updatedQueue = [];
+
+  for (const item of queue) {
+    // Skip if exceeded max retries
+    if (item.retryCount >= MAX_RETRIES) {
+      console.log(`[BijakBeli] Dropping ${item.payload.product_url} after ${MAX_RETRIES} retries`);
+      continue;
+    }
+
+    const result = await submitProduct(item.payload);
+    
+    if (result.ok) {
+      // Success! Remove from queue
+      successfulUrls.push(item.payload.product_url);
+      await bumpStats(item.marketplace, true);
+      await appendHistory({
+        marketplace: item.marketplace,
+        title: item.payload.title,
+        price: item.payload.price,
+        url: item.payload.product_url,
+        success: true,
+        confidence: result.confidence,
+        message: result.message,
+        submittedAt: new Date().toISOString(),
+      });
+    } else if (result.status !== 400 && result.status !== 401) {
+      // Transient error (500, 503, network) — keep in queue
+      updatedQueue.push({
+        ...item,
+        retryCount: item.retryCount + 1,
+      });
+    }
+    // else: permanent error (400, 401) — drop silently
+
+    // Throttle to avoid overwhelming API
+    await new Promise((r) => setTimeout(r, 300));
+  }
+
+  // Update queue (remove successful + increment retry count)
+  await chrome.storage.local.set({ pendingQueue: updatedQueue });
+
+  console.log(`[BijakBeli] Flush complete: ${successfulUrls.length} succeeded, ${updatedQueue.length} still pending`);
+  
+  // Update badge to reflect new queue size
+  await updateBadge();
 });
 
 // ─── Lifecycle ──────────────────────────────────────────────────────────
