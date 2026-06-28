@@ -10,8 +10,13 @@ const STORAGE_KEY = "pendingQueue";
 const MAX_RETRIES = 3;
 
 /**
+ * Storage adapter shape (chrome.storage.local in production, in-memory fake in tests).
+ * @typedef {{ get: (key: string) => Promise<Record<string, unknown>>, set: (obj: Record<string, unknown>) => Promise<void> }} StorageAdapter
+ */
+
+/**
  * Read queue from storage. Returns [] if empty/undefined.
- * @param {{get: (k: string) => Promise<any>, set: (obj: any) => Promise<void>}} storage
+ * @param {StorageAdapter} storage
  */
 export async function getPendingQueue(storage) {
   const result = await storage.get(STORAGE_KEY);

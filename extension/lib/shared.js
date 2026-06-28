@@ -50,7 +50,6 @@ export function downloadCsv(history, filenamePrefix = "bijakbeli-history") {
  * Plain-JS dual export: when loaded as plain script in Chrome extension,
  * bind helpers to window so popup.js/sidepanel.js can access them.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const _globalThis = typeof globalThis !== "undefined" ? globalThis : (typeof window !== "undefined" ? window : null);
 if (_globalThis) {
   _globalThis.BijakBeliShared = {

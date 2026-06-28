@@ -13,8 +13,13 @@ const STORAGE_KEY = "priceWatchlist";
 const MAX_ITEMS = 50;
 
 /**
+ * @typedef {{ get: (key: string) => Promise<Record<string, unknown>>, set: (obj: Record<string, unknown>) => Promise<void> }} StorageAdapter
+ */
+
+/**
  * Read the watchlist. Returns [] if storage is empty or value is malformed.
- * @param {{get: Function, set: Function}} storage
+ * @param {StorageAdapter} storage
+ * @returns {Promise<Array<{url: string, targetPrice: number, title?: string, marketplace?: string, addedAt?: string, lastSeenPrice?: number, lastCheckedAt?: string, lastNotifiedAt?: string}>>}
  */
 export async function getWatchlist(storage) {
   const result = await storage.get(STORAGE_KEY);
@@ -25,7 +30,7 @@ export async function getWatchlist(storage) {
 /**
  * Add a product URL with a target price. Dedupe by URL.
  * Returns the new/updated item, or null if duplicate with identical target.
- * @param {Function} storage
+ * @param {StorageAdapter} storage
  * @param {{url: string, title?: string, marketplace?: string, targetPrice: number}} item
  * @returns {Promise<object>} the watch item now in the list
  */

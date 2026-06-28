@@ -12,11 +12,11 @@ import {
  * Compatible with the expected `.get(key) → Promise<obj>` and
  * `.set(obj) → Promise<void>` interface.
  */
-function createFakeStorage(initial = {}) {
-  const state = { ...initial };
+function createFakeStorage(initial: Record<string, unknown> = {}) {
+  const state: Record<string, unknown> = { ...initial };
   return {
-    get: async (key) => ({ [key]: state[key] }),
-    set: async (obj) => {
+    get: async (key: string): Promise<Record<string, unknown>> => ({ [key]: state[key] }),
+    set: async (obj: Record<string, unknown>): Promise<void> => {
       Object.assign(state, obj);
     },
     _state: state, // exposed for inspection
@@ -187,7 +187,7 @@ describe("extension/queue.js — retry queue", () => {
     });
 
     it("removes successful items", async () => {
-      const submitFn = async (payload) => {
+      const submitFn = async (payload: { product_url: string }) => {
         if (payload.product_url === samplePayload.product_url) return { ok: true };
         return { ok: false, status: 500 };
       };
@@ -284,7 +284,7 @@ describe("extension/queue.js — retry queue", () => {
       await addToPendingQueue(storage, { ...samplePayload, product_url: "https://transient.test" }, "tokopedia");
       await addToPendingQueue(storage, { ...samplePayload, product_url: "https://bad.test" }, "lazada");
 
-      const submitFn = async (payload) => {
+      const submitFn = async (payload: { product_url: string }) => {
         if (payload.product_url === "https://ok.test") return { ok: true };
         if (payload.product_url === "https://transient.test") return { ok: false, status: 500 };
         return { ok: false, status: 400 }; // permanent

@@ -8,11 +8,11 @@ import {
   itemsToNotify,
 } from "../../extension/lib/watchlist.js";
 
-function createFakeStorage(initial = {}) {
-  const state = { ...initial };
+function createFakeStorage(initial: Record<string, unknown> = {}) {
+  const state: Record<string, unknown> = { ...initial };
   return {
-    get: async (key) => ({ [key]: state[key] }),
-    set: async (obj) => {
+    get: async (key: string): Promise<Record<string, unknown>> => ({ [key]: state[key] }),
+    set: async (obj: Record<string, unknown>): Promise<void> => {
       Object.assign(state, obj);
     },
     _state: state,
@@ -56,9 +56,9 @@ describe("extension/watchlist.js — price alerts", () => {
   describe("addToWatchlist", () => {
     it("appends a new item with metadata", async () => {
       const item = await addToWatchlist(storage, baseItem);
-      expect(item.url).toBe(baseItem.url);
-      expect(item.targetPrice).toBe(15000000);
-      expect(item.addedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect((item as { url: string }).url).toBe(baseItem.url);
+      expect((item as { targetPrice: number }).targetPrice).toBe(15000000);
+      expect((item as { addedAt: string }).addedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
 
     it("rejects missing url", async () => {
@@ -73,7 +73,7 @@ describe("extension/watchlist.js — price alerts", () => {
     it("deduplicates by URL — updates target price in place", async () => {
       await addToWatchlist(storage, { ...baseItem, targetPrice: 15000000 });
       const updated = await addToWatchlist(storage, { ...baseItem, targetPrice: 14000000 });
-      expect(updated.targetPrice).toBe(14000000);
+      expect((updated as { targetPrice: number }).targetPrice).toBe(14000000);
 
       const list = await getWatchlist(storage);
       expect(list).toHaveLength(1); // still single item, not duplicate
@@ -189,7 +189,7 @@ describe("extension/watchlist.js — price alerts", () => {
       ];
       const prices = { u1: 80, u2: 250, u3: 40 }; // u1 yes, u2 no (above), u3 yes
       const result = itemsToNotify(list, prices);
-      expect(result.map((r) => r.url)).toEqual(["u1", "u3"]);
+      expect((result as Array<{ url: string }>).map((r) => r.url)).toEqual(["u1", "u3"]);
     });
 
     it("treats lastNotifiedAt null/undefined as never notified", () => {
