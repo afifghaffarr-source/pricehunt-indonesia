@@ -21,15 +21,15 @@ else
   green "OK: manifest.json parses"
 fi
 
-# --- 2. Required fields ---
+# --- 2. Required manifest fields ---
 hdr "2. Required manifest fields"
-for field in name version description permissions host_permissions; do
+for field in name version description permissions host_permissions minimum_chrome_version content_security_policy key; do
   if ! jq -e ".$field" "$EXT_DIR/manifest.json" >/dev/null 2>&1; then
     red "FAIL: manifest.json missing '$field'"
     fail=1
   fi
 done
-if [ "$fail" -eq 0 ]; then green "OK: required fields present"; fi
+if [ "$fail" -eq 0 ]; then green "OK: required fields present (incl. CSP, min_version, key)"; fi
 
 # --- 3. No remote code / eval ---
 hdr "3. No remote code or eval in any extension JS"
