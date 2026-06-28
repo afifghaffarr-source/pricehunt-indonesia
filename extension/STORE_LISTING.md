@@ -51,7 +51,7 @@ and contributing it to a community-priced database.
   kecuali kamu konfigurasi INGESTION_SECRET
 • 100% gratis, 100% open, 100% no-ads
 • Lihat Privacy Policy lengkap di:
-  https://www.bijakbeli.web.id/extension/privacy
+  https://www.bijakbeli.web.id/legal#privacy
 
 ### Untuk siapa extension ini:
 
@@ -171,7 +171,7 @@ File size: < 1 MB each. Use PNG or JPEG.
 
 ## 🛡️ Privacy Policy URL
 
-**Live URL:** https://www.bijakbeli.web.id/extension/privacy
+**Live URL:** https://www.bijakbeli.web.id/legal#privacy
 
 ## 🧪 Test Account Instructions (for CWS review)
 
