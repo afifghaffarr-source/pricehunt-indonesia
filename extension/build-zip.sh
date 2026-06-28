@@ -1,23 +1,40 @@
 #!/usr/bin/env bash
-# Build the uploadable Chrome extension zip. Excludes dev files.
+# Build the CWS-submittable Chrome extension zip.
+# Only includes files referenced by manifest.json. No docs, no scripts, no screenshots.
+# Output: bijakbeli-extension-v<version>.zip (read from manifest.json)
 set -euo pipefail
 
 EXT_DIR="${1:-extension}"
-OUT="bijakbeli-extension-v$(jq -r .version "$EXT_DIR/manifest.json").zip"
+VERSION=$(jq -r .version "$EXT_DIR/manifest.json")
+OUT="bijakbeli-extension-v${VERSION}.zip"
 
-# Clean build dir
+# Clean staging dir
 rm -rf build && mkdir -p build
-cp -R "$EXT_DIR"/. build/
 
-# Strip dev artifacts
-rm -rf build/__test__ build/tests build/*.test.js build/.git build/node_modules
+# Files referenced by manifest.json (and loaded by html files via <script src=>)
+cp "$EXT_DIR/manifest.json" build/
 
-# Re-zip (preserve permissions; use -X to drop extended attrs)
+# Icons
+cp "$EXT_DIR/icon16.png" "$EXT_DIR/icon48.png" "$EXT_DIR/icon128.png" build/
+
+# Manifest-referenced JS
+cp "$EXT_DIR/background.js" build/
+cp "$EXT_DIR/marketplace-scraper.js" build/
+cp -R "$EXT_DIR/lib" build/
+
+# Popup + sidepanel (HTML + JS)
+cp "$EXT_DIR/popup.html" "$EXT_DIR/popup.js" build/
+cp "$EXT_DIR/sidepanel.html" "$EXT_DIR/sidepanel.js" build/
+
+# Re-zip
 (cd build && zip -r -X --quiet "../$OUT" .)
 
-# Show what got packaged
-echo "Packaged files:"
-unzip -l "$OUT" | tail -20
+# Verify
+echo "=== ${OUT} contents ==="
+unzip -l "$OUT"
 echo
-echo "Total: $(stat -c%s "$OUT" | numfmt --to=iec)"
+echo "Total: $(stat -c%s "$OUT") bytes ($(stat -c%s "$OUT" | numfmt --to=iec))"
 echo "Output: $(realpath "$OUT")"
+
+# Cleanup
+rm -rf build

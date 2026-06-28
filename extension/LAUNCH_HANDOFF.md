@@ -36,11 +36,12 @@ cd extension
 ./build-zip.sh
 ```
 
-It produces `bijakbeli-extension-v3.0.1.zip` (~50 KB) at the project root.
+It produces `bijakbeli-extension-v3.0.1.zip` (**32 KB**, 13 files) at the project root.
 The script:
 
-- Strips `__test__/`, `.git/`, `*.test.js`
-- Keeps only manifest + icons (16/48/128) + JS/HTML files
+- Copies only files referenced by `extension/manifest.json` and loaded HTML
+- Excludes all docs (`*.md`), dev scripts (`build-zip.sh`, `preflight-check.sh`, `generate_icons.py`), and `screenshots/` folder
+- Keeps manifest + icons (16/48/128) + JS/HTML files + `lib/*.js`
 - Emits the ZIP CWS expects (NOT `.tar.gz`)
 
 Verify before upload:
