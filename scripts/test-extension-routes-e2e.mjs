@@ -542,6 +542,129 @@ try {
       await page.close();
     }
   });
+
+  // Session 8: FAQ a11y — skip-to-content link + focus-visible rings.
+  await test("FAQ a11y: skip-link + focus-visible rings", async ({ assert }) => {
+    const page = await browser.newPage();
+    try {
+      await page.goto(`${BASE}/extension/faq`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(
+        () => document.querySelector('[data-testid="faq-match-count"]') !== null,
+        { timeout: 20_000 }
+      );
+      await page.waitForTimeout(400);
+
+      // 8a — skip-to-content link exists at top of page
+      const skipLink = page.locator(".skip-to-content", {
+        hasText: "Lewati ke daftar pertanyaan",
+      });
+      assert((await skipLink.count()) === 1, "FAQ skip-to-content link rendered");
+
+      // Target fragment validation — the link is wired into our anchor by
+      // Next.js at build time, so we can verify the href without fighting
+      // sibling skip-links from the chrome layout.
+      const skipHref = await skipLink.getAttribute("href");
+      assert(
+        skipHref === "#faq-questions",
+        `Skip-link points at #faq-questions (got=${skipHref})`
+      );
+
+      // Programmatically click the skip-link — verifies the feature works
+      // end-to-end without depending on Tab order through the chrome layout.
+      await page.evaluate(() => {
+        // Synthetic click should fire without depending on focus order.
+        const a = document.querySelector(
+          '.skip-to-content[href="#faq-questions"]'
+        );
+        if (a instanceof HTMLElement) a.click();
+      });
+      await page.waitForTimeout(250);
+      const urlHasFrag = page.url().includes("#faq-questions");
+      assert(
+        urlHasFrag,
+        `Click on skip-link jumps to #faq-questions (now=${page.url()})`
+      );
+
+      // 8b — search input has faq-focus-ring class
+      const searchRings = await page.evaluate(() => {
+        const input = document.getElementById("faq-search");
+        return input?.classList.contains("faq-focus-ring") ?? false;
+      });
+      assert(searchRings, "Search input has faq-focus-ring class");
+
+      // 8c — at least one FAQ accordion <details> has faq-smooth-details
+      await page.goto(`${BASE}/extension/faq?q=tokopedia`, {
+        waitUntil: "domcontentloaded",
+      });
+      await page.waitForFunction(
+        () => document.querySelectorAll("details").length >= 1,
+        { timeout: 20_000 }
+      );
+      await page.waitForTimeout(400);
+      const smoothCount = await page.evaluate(() => {
+        const ds = Array.from(document.querySelectorAll("details"));
+        return ds.filter((d) => d.classList.contains("faq-smooth-details")).length;
+      });
+      assert(
+        smoothCount >= 1,
+        `At least 1 FAQ <details> uses faq-smooth-details (got=${smoothCount})`
+      );
+
+      // 8d — summaries wear faq-focus-ring
+      const summaryRingCount = await page.evaluate(() => {
+        const sums = Array.from(document.querySelectorAll("summary"));
+        return sums.filter((s) => s.classList.contains("faq-focus-ring")).length;
+      });
+      assert(
+        summaryRingCount >= 1,
+        `At least 1 <summary> wears faq-focus-ring (got=${summaryRingCount})`
+      );
+
+      // 8e — focus-visible CSS rule exists in the stylesheets.
+      // TailwindCSS v4 wraps all custom rules in @layer blocks (CSSLayerBlockRule
+      // type=4) so a flat walk over cssRules only yields tailwind utility rules.
+      // We need to recurse into @layer children to find our handwritten rules.
+      const cssHasFocusRule = await page.evaluate(() => {
+        const patterns = [
+          "faq-focus-ring",
+          "skip-to-content",
+          "smooth-details",
+          "summary",
+        ];
+        const find = (rules) => {
+          for (const rule of Array.from(rules)) {
+            // CSSLayerBlockRule (typed as CSSRule with type=4) lives in chrome
+            // as an unstable internal: we sniff by cssRules getter presence.
+            if ("cssRules" in rule && !(rule instanceof CSSStyleRule)) {
+              const hit = find(rule.cssRules);
+              if (hit) return hit;
+            } else if (rule instanceof CSSStyleRule) {
+              const t = rule.selectorText || "";
+              for (const p of patterns) {
+                if (t.includes(p) && t.includes("focus-visible")) return t;
+              }
+            }
+          }
+          return null;
+        };
+        for (const sheet of Array.from(document.styleSheets)) {
+          try {
+            const hit = find(sheet.cssRules);
+            if (hit) return hit;
+          } catch {
+            // cross-origin — ignore
+          }
+        }
+        return null;
+      });
+      assert(
+        cssHasFocusRule !== null,
+        `Focus-visible rule discoverable inside @layer block (got=${cssHasFocusRule ?? "null"})`
+      );
+    } finally {
+      await page.close();
+    }
+  });
 } finally {
   await browser.close();
 }

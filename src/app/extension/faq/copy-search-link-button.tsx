@@ -92,7 +92,7 @@ export function CopySearchLinkButton() {
       onClick={handleCopy}
       data-testid="faq-copy-permalink"
       data-share-state={state}
-      className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+      className="faq-focus-ring inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
       aria-label="Salin URL pencarian saat ini ke papan klip"
     >
       <Link2 className="h-3.5 w-3.5" aria-hidden="true" />

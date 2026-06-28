@@ -203,3 +203,103 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FAQ /extension/faq — a11y + accordion animation polish (added 2026-06-28)
+
+   Why this lives here and not in tailwind @apply: we want these rules to
+   apply to <details>/<summary> from FAQ search results which are server-
+   rendered from many places — single source of truth beats scattered
+   arbitrary classes.
+
+   1. Focus-visible rings — show keyboard position clearly. Mouse users
+      get nothing (`:focus` not `:focus-visible`), keyboard users get a
+      2px emerald ring with 2px offset. Works on <input>, <button>,
+      <a>, <summary>, [tabindex="0"].
+   2. Accordion smooth open — `<details>` natively toggles. Modern Chrome
+      supports `::details-content` + `interpolate-size: allow-keywords`
+      so we can transition `block-size: auto` from `0` to `auto`
+      smoothly. Falls back to instant toggle in older browsers (Safari
+      < 17.4 / Firefox < 130) — which is fine, just less premium.
+
+   Note: Tailwind v4 + `@import "tailwindcss"` strips root-level CSS
+   rules if they conflict with utility classes. We MUST wrap these in
+   `@layer utilities` (or `base`) to keep them in the compiled output.
+   Verified 2026-06-28 — without the @layer wrap, .faq-focus-ring and
+   the others vanish from the dev-server-stylesheet entirely.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  /* (1) Focus-visible ring — emerald-500 to match the rest of the design
+     system. Two-layer ring (color + offset) is the modern WCAG-friendly
+     pattern; the 2px offset prevents overlap on rounded-2xl cards. */
+  .faq-focus-ring:focus-visible {
+    outline: 2px solid #10b981; /* emerald-500 */
+    outline-offset: 2px;
+    border-radius: inherit;
+  }
+
+  /* <summary> native focus-visible — some browsers don't pass :focus-visible
+     into tag-internal elements, so we use the cascade. */
+  summary:focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+  .dark summary:focus-visible {
+    outline-color: #34d399; /* emerald-400 for dark mode contrast */
+  }
+
+  /* (2) Accordion smooth open — requires opt-in via .faq-smooth-details.
+     We can't globally apply because some <details> are critical-path
+     install instructions (sawtooth collapse looks broken there). */
+  .faq-smooth-details::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+      block-size 0.22s ease,
+      content-visibility 0.22s ease allow-discrete;
+  }
+
+  .faq-smooth-details[open]::details-content {
+    block-size: auto;
+  }
+
+  /* Skip-to-content link — surfaced only when keyboard-focused (Tab on
+     page load). White background, emerald ring, top-center placement. */
+  .skip-to-content {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    background: #ffffff;
+    color: #18181b; /* zinc-900 */
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: top 0.18s ease;
+    border: 2px solid transparent;
+  }
+  .skip-to-content:focus-visible {
+    top: 0.5rem;
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+    border-color: #10b981;
+  }
+  .dark .skip-to-content {
+    background: #18181b;
+    color: #fafafa;
+    border-color: #10b981;
+  }
+}
+
+/* Bridge behavior — older browsers without ::details-content get the
+   instant default. Modern Chrome 129+, Edge 129+, Safari 18.4+ get the
+   smooth transition. */
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+}

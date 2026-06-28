@@ -158,6 +158,10 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
         />
       ))}
 
+      <a href="#faq-questions" className="skip-to-content">
+        Lewati ke daftar pertanyaan
+      </a>
+
       <main className="mx-auto max-w-3xl px-4 py-12 font-sans sm:px-6 lg:px-8">
         <div className="mb-10 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
@@ -199,7 +203,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
               defaultValue={query}
               placeholder={`Cari di antara ${TOTAL_PERTANYAAN} pertanyaan…`}
               autoComplete="off"
-              className="w-full rounded-md border border-zinc-300 bg-white py-2 pr-10 pl-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              className="faq-focus-ring w-full rounded-md border border-zinc-300 bg-white py-2 pr-10 pl-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
             />
             {hasQuery ? (
               <Link
@@ -279,6 +283,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
         </div>
 
         {/* Bahasa sections */}
+        <div id="faq-questions">
         {filteredBahasa.length === 0 && hasQuery ? (
           <div className="mb-10 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
             Coba kata kunci lain (mis. &quot;INGESTION_SECRET&quot;,
@@ -318,9 +323,9 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
                     key={id}
                     id={id}
                     data-faq-id={id}
-                    className="group overflow-hidden rounded-lg border border-zinc-200 bg-white transition-colors open:bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:open:bg-zinc-900/40 dark:hover:border-zinc-700"
+                    className="faq-smooth-details group overflow-hidden rounded-lg border border-zinc-200 bg-white transition-colors open:bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:open:bg-zinc-900/40 dark:hover:border-zinc-700"
                   >
-                    <summary className="flex cursor-pointer list-none items-center justify-between p-4 font-medium text-zinc-900 select-none dark:text-zinc-100">
+                    <summary className="faq-focus-ring flex cursor-pointer list-none items-center justify-between p-4 font-medium text-zinc-900 select-none dark:text-zinc-100">
                       <span className="pr-4">{q}</span>
                       <span
                         aria-hidden="true"
@@ -368,6 +373,7 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
             </div>
           </div>
         </section>
+        </div>
 
         {/* Contact + helpful links */}
         <section className="mb-6 rounded-lg border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900">
