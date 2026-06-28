@@ -439,9 +439,9 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
                       <summary className="flex cursor-pointer list-none items-center p-3 text-sm font-medium text-zinc-800 select-none dark:text-zinc-200">
                         <span className="pr-3">{q}</span>
                       </summary>
-                      <p className="border-t border-zinc-200 px-3 py-2 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
+                      <div className="border-t border-zinc-200 px-3 py-2 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
                         {ENGLISH_HTML[id] ?? a}
-                      </p>
+                      </div>
                     </details>
                   ))}
                 </div>
