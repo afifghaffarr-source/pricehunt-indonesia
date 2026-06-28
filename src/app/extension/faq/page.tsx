@@ -22,6 +22,7 @@ import {
 } from "@/app/extension/faq/data";
 import { BAHASA_HTML, ENGLISH_HTML } from "@/app/extension/faq/html";
 import { FaqKeyboardNav } from "@/components/faq-keyboard-nav";
+import { CopySearchLinkButton } from "@/app/extension/faq/copy-search-link-button";
 
 export const metadata: Metadata = {
   title: "FAQ — BijakBeli Chrome Extension",
@@ -214,11 +215,14 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
 
         {/* Telemetry-style match counter — server-rendered count of ?q= hits.
             Useful for power users to validate keyword presence at a glance.
-            data-faq-count exposes the result count for analytics. */}
+            data-faq-count exposes the result count for analytics.
+            data-faq-hint="0" when the active search yields zero matches so
+            analytics can measure dead-end rate. */}
         <div
-          className="mx-auto mb-8 max-w-xl text-center text-xs text-zinc-500 dark:text-zinc-400"
+          className="mx-auto mb-2 max-w-xl text-center text-xs text-zinc-500 dark:text-zinc-400"
           data-testid="faq-match-count"
           data-faq-count={matchCount}
+          data-faq-hint={hasQuery && matchCount === 0 ? "0" : "1"}
           aria-live="polite"
         >
           {hasQuery ? (
@@ -250,6 +254,17 @@ export default async function FAQPage({ searchParams }: FAQPageProps) {
             </>
           )}
         </div>
+
+        {/* Share permalink — visible only when an active query narrows the
+            page so the launcher can give someone a direct search URL. Pure
+            client component (~30 LOC) that wraps navigator.clipboard. */}
+        {hasQuery ? (
+          <p className="mx-auto mb-8 max-w-xl text-center">
+            <CopySearchLinkButton />
+          </p>
+        ) : (
+          <p className="mx-auto mb-8 max-w-xl" />
+        )}
 
         <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
           <Badge variant="secondary">
