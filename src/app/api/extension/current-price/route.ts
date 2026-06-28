@@ -41,16 +41,26 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Cheap SSRF guard: only allow the marketplace hosts we ship the
-  // extension for. Prevents the per-user per-30min alarm from being turned
-  // into an open-proxy by users feeding arbitrary URLs.
+  // Cheap SSRF guard: only allow the marketplace hosts the extension
+  // actually scrapes. Production URLs span both .com and .co.id variants,
+  // and we accept both with or without www/subdomain prefix.
+  // Source of truth: SELECT DISTINCT host(offers.url) FROM offers.
   const ALLOWED_HOST_PATTERNS = [
-    /^https?:\/\/(?:www\.)?shopee\.co\.id\//,
+    // Shopee
     /^https?:\/\/(?:[a-z0-9-]+\.)?shopee\.co\.id\//,
-    /^https?:\/\/(?:www\.)?tokopedia\.com\//,
-    /^https?:\/\/(?:www\.)?lazada\.co\.id\//i,
-    /^https?:\/\/(?:www\.)?blibli\.com\//,
-    /^https?:\/\/(?:www\.)?bukalapak\.com\//,
+    // Tokopedia — both .com and .co.id, with or without www
+    /^https?:\/\/(?:[a-z0-9-]+\.)?tokopedia\.com\//,
+    /^https?:\/\/(?:[a-z0-9-]+\.)?tokopedia\.co\.id\//,
+    // Lazada, Blibli, Bukalapak — both .com and .co.id
+    /^https?:\/\/(?:[a-z0-9-]+\.)?lazada\.co\.id\//i,
+    /^https?:\/\/(?:[a-z0-9-]+\.)?lazada\.com\//i,
+    /^https?:\/\/(?:[a-z0-9-]+\.)?blibli\.com\//,
+    /^https?:\/\/(?:[a-z0-9-]+\.)?blibli\.co\.id\//,
+    /^https?:\/\/(?:[a-z0-9-]+\.)?bukalapak\.com\//,
+    /^https?:\/\/(?:[a-z0-9-]+\.)?bukalapak\.co\.id\//,
+    // TikTok Shop — both domains
+    /^https?:\/\/(?:[a-z0-9-]+\.)?tiktok\.com\//,
+    /^https?:\/\/(?:[a-z0-9-]+\.)?tiktok\.co\.id\//,
     /^https?:\/\/shop\.tiktok\.com\//,
   ];
   if (!ALLOWED_HOST_PATTERNS.some((re) => re.test(url))) {

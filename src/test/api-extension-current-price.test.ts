@@ -266,6 +266,14 @@ describe("GET /api/extension/current-price", () => {
       "https://www.blibli.com/-lg-oled/4",
       "https://www.bukalapak.com/-anker/5",
       "https://shop.tiktok.com/-gaming-chair/6",
+      "https://www.tokopedia.com/x/2",
+      "https://tokopedia.co.id/x/3",
+      "https://www.lazada.com/x/4",
+      "https://lazada.co.id/x/5",
+      "https://www.blibli.co.id/x/6",
+      "https://www.bukalapak.co.id/x/7",
+      "https://www.tiktok.com/x/8",
+      "https://tiktok.co.id/x/9",
     ])("allows %s", async (goodUrl) => {
       supabaseProxyState.result = { data: null, error: null };
       const u = new URL("http://localhost/api/extension/current-price");
