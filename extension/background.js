@@ -7,7 +7,33 @@
  *   3. POST to /api/ingestion/offer-snapshot with INGESTION_SECRET
  *   4. Track submission history in chrome.storage.local
  *   5. Periodically flush pending submissions (in case of network drops)
+ *   6. Watchlist: poll current prices every 30 min, notify on drops (P5)
  */
+
+// ES module imports — manifest declares background as { type: "module" }
+import {
+  getWatchlist as wlGetWatchlist,
+  addToWatchlist as wlAddToWatchlist,
+  removeFromWatchlist as wlRemoveFromWatchlist,
+  recordPriceCheck as wlRecordPriceCheck,
+  recordNotification as wlRecordNotification,
+  itemsToNotify as wlItemsToNotify,
+} from "./lib/watchlist.js";
+
+// Forward notifications to the product URL when clicked.
+const notificationUrlMap = {};
+chrome.notifications.onClicked.addListener((notificationId) => {
+  const url = notificationUrlMap[notificationId];
+  if (url) chrome.tabs.create({ url });
+  chrome.notifications.clear(notificationId);
+  delete notificationUrlMap[notificationId];
+});
+
+// Storage adapter expected by the watchlist module.
+const storageAdapter = {
+  get: (k) => chrome.storage.local.get(k),
+  set: (o) => chrome.storage.local.set(o),
+};
 
 // INGESTION_SECRET is bundled at build time. In dev, we read from
 // chrome.storage.local where popup.js stores it after user setup.
@@ -18,6 +44,7 @@ const SUBMIT_ENDPOINT = `${BIJAKBELI_API}/api/ingestion/offer-snapshot`;
 const DEDUPE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const MAX_HISTORY = 200;
 const FLUSH_ALARM = "bijakbeli-flush";
+const WATCH_CHECK_ALARM = "bijakbeli-watch-check";
 const MAX_CONCURRENT_SUBMISSIONS = 10; // Global limit across all tabs
 
 // In-memory pending queue (lost on service worker idle — that's OK, we flush via storage)
@@ -330,6 +357,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
 
+        case "BIJAKBELI_GET_WATCHLIST": {
+          const list = await watchStorageGet();
+          sendResponse({ list });
+          break;
+        }
+
+        case "BIJAKBELI_ADD_WATCH": {
+          try {
+            const item = await wlAddToWatchlist(storageAdapter, message.payload);
+            await updateBadge();
+            sendResponse({ ok: true, item });
+          } catch (e) {
+            sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) });
+          }
+          break;
+        }
+
+        case "BIJAKBELI_REMOVE_WATCH": {
+          const removed = await wlRemoveFromWatchlist(storageAdapter, message.url);
+          await updateBadge();
+          sendResponse({ ok: removed });
+          break;
+        }
+
+        case "BIJAKBELI_CHECK_WATCHES_NOW": {
+          // Manual trigger from popup / sidepanel when user wants an instant poll
+          const result = await checkWatchlistPrices();
+          sendResponse({ ok: true, ...result });
+          break;
+        }
+
         default:
           sendResponse({ error: "Unknown message type" });
       }
@@ -412,9 +470,73 @@ async function flushPendingQueue() {
   };
 }
 
+/**
+ * Watchlist polling: for each watched URL, fetch current price from public
+ * API endpoint. Items where price ≤ target (and not recently notified) get
+ * a native browser notification. Caller: chrome.alarms listener (30 min).
+ *
+ * Returns count summary for logging / sidepanel display.
+ */
+async function checkWatchlistPrices() {
+  const items = await wlGetWatchlist(storageAdapter);
+  if (!items || items.length === 0) return { checked: 0, notified: 0 };
+
+  const secret = await getIngestionSecret();
+  if (!secret) {
+    console.warn("[BijakBeli watchlist] INGESTION_SECRET not set — skipping poll");
+    return { checked: 0, notified: 0 };
+  }
+
+  const currentPrices = {};
+  for (const item of items) {
+    try {
+      const res = await fetch(
+        `${BIJAKBELI_API}/api/extension/current-price?url=${encodeURIComponent(item.url)}`,
+        { headers: { Authorization: `Bearer ${secret}` } }
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (typeof data?.price === "number") {
+        currentPrices[item.url] = data.price;
+        await wlRecordPriceCheck(storageAdapter, item.url, data.price);
+      }
+    } catch (e) {
+      console.warn(`[BijakBeli watchlist] price check failed for ${item.url}`, e);
+    }
+  }
+
+  const toNotify = wlItemsToNotify(items, currentPrices);
+  for (const item of toNotify) {
+    const nid = `bijakbeli-drop-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    notificationUrlMap[nid] = item.url;
+    try {
+      await chrome.notifications.create(nid, {
+        type: "basic",
+        iconUrl: "icon128.png",
+        title: "Harga turun! 🎯",
+        message: `${(item.title || "Produk").slice(0, 80)} sekarang Rp ${item.lastSeenPrice?.toLocaleString("id-ID") || currentPrices[item.url]?.toLocaleString("id-ID")}`,
+        contextMessage: `Target: Rp ${item.targetPrice.toLocaleString("id-ID")} • ${item.marketplace || ""}`,
+        priority: 1,
+      });
+      await wlRecordNotification(storageAdapter, item.url);
+    } catch (e) {
+      console.warn("[BijakBeli watchlist] notification failed", e);
+      delete notificationUrlMap[nid];
+    }
+  }
+
+  return { checked: items.length, notified: toNotify.length };
+}
+
+chrome.alarms.create(FLUSH_ALARM, { periodInMinutes: 5 });
+chrome.alarms.create(WATCH_CHECK_ALARM, { periodInMinutes: 30 });
+
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name !== FLUSH_ALARM) return;
-  await flushPendingQueue();
+  if (alarm.name === FLUSH_ALARM) {
+    await flushPendingQueue();
+  } else if (alarm.name === WATCH_CHECK_ALARM) {
+    await checkWatchlistPrices();
+  }
 });
 
 // ─── Lifecycle ──────────────────────────────────────────────────────────

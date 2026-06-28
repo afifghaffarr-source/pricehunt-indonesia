@@ -162,7 +162,129 @@ async function renderMain() {
   }
   app.appendChild(mpSection);
 
-  // Actions
+  // Watchlist section (P5: price drop alerts)
+  const { list: watchlist = [] } = await sendMessage("BIJAKBELI_GET_WATCHLIST");
+  const watchSection = el("div", { class: "section" });
+  watchSection.appendChild(
+    el("div", { class: "section-title", style: "color:#92400e" }, "🎯 Pantau Harga")
+  );
+
+  // Compact add form
+  const watchForm = el("div", { style: "background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px;font-size:12px;margin-bottom:10px" });
+  const urlInput = el("input", {
+    type: "text",
+    placeholder: "URL produk (mis. https://shopee.co.id/...)",
+    style: "width:100%;padding:6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;margin-bottom:6px;box-sizing:border-box",
+  });
+  const priceInput = el("input", {
+    type: "number",
+    placeholder: "Target harga (IDR)",
+    style: "width:100%;padding:6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;margin-bottom:6px;box-sizing:border-box",
+  });
+  const addBtn = el(
+    "button",
+    {
+      style: "width:100%;background:#f59e0b;color:white;padding:6px;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:11px",
+    },
+    "+ Tambah Watch"
+  );
+  addBtn.onclick = async () => {
+    const url = urlInput.value.trim();
+    const target = parseInt(priceInput.value, 10);
+    if (!url || !target) {
+      alert("URL dan target harga harus diisi");
+      return;
+    }
+    addBtn.disabled = true;
+    addBtn.textContent = "⏳...";
+    const result = await sendMessage("BIJAKBELI_ADD_WATCH", {
+      payload: { url, targetPrice: target },
+    });
+    addBtn.disabled = false;
+    addBtn.textContent = "+ Tambah Watch";
+    if (result.ok) {
+      urlInput.value = "";
+      priceInput.value = "";
+      renderMain();
+    } else {
+      alert(`Gagal: ${result.error}`);
+    }
+  };
+  watchForm.appendChild(urlInput);
+  watchForm.appendChild(priceInput);
+  watchForm.appendChild(addBtn);
+
+  // Auto-fill from active tab
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.url && !urlInput.value) urlInput.value = tab.url;
+  } catch (_e) { /* popup context — no active tab */ }
+  watchSection.appendChild(watchForm);
+
+  if (watchlist.length === 0) {
+    watchSection.appendChild(
+      el("div", { style: "color:#9ca3af;font-size:11px;font-style:italic;text-align:center;padding:8px" },
+        "Belum ada watch. Tambah URL produk di atas untuk mulai pantau harga."
+      )
+    );
+  } else {
+    // Manual instant check button
+    const checkBtn = el(
+      "button",
+      { style: "width:100%;background:#2563eb;color:white;padding:6px;border:none;border-radius:6px;font-weight:600;cursor:pointer;margin-bottom:8px;font-size:11px" },
+      "🔍 Cek Sekarang (INSTANT)"
+    );
+    checkBtn.onclick = async () => {
+      checkBtn.disabled = true;
+      checkBtn.textContent = "⏳ Checking...";
+      const r = await sendMessage("BIJAKBELI_CHECK_WATCHES_NOW");
+      checkBtn.disabled = false;
+      checkBtn.textContent = "🔍 Cek Sekarang (INSTANT)";
+      alert(r.notified > 0
+        ? `🎯 ${r.notified} notifikasi terkirim dari ${r.checked} watch!`
+        : `✓ ${r.checked} watch dicek, tidak ada yg turun harga`
+      );
+      renderMain();
+    };
+    watchSection.appendChild(checkBtn);
+
+    for (const item of watchlist) {
+      const row = el("div", {
+        style: "background:#f9fafb;border-left:3px solid #f59e0b;border-radius:4px;padding:8px;margin-bottom:6px;font-size:11px",
+      });
+      const titleRow = el("div", { style: "display:flex;justify-content:space-between;gap:8px;align-items:start" });
+      titleRow.appendChild(
+        el("span", {
+          style: "flex:1;font-weight:500;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",
+          title: item.url,
+        }, item.title?.substring(0, 50) || item.url.substring(0, 50))
+      );
+      const removeBtn = el(
+        "button",
+        { style: "background:#fee2e2;color:#991b1b;border:none;border-radius:3px;padding:2px 6px;font-size:10px;cursor:pointer" },
+        "✗"
+      );
+      removeBtn.onclick = async () => {
+        if (!confirm(`Hapus watch untuk ${item.title || item.url}?`)) return;
+        await sendMessage("BIJAKBELI_REMOVE_WATCH", { url: item.url });
+        renderMain();
+      };
+      titleRow.appendChild(removeBtn);
+      row.appendChild(titleRow);
+      row.appendChild(el("div", { style: "color:#92400e" }, `Target: Rp ${item.targetPrice.toLocaleString("id-ID")}`));
+      if (item.lastSeenPrice) {
+        const ratio = item.lastSeenPrice <= item.targetPrice;
+        row.appendChild(el("div", { style: `color:${ratio ? "#059669" : "#6b7280"};font-weight:${ratio ? "600" : "400"}` },
+          `${ratio ? "🎯 ON TARGET:" : "Last seen:"} Rp ${item.lastSeenPrice.toLocaleString("id-ID")}`));
+      } else {
+        row.appendChild(el("div", { style: "color:#9ca3af" }, "Belum pernah dicek"));
+      }
+      watchSection.appendChild(row);
+    }
+  }
+
+  app.appendChild(watchSection);
+
   const actions = el("div", { class: "section" });
   actions.appendChild(el("div", { class: "section-title" }, "⚡ Aksi"));
 
