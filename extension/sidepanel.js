@@ -41,7 +41,7 @@ async function renderMain() {
     return;
   }
 
-  const { stats = { totalSubmitted: 0, lastSubmissionAt: null, byMarketplace: {} }, recentHistory = [] } =
+  const { stats = { totalSubmitted: 0, lastSubmissionAt: null, byMarketplace: {} }, recentHistory = [], pendingCount = 0, pendingQueue = [] } =
     await sendMessage("BIJAKBELI_GET_STATS");
 
   // Instructions banner if no submissions yet
@@ -73,6 +73,71 @@ async function renderMain() {
   lastCard.appendChild(el("div", { class: "stat-sublabel" }, stats.lastSubmissionAt ? "" : "belum ada"));
   grid.appendChild(lastCard);
   app.appendChild(grid);
+
+  // Pending queue (P3 sidepanel parity)
+  if (pendingCount > 0) {
+    const pendingSection = el("div", { class: "section" });
+    pendingSection.appendChild(
+      el("div", { class: "section-title", style: "color:#92400e" }, `⏳ Pending Retry: ${pendingCount}`)
+    );
+    pendingSection.appendChild(
+      el("div", { 
+        style: "background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px;font-size:12px" 
+      }, null)
+    ).appendChild(
+      el("div", { style: "color:#78350f" }, "Akan di-retry otomatis setiap 5 menit (max 3x)")
+    );
+    
+    const pendingList = pendingSection.querySelector("div div:last-child");
+    pendingQueue.slice(0, 5).forEach((item) => {
+      const row = el(
+        "div",
+        { 
+          style: "padding:6px;border-bottom:1px solid #fde68a;display:flex;justify-content:space-between;gap:8px" 
+        },
+        null
+      );
+      const info = el("div", { style: "flex:1;overflow:hidden" });
+      const title = item.payload?.title?.substring(0, 45) || "Unknown";
+      info.appendChild(el("div", { style: "color:#451a03;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" }, `${title}${item.payload?.title?.length > 45 ? "..." : ""}`));
+      info.appendChild(el("div", { style: "color:#92400e;font-size:10px" }, `${item.marketplace} • ${formatRupiah(item.payload?.price || 0)}`));
+      row.appendChild(info);
+      
+      const retryBadge = el(
+        "div",
+        { 
+          style: "background:#92400e;color:white;font-size:10px;padding:2px 6px;border-radius:3px;white-space:nowrap;font-weight:600" 
+        },
+        `${item.retryCount}/3`
+      );
+      row.appendChild(retryBadge);
+      pendingList.appendChild(row);
+    });
+    
+    // Manual retry button
+    const retryBtn = el(
+      "button",
+      {
+        class: "btn",
+        style: "margin-top:10px;background:#f59e0b;color:white",
+      },
+      "🔄 Retry Sekarang"
+    );
+    retryBtn.onclick = async () => {
+      retryBtn.disabled = true;
+      retryBtn.textContent = "⏳ Retrying...";
+      const result = await sendMessage("BIJAKBELI_FLUSH_NOW");
+      if (result.succeeded > 0) {
+        alert(`✓ ${result.succeeded}/${result.attempted} berhasil di-retry`);
+      } else {
+        alert("⏳ Tidak ada yang berhasil di-retry saat ini");
+      }
+      renderMain();
+    };
+    pendingList.appendChild(retryBtn);
+    
+    app.appendChild(pendingSection);
+  }
 
   // Marketplace breakdown
   const mpSection = el("div", { class: "section" });
@@ -163,6 +228,22 @@ async function renderMain() {
         detail.appendChild(el("span", { style: "margin-left:8px" }, `conf: ${Math.round(h.confidence)}`));
       }
       meta.appendChild(detail);
+      
+      // Error message inline (P3 parity with popup)
+      if (!h.success && h.message) {
+        const errorMsg = el(
+          "div",
+          { 
+            style: "margin-top:4px;color:#dc2626;font-size:10px;font-style:italic;padding-left:6px;border-left:2px solid #fca5a5" 
+          },
+          null
+        );
+        let msg = h.message;
+        if (msg.length > 80) msg = msg.substring(0, 80) + "...";
+        errorMsg.appendChild(el("span", null, `⚠ ${msg}`));
+        meta.appendChild(errorMsg);
+      }
+      
       item.appendChild(meta);
 
       const badge = el("span", {
@@ -171,8 +252,81 @@ async function renderMain() {
       item.appendChild(badge);
       histSection.appendChild(item);
     });
+    
+    // Error summary if any (P3 parity)
+    const errorCount = recentHistory.filter(h => !h.success).length;
+    if (errorCount > 0) {
+      const errorSummary = el(
+        "div",
+        { 
+          style: "margin-top:12px;padding:8px;background:#fee2e2;border-radius:6px;font-size:12px;color:#991b1b;text-align:center;font-weight:500" 
+        },
+        `⚠️ ${errorCount} submission gagal dari ${recentHistory.length} total`
+      );
+      histSection.appendChild(errorSummary);
+    }
+
+    // CSV export button (P3 parity)
+    const exportBtn = el(
+      "button",
+      {
+        style:
+          "display:block;width:100%;margin-top:12px;padding:8px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;font-size:12px;color:#374151;cursor:pointer;font-weight:500",
+      },
+      "📥 Export History (CSV)"
+    );
+    exportBtn.onclick = (e) => {
+      e.preventDefault();
+      exportHistoryCsv(recentHistory);
+    };
+    histSection.appendChild(exportBtn);
   }
   app.appendChild(histSection);
+}
+
+/**
+ * Convert history to CSV and trigger download. Same as popup implementation.
+ */
+function exportHistoryCsv(history) {
+  if (!history || history.length === 0) {
+    alert("Tidak ada data untuk di-export");
+    return;
+  }
+
+  const headers = ["Timestamp", "Marketplace", "Title", "Price (IDR)", "URL", "Status", "Confidence", "Message"];
+  const escapeCsv = (val) => {
+    if (val === null || val === undefined) return "";
+    const str = String(val);
+    if (/[",\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const rows = history.map((h) => [
+    h.submittedAt || "",
+    h.marketplace || "",
+    h.title || "",
+    h.price || 0,
+    h.url || "",
+    h.success ? "Success" : "Failed",
+    h.confidence ? Math.round(h.confidence) : "",
+    h.message || "",
+  ].map(escapeCsv).join(","));
+
+  const csv = [headers.join(","), ...rows].join("\n");
+  // UTF-8 BOM for Excel
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = `bijakbeli-history-${date}.csv`;
+  
+  const a = el("a", { href: url, download: filename, style: "display:none" });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function renderSetup() {
