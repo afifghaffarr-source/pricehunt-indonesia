@@ -158,11 +158,24 @@ API. We never combine it with web-accessible resources or remote code.
 
 ### Submit
 
-1. Upload `bijakbeli-extension-v3.0.1.tar.gz` (~32 KB)
+1. Upload `bijakbeli-extension-v3.0.1.zip` (~32 KB, built by `extension/build-zip.sh`)
 2. Upload 1 small promo tile + 5 screenshots (drop marquee if not chasing curated features)
 3. Fill form fields above
-4. Click **Submit for review**
-5. Expected review time: 1–7 business days (typical 3 days)
+4. **Run pre-flight first**: `bash extension/preflight-check.sh extension`
+   - Validates manifest, no eval/Function blobs, privacy URL reachable (200), privacy content is real document
+   - Expect: `ALL PRE-FLIGHT CHECKS PASSED ✓`
+   - **Will fail** until `bijakbeli.web.id` Vercel alias re-pointed — the script is the canary
+5. Click **Submit for review**
+6. Expected review time: 1–7 business days (typical 3 days)
+
+### Build script
+
+```bash
+bash extension/build-zip.sh
+# Output: bijakbeli-extension-v3.0.1.zip (strips __test__/, .git/, *.test.js)
+```
+
+Old tar.gz approach superseded — use the zip script above. Cleaner CWS artifact.
 
 ## Post-submit checklist
 
