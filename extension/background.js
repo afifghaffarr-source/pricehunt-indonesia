@@ -121,9 +121,9 @@ async function submitBatch(products, marketplace) {
           sold_count: product.sold_count || undefined,
           stock_status: "available",
           image_url: product.image_url || undefined,
-          source: "browser_extension_v2",
+          source: "browser_extension_v3",
           captured_at: product.capturedAt || new Date().toISOString(),
-          parser_version: "2.0.0",
+          parser_version: "3.0.1",
         };
 
         const result = await submitProduct(payload);
