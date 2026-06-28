@@ -51,7 +51,8 @@ fi
 
 # --- 5. Privacy policy URL reachable ---
 hdr "5. Privacy policy URL reachable"
-priv_status=$(curl -sI -o /dev/null -w '%{http_code}' --max-time 10 \
+# -L follows redirects so canonical www/non-www 308s count as success
+priv_status=$(curl -sIL -o /dev/null -w '%{http_code}' --max-time 10 \
   "$BASE_URL/extension/privacy-policy" || echo "000")
 if [ "$priv_status" = "200" ]; then
   green "OK: $BASE_URL/extension/privacy-policy returns 200"
@@ -62,7 +63,7 @@ fi
 
 # --- 6. Storefront reachable ---
 hdr "6. Storefront landing reachable"
-landing_status=$(curl -sI -o /dev/null -w '%{http_code}' --max-time 10 \
+landing_status=$(curl -sIL -o /dev/null -w '%{http_code}' --max-time 10 \
   "$BASE_URL/extension" || echo "000")
 if [ "$landing_status" = "200" ]; then
   green "OK: $BASE_URL/extension returns 200"
@@ -71,9 +72,9 @@ else
   fail=1
 fi
 
-# --- 7. Privacy policy size sensible ---
+# --- 7. Privacy policy content size ---
 hdr "7. Privacy policy content size"
-priv_size=$(curl -s --max-time 10 "$BASE_URL/extension/privacy-policy" | wc -c)
+priv_size=$(curl -sL --max-time 10 "$BASE_URL/extension/privacy-policy" | wc -c)
 if [ "$priv_size" -lt 5000 ]; then
   red "FAIL: privacy policy is only $priv_size bytes — likely a stub (CWS requires comprehensive)"
   fail=1
