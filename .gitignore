@@ -20,6 +20,10 @@
 # production
 /build
 
+# audit reports (regeneratable by scripts)
+/a11y-reports/
+/perf-reports/
+
 # misc
 .DS_Store
 *.pem
