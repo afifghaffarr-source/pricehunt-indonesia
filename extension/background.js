@@ -298,7 +298,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case "BIJAKBELI_GET_STATS": {
           const stats = await getStats();
           const history = await getHistory();
-          sendResponse({ stats, recentHistory: history.slice(0, 10) });
+          const pendingQueue = await getPendingQueue();
+          sendResponse({ 
+            stats, 
+            recentHistory: history.slice(0, 10),
+            pendingCount: pendingQueue.length,
+            pendingQueue: pendingQueue.slice(0, 5) // Show first 5 pending items
+          });
+          break;
+        }
+
+        case "BIJAKBELI_FLUSH_NOW": {
+          const result = await flushPendingQueue();
+          sendResponse({ ok: true, ...result });
           break;
         }
 
@@ -331,11 +343,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.alarms.create(FLUSH_ALARM, { periodInMinutes: 5 });
 
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name !== FLUSH_ALARM) return;
-
+/**
+ * Reusable flush logic: processes pending queue and retries failed submissions.
+ * Called by alarm listener (every 5 min) and manual trigger (FLUSH_NOW).
+ */
+async function flushPendingQueue() {
   const queue = await getPendingQueue();
-  if (queue.length === 0) return;
+  if (queue.length === 0) return { attempted: 0, succeeded: 0, remaining: 0 };
 
   console.log(`[BijakBeli] Flushing ${queue.length} pending submissions...`);
 
@@ -386,6 +400,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   
   // Update badge to reflect new queue size
   await updateBadge();
+
+  return {
+    attempted: queue.length,
+    succeeded: successfulUrls.length,
+    remaining: updatedQueue.length,
+  };
+}
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name !== FLUSH_ALARM) return;
+  await flushPendingQueue();
 });
 
 // ─── Lifecycle ──────────────────────────────────────────────────────────

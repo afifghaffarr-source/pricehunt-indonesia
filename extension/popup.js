@@ -86,7 +86,7 @@ function renderSetup() {
 }
 
 async function renderMain() {
-  const { stats, recentHistory } = await sendMessage("BIJAKBELI_GET_STATS");
+  const { stats, recentHistory, pendingCount, pendingQueue } = await sendMessage("BIJAKBELI_GET_STATS");
   const app = clearApp();
 
   // Header
@@ -131,6 +131,52 @@ async function renderMain() {
       statsDiv.appendChild(row);
     }
     app.appendChild(statsDiv);
+  }
+
+  // Pending queue section (P2 visibility)
+  if (pendingCount > 0) {
+    const queueDiv = el("div", {
+      style:
+        "background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:8px;margin-bottom:12px;font-size:11px",
+    });
+    queueDiv.appendChild(
+      el("div", { style: "font-weight:600;margin-bottom:4px;color:#92400e" }, `⏳ Pending Retry: ${pendingCount}`)
+    );
+    queueDiv.appendChild(
+      el("div", { style: "color:#78350f;margin-bottom:6px" }, "Akan di-retry otomatis setiap 5 menit (max 3x)")
+    );
+    
+    // Show first 3 pending items
+    for (const item of (pendingQueue || []).slice(0, 3)) {
+      const row = el(
+        "div",
+        { style: "padding:2px 0;border-top:1px solid #fde68a;font-size:10px" },
+        null
+      );
+      const title = item.payload?.title?.substring(0, 30) || "Unknown product";
+      row.appendChild(el("div", { style: "color:#451a03" }, `${title}${item.payload?.title?.length > 30 ? "..." : ""}`));
+      row.appendChild(el("div", { style: "color:#92400e;font-size:9px" }, `Retry: ${item.retryCount}/3 • ${item.marketplace}`));
+      queueDiv.appendChild(row);
+    }
+    
+    // Manual retry button
+    const retryBtn = el(
+      "button",
+      {
+        style:
+          "width:100%;background:#f59e0b;color:white;padding:6px;border:none;border-radius:4px;font-weight:600;cursor:pointer;margin-top:6px;font-size:11px",
+      },
+      "🔄 Retry Sekarang"
+    );
+    retryBtn.onclick = async () => {
+      retryBtn.disabled = true;
+      retryBtn.textContent = "⏳ Retrying...";
+      await sendMessage("BIJAKBELI_FLUSH_NOW");
+      setTimeout(renderMain, 1500); // Refresh after delay
+    };
+    queueDiv.appendChild(retryBtn);
+    
+    app.appendChild(queueDiv);
   }
 
   // Quick action: scrape current tab
@@ -190,15 +236,20 @@ async function renderMain() {
     app.appendChild(histTitle);
 
     const histList = el("div", { style: "max-height:200px;overflow-y:auto" });
+    
+    // Count errors for summary
+    const errorCount = recentHistory.filter(h => !h.success).length;
+    
     recentHistory.slice(0, 8).forEach((h) => {
       const row = el(
         "div",
         {
           style:
-            "padding:6px;border-bottom:1px solid #f3f4f6;font-size:10px;display:flex;justify-content:space-between;align-items:center",
+            "padding:6px;border-bottom:1px solid #f3f4f6;font-size:10px",
         },
         null
       );
+      const topRow = el("div", { style: "display:flex;justify-content:space-between;align-items:center" });
       const left = el("div", { style: "flex:1;overflow:hidden;text-overflow:ellipsis" });
       left.appendChild(
         el("div", { style: "font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" }, h.title?.substring(0, 40) || "(no title)")
@@ -206,7 +257,7 @@ async function renderMain() {
       left.appendChild(
         el("div", { style: "color:#6b7280" }, `${h.marketplace} • ${formatRupiah(h.price || 0)}`)
       );
-      row.appendChild(left);
+      topRow.appendChild(left);
 
       const badge = el(
         "span",
@@ -217,10 +268,61 @@ async function renderMain() {
         },
         h.success ? `✓${h.confidence ? " " + Math.round(h.confidence) : ""}` : "✗"
       );
-      row.appendChild(badge);
+      topRow.appendChild(badge);
+      row.appendChild(topRow);
+      
+      // Show error message inline for failed items (P2 better error visibility)
+      if (!h.success && h.message) {
+        const errorMsg = el(
+          "div",
+          { 
+            style: "margin-top:3px;color:#dc2626;font-size:9px;font-style:italic;padding-left:4px;border-left:2px solid #fca5a5" 
+          },
+          null
+        );
+        // Simplify common error messages
+        let msg = h.message;
+        if (msg.length > 80) msg = msg.substring(0, 80) + "...";
+        errorMsg.appendChild(el("span", null, `⚠ ${msg}`));
+        row.appendChild(errorMsg);
+      }
+      
       histList.appendChild(row);
     });
+    
+    // Error summary footer
+    if (errorCount > 0) {
+      const errorSummary = el(
+        "div",
+        { 
+          style: "margin-top:6px;padding:6px;background:#fee2e2;border-radius:4px;font-size:10px;color:#991b1b;text-align:center" 
+        },
+        null
+      );
+      errorSummary.appendChild(
+        el("span", { style: "font-weight:600" }, `⚠️ ${errorCount} submission gagal`)
+      );
+      histList.appendChild(errorSummary);
+    }
+    
     app.appendChild(histList);
+  }
+
+  // Export CSV button (P2)
+  if (recentHistory.length > 0) {
+    const exportBtn = el(
+      "button",
+      {
+        style:
+          "display:block;width:100%;margin-top:8px;padding:6px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;font-size:11px;color:#374151;cursor:pointer;font-weight:500",
+      },
+      "📥 Export History (CSV)"
+    );
+    exportBtn.onclick = async (e) => {
+      e.preventDefault();
+      exportHistoryCsv(recentHistory);
+    };
+    app.appendChild(exportBtn);
   }
 
   // Settings link
@@ -239,6 +341,54 @@ async function renderMain() {
     renderSetup();
   };
   app.appendChild(settingsLink);
+}
+
+/**
+ * Convert history array to CSV and trigger browser download.
+ * CSV escapes commas/quotes properly per RFC 4180.
+ */
+function exportHistoryCsv(history) {
+  if (!history || history.length === 0) {
+    alert("Tidak ada data untuk di-export");
+    return;
+  }
+
+  const headers = ["Timestamp", "Marketplace", "Title", "Price (IDR)", "URL", "Status", "Confidence", "Message"];
+  const escapeCsv = (val) => {
+    if (val === null || val === undefined) return "";
+    const str = String(val);
+    // Quote if contains comma, quote, or newline
+    if (/[",\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const rows = history.map((h) => [
+    h.submittedAt || "",
+    h.marketplace || "",
+    h.title || "",
+    h.price || 0,
+    h.url || "",
+    h.success ? "Success" : "Failed",
+    h.confidence ? Math.round(h.confidence) : "",
+    h.message || "",
+  ].map(escapeCsv).join(","));
+
+  const csv = [headers.join(","), ...rows].join("\n");
+  // Add BOM so Excel reads UTF-8 correctly
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = `bijakbeli-history-${date}.csv`;
+  
+  // Trigger download
+  const a = el("a", { href: url, download: filename, style: "display:none" });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
