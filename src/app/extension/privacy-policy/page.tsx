@@ -46,7 +46,77 @@ export default function ExtensionPrivacyPolicyPage() {
       <section className="mb-10">
         <h2 className="mb-4 text-2xl font-semibold">1. Informasi yang Kami Kumpulkan</h2>
 
-        <h3 className="mb-2 mt-4 text-xl font-semibold">1.1 Data produk dari marketplace</h3>
+        <h3 className="mb-2 mt-4 text-xl font-semibold">1.1 Ringkasan data per kategori (untuk Chrome Web Store 2026)</h3>
+        <p className="mb-3 leading-relaxed">
+          Sejak awal 2026, Chrome Web Store mewajibkan developer untuk memilih kategori
+          data yang dikumpulkan dari daftar tetap. Tabel di bawah menggunakan istilah
+          resmi dari dashboard Chrome dan menjelaskan apa yang kami kumpulkan per kategori:
+        </p>
+        <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <table className="w-full text-sm">
+            <thead className="bg-zinc-100 dark:bg-zinc-900">
+              <tr>
+                <th className="px-3 py-2 text-left font-semibold">Kategori (Chrome Dashboard)</th>
+                <th className="px-3 py-2 text-left font-semibold">Status</th>
+                <th className="px-3 py-2 text-left font-semibold">Penjelasan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 font-medium">Personally identifiable information</td>
+                <td className="px-3 py-2 text-green-700 dark:text-green-400 font-semibold">Tidak dikumpulkan</td>
+                <td className="px-3 py-2">Tidak ada nama, email, nomor telepon, atau alamat.</td>
+              </tr>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 font-medium">Health information</td>
+                <td className="px-3 py-2 text-green-700 dark:text-green-400 font-semibold">Tidak dikumpulkan</td>
+                <td className="px-3 py-2">—</td>
+              </tr>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 font-medium">Financial information</td>
+                <td className="px-3 py-2 text-green-700 dark:text-green-400 font-semibold">Tidak dikumpulkan</td>
+                <td className="px-3 py-2">Tidak ada akses ke metode pembayaran, kartu, atau dompet digital.</td>
+              </tr>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 font-medium">Authentication information</td>
+                <td className="px-3 py-2 text-green-700 dark:text-green-400 font-semibold">Tidak dikumpulkan</td>
+                <td className="px-3 py-2">INGESTION_SECRET adalah token bersama (bukan identitas personal). Tidak ada username/password/kredensial login.</td>
+              </tr>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 font-medium">Personal communications</td>
+                <td className="px-3 py-2 text-green-700 dark:text-green-400 font-semibold">Tidak dikumpulkan</td>
+                <td className="px-3 py-2">Tidak membaca email, chat, atau pesan.</td>
+              </tr>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 font-medium">Location</td>
+                <td className="px-3 py-2 text-green-700 dark:text-green-400 font-semibold">Tidak dikumpulkan</td>
+                <td className="px-3 py-2">Tidak ada akses ke GPS atau alamat IP.</td>
+              </tr>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 font-medium">Web history</td>
+                <td className="px-3 py-2 text-green-700 dark:text-green-400 font-semibold">Tidak dikumpulkan</td>
+                <td className="px-3 py-2">Ekstensi tidak menyimpan daftar URL yang Anda kunjungi. Hanya membaca halaman marketplace yang sedang aktif pada saat scrape.</td>
+              </tr>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 font-medium">User activity</td>
+                <td className="px-3 py-2 text-amber-700 dark:text-amber-400 font-semibold">Dikumpulkan (terbatas)</td>
+                <td className="px-3 py-2">Background worker mengunjungi ulang URL produk di watchlist Anda (satu produk = satu request ke marketplace) untuk cek apakah harga berubah. Daftar URL ini hanya berasal dari items yang Anda tambahkan sendiri.</td>
+              </tr>
+              <tr className="border-t border-zinc-200 dark:border-zinc-800 bg-amber-50 dark:bg-amber-950/20">
+                <td className="px-3 py-2 font-medium">Website content</td>
+                <td className="px-3 py-2 text-amber-700 dark:text-amber-400 font-semibold">Dikumpulkan (marketplace saja)</td>
+                <td className="px-3 py-2">Content script membaca elemen-elemen publik dari halaman produk marketplace: judul produk, harga, nama toko, rating seller. Tidak membaca elemen di luar area produk.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Untuk dashboard Chrome Web Store saat submit, jawablah sesuai tabel di atas.
+          Versi lebih lengkap ada di <code>extension/LAUNCH_CHECKLIST.md</code> bagian
+          &quot;Data Certification Matrix&quot;.
+        </p>
+
+        <h3 className="mb-2 mt-6 text-xl font-semibold">1.2 Data produk dari marketplace</h3>
         <p className="leading-relaxed">
           Setiap kali Anda membuka halaman produk di Shopee, Tokopedia, Lazada, Blibli,
           Bukalapak, atau TikTok Shop, ekstensi membaca informasi yang <strong>sudah ditampilkan
@@ -55,7 +125,7 @@ export default function ExtensionPrivacyPolicyPage() {
           atau mengubah apapun di halaman marketplace.
         </p>
 
-        <h3 className="mb-2 mt-4 text-xl font-semibold">1.2 INGESTION_SECRET</h3>
+        <h3 className="mb-2 mt-4 text-xl font-semibold">1.3 INGESTION_SECRET</h3>
         <p className="leading-relaxed">
           Untuk mengirim data ke server BijakBeli, Anda memasukkan INGESTION_SECRET secara
           manual di popup ekstensi. Secret ini disimpan di <code>chrome.storage.local</code>{" "}

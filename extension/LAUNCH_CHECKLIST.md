@@ -156,6 +156,24 @@ API. We never combine it with web-accessible resources or remote code.
 - **Regions**: All (primary market: Indonesia)
 - **Pricing**: Free
 
+### Data Certification Matrix (CWS 2026 dashboard)
+
+Sebelum klik Submit, di tab **Privacy practices** jawab checklist sebagai berikut. Jawaban di bawah dicocokkan dengan tabel 9-kategori di `/extension/privacy-policy`.
+
+| CWS Dashboard Label | Jawab | Alasan |
+|---|---|---|
+| Personally identifiable information | ❌ No | Tidak ada nama, email, telepon, alamat |
+| Health information | ❌ No | Di luar scope ekstensi |
+| Financial or payment information | ❌ No | Tidak akses metode pembayaran |
+| Authentication information | ❌ No | INGESTION_SECRET = shared token, bukan identitas |
+| Personal communications | ❌ No | Tidak baca email/chat |
+| Location | ❌ No | Tidak ada akses GPS/IP |
+| Web history | ❌ No | Tidak simpan URL history |
+| User activity | ✅ Yes | Background worker periodic cek watchlist URL |
+| Website content | ✅ Yes | Baca title/harga/toko dari halaman marketplace |
+
+Catat untuk reviewer: untuk "Yes" dua terakhir, siapkan 1 paragraf justifikasi (paste ke textfield "How is this data used"). Sudah ada di `extension/REJECTION_RESPONSE_KIT.md` section 6.
+
 ### Submit
 
 1. Upload `bijakbeli-extension-v3.0.1.zip` (~32 KB, built by `extension/build-zip.sh`)
