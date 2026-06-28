@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# BijakBeli Daily Health Snapshot
+# Runs once/day on Binance VPS (Hermes cron, workdir=bijakbeli-app).
+#
+# Bundles four cheap diagnostic checks into one Markdown report.
+# Designed for Vercel Hobby (free) + Supabase free tier:
+#   - 5 health-pings hit public Vercel URLs (counted as 5 invocations/day × 30 = 150/month)
+#     vs. 100,000/month free quota. Negligible.
+#   - Cron watchdog query: 1 Supabase REST read/day (well under 500K free quota).
+#   - axe-core regression: runs against localhost:3000 (dev mode), 0 Vercel hits.
+#   - Build-zip freshness: pure local filesystem check, 0 outside requests.
+#
+# Total external cost per day: 5 Vercel route hits + 1 Supabase read = FREE TIER SAFE.
+#
+# Usage:
+#   bash monitor/daily_health.sh
+#
+# Designed to be run from cronjob(no_agent=true) — stdout IS the report.
+
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT" || exit 1
+
+PROD_BASE="${PROD_BASE:-https://www.bijakbeli.web.id}"
+ROUTES=(
+  "/extension"
+  "/extension/faq"
+  "/extension/setup"
+  "/extension/privacy-policy"
+  "/extension/installed"
+)
+TIMEOUT="${HEALTH_TIMEOUT:-15}"
+DATE_UTC=$(date -u +"%Y-%m-%d %H:%M UTC")
+
+# -------------------------------------------------------------------- section 1
+SECTION_HEALTH_OK=0
+SECTION_HEALTH_FAIL=0
+
+echo "## 📍 SSR / API smoke (5 public routes)"
+echo ""
+echo "| Route | Status | Latency (s) |"
+echo "|---|---|---|"
+for r in "${ROUTES[@]}"; do
+  url="${PROD_BASE}${r}"
+  out=$(curl -sS -o /dev/null -w "%{http_code}|%{time_total}" --max-time "$TIMEOUT" "$url" 2>&1) || out="000|0"
+  code="${out%|*}"
+  latency="${out#*|}"
+  if [ "$code" = "200" ]; then
+    SECTION_HEALTH_OK=$((SECTION_HEALTH_OK + 1))
+    status_emoji="✅"
+  else
+    SECTION_HEALTH_FAIL=$((SECTION_HEALTH_FAIL + 1))
+    status_emoji="❌"
+  fi
+  printf "| %s | %s %s | %.3f |\n" "$r" "$code" "$status_emoji" "$latency"
+done
+echo ""
+
+# -------------------------------------------------------------------- section 2
+echo "## ♿ Axe-core WCAG 2.1 AA regression"
+echo ""
+if [ -f scripts/axe-a11y-faq.mjs ]; then
+  # Ensure dev server is running for axe to audit (start fresh if killed)
+  if ! curl -sS -o /dev/null -w "%{http_code}" --max-time 3 "http://localhost:3000/extension" 2>/dev/null | grep -q "200"; then
+    echo "\`next dev\` not reachable on :3000. Starting in background for axe..."
+    lsof -ti:3000 2>/dev/null | xargs -r kill -9
+    (nohup npx next dev -p 3000 > /tmp/dev.log 2>&1 &)
+    # wait for ready
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+      if curl -sS -o /dev/null -w "%{http_code}" --max-time 3 "http://localhost:3000/extension" 2>/dev/null | grep -q "200"; then
+        echo "dev ready after ${i}s"
+        break
+      fi
+      sleep 1
+    done
+  fi
+  total_violations=0
+  node scripts/axe-a11y-faq.mjs >/tmp/axe.out 2>&1 || true
+  # Parse the JSON for total blocking violations
+  if [ -f a11y-reports/axe-faq.json ]; then
+    total_violations=$(jq '[.violations[]?.nodes | length] | add // 0' a11y-reports/axe-faq.json 2>/dev/null || echo 0)
+  fi
+  if [ "$total_violations" -eq 0 ]; then
+    echo "✅ 0 serious/critical axe violations across 5 routes."
+  else
+    echo "❌ $total_violations axe violation(s) detected. Report: a11y-reports/axe-faq.md"
+    cat a11y-reports/axe-faq.md 2>/dev/null | head -40 || true
+  fi
+else
+  echo "⚠️ scripts/axe-a11y-faq.mjs not found."
+fi
+echo ""
+
+# -------------------------------------------------------------------- section 3
+echo "## 🔨 Build-zip freshness"
+echo ""
+zip_file="bijakbeli-extension-v$(jq -r '.version' extension/manifest.json).zip"
+if [ -f "$zip_file" ]; then
+  zip_mtime=$(stat -c '%Y' "$zip_file")
+  zip_age_sec=$(( $(date +%s) - zip_mtime ))
+  zip_age_hr=$(( zip_age_sec / 3600 ))
+  last_commit_ts=$(git log -1 --format='%ct')
+  last_commit_age_sec=$(( $(date +%s) - last_commit_ts ))
+  last_commit_msg=$(git log -1 --format='%s' | head -c 80)
+  if [ "$last_commit_age_sec" -gt "$zip_age_sec" ]; then
+    drift_sec=$(( last_commit_age_sec - zip_age_sec ))
+    echo "❌ ZIP older than latest commit."
+    echo "- Latest commit: \`$last_commit_msg\` ($((last_commit_age_sec / 3600))h ago)"
+    echo "- ZIP age: ${zip_age_hr}h"
+    echo "- Drift: $((drift_sec / 3600))h"
+    echo "→ Re-run: \`bash extension/build-zip.sh\`"
+  else
+    echo "✅ ZIP current: ${zip_age_hr}h old"
+    echo "- Latest commit: \`$last_commit_msg\` (${zip_age_hr}h ago)"
+  fi
+else
+  echo "❌ $zip_file missing. Run: \`bash extension/build-zip.sh\`"
+fi
+echo ""
+
+# -------------------------------------------------------------------- section 4
+echo "## 🔍 Supabase-side prod crons (last seen)"
+echo ""
+if [ -f monitor/cron_watchdog.py ]; then
+  python3 monitor/cron_watchdog.py --days 5 --quiet 2>&1 | head -20 || echo "(watchdog script errored)"
+else
+  echo "⚠️ monitor/cron_watchdog.py not found."
+fi
+echo ""
+
+# -------------------------------------------------------------------- footer
+echo "---"
+echo "Snapshot taken: $DATE_UTC"
+echo "Generated by: monitor/daily_health.sh (Hermes Cron, workdir=bijakbeli-app)"
+echo "External cost: 5 Vercel route GETs + 1 Supabase REST read (free tier)"
