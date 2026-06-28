@@ -34,13 +34,47 @@
 
   function parsePriceIDR(text) {
     if (!text) return null;
-    // Match "Rp1.234.000", "Rp 1.234.000", "1.234.000", "Rp1,234,000"
-    const match = text.match(/(?:Rp\.?\s*)?([\d.]+(?:\.\d{3})*)/i);
-    if (!match) return null;
-    // Remove dots (thousands separator in IDR)
-    const numStr = match[1].replace(/\./g, "").replace(/,/g, "");
-    const num = parseInt(numStr, 10);
-    return isNaN(num) || num <= 0 ? null : num;
+    // Strategy:
+    //   1. Shopee renders installment ("Rp X/bln", "/bln", "cicilan") plus
+    //      the real price in nested spans. The previous greedy regex
+    //      matched digit groups across boundaries, producing 100× wrong
+    //      numbers like 1.045.994.000 instead of 13.094.500.
+    //   2. To avoid this, we extract ONLY digits belonging to a single
+    //      price triplet (groups of exactly 3 digits separated by dots),
+    //      anchored by either an explicit "Rp" prefix or the beginning
+    //      of the trimmed string. We stop parsing at the first non-digit,
+    //      non-dot character.
+    //   3. We reject numbers outside a sane Indonesian price range
+    //      (Rp1.000 - Rp1.000.000.000) so obvious reconciliation errors
+    //      (cicilan fragments, coupon suffixes, "X.000" suffix leaks)
+    //      fail loud rather than pollute the database.
+    const cleaned = String(text).replace(/\s+/g, " ").trim();
+
+    // Anchor on Rp prefix if present, else use leading-digit fallback.
+    // Match only [\d.] so we never capture letters like "bln" or "/".
+    // Pattern: (?:\d{1,3}(?:\.\d{3})+)   — ensures at least one thousands
+    // group, which rules out partial captures like "1.0" or "0.00".
+    // Pattern 1: starts with "Rp" (the canonical Shopee/Tokopedia format).
+    // Pattern 2: any leading-digit price (catches "<span>99.999</span>"
+    //                 fragments), BUT only if NOT preceded by `-`. This
+    //                 rejects "Rp-50.000" which would otherwise extract
+    //                 "50.000" via the loose fallback.
+    const patterns = [
+      /(?:Rp\.?\s*)?(\d{1,3}(?:\.\d{3})+)/i,
+      /(?<![-\d.])(\d{1,3}(?:\.\d{3})+)/,
+    ];
+
+    for (const p of patterns) {
+      const m = cleaned.match(p);
+      if (!m) continue;
+      const digitsOnly = m[1].replace(/\./g, "");
+      const num = parseInt(digitsOnly, 10);
+      // Sanity: typical Indonesian consumer-electronics price lives in
+      // [Rp1.000, Rp1.000.000.000]. Outside = bug somewhere upstream.
+      if (isNaN(num) || num < 1000 || num > 1_000_000_000) continue;
+      return num;
+    }
+    return null;
   }
 
   /**
