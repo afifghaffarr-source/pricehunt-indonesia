@@ -474,6 +474,26 @@ export default function ExtensionPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Footer: Privacy + Source */}
+      <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t pt-6 text-sm text-muted-foreground">
+        <Link
+          href="/extension/privacy"
+          className="hover:text-foreground hover:underline"
+        >
+          <Shield className="mr-1 inline h-3.5 w-3.5" />
+          Privacy Policy
+        </Link>
+        <a
+          href="https://github.com/afifghaffarr-source/pricehunt-indonesia"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-foreground hover:underline"
+        >
+          Source Code (GitHub)
+        </a>
+        <span>v3.0.1 · Manifest V3</span>
+      </div>
     </div>
   );
 }

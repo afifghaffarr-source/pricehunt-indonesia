@@ -1,8 +1,16 @@
 {
   "manifest_version": 3,
   "name": "BijakBeli.app",
+  "short_name": "BijakBeli",
   "version": "3.0.1",
-  "description": "Bandingkan harga marketplace Indonesia saat browsing. Auto-scrape produk yang kamu lihat untuk membantu komunitas.",
+  "description": "Bandingkan harga marketplace Indonesia saat browsing. Auto-scrape produk untuk bantu komunitas.",
+  "author": "BijakBeli Team",
+  "homepage_url": "https://www.bijakbeli.web.id/extension",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "permissions": [
     "activeTab",
     "storage",
@@ -31,11 +39,12 @@
   "side_panel": {
     "default_path": "sidepanel.html"
   },
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  },
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/*.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": [
