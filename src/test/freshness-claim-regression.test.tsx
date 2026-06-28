@@ -113,7 +113,15 @@ describe("BUG-06: lying freshness claim regression guard", () => {
   });
 
   describe("cron schedule alignment", () => {
-    it("vercel.json has a daily price cron (the source of truth)", async () => {
+    // The vercel.json cron is the source of truth for product page
+    // <TrustSignalsBar autoCheckFrequency>. Test that documents this and
+    // asserts no hourly lie is shown on the product page.
+    //
+    // History: previously tested for `path contains "price"` against
+    // `/api/cron/prices` cron. That cron was removed 2026-06-28 because the
+    // Vercel Hobby (free) tier caps at 2 cron jobs total and the route
+    // handler never existed. We now have a single `digest` cron.
+    it("vercel.json exposes exactly one cron on Hobby tier (the source of truth)", async () => {
       const fs = await import("node:fs");
       const path = await import("node:path");
       const source = fs.readFileSync(
@@ -122,15 +130,20 @@ describe("BUG-06: lying freshness claim regression guard", () => {
       );
       const vercel = JSON.parse(source);
 
-      const priceCron = vercel.crons?.find((c: { path: string }) =>
-        c.path.includes("price"),
-      );
-      expect(priceCron, "vercel.json must define a price cron").toBeTruthy();
+      // Vercel Hobby free-tier max = 2 cron jobs. We use 1 to leave headroom.
+      expect(
+        vercel.crons?.length,
+        "Vercel Hobby caps at 2 cron jobs",
+      ).toBeLessThanOrEqual(2);
 
-      // The price cron must be daily (24h), not hourly. If this ever changes,
-      // the TrustSignalsBar frequency on the product page must be updated
-      // to match. 0 6 * * * = 06:00 UTC daily.
-      expect(priceCron.schedule).toBe("0 6 * * *");
+      const digestCron = vercel.crons?.find((c: { path: string }) =>
+        c.path.includes("digest"),
+      );
+      expect(digestCron, "vercel.json must define a digest cron").toBeTruthy();
+
+      // Weekly summary cron. Documented here so any schedule change must also
+      // be reflected on the product page <TrustSignalsBar>.
+      expect(digestCron.schedule).toBe("0 9 * * 1");
     });
   });
 });

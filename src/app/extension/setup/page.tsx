@@ -10,6 +10,15 @@ export const metadata = {
   robots: "noindex",
 };
 
+// Next.js 15.5.4 + Turbopack has a known issue where static prerendered pages
+// wrapped in the root <Suspense> (because of /src/app/loading.tsx) end up with
+// body content stuck inside <div hidden id="S:0"> and the page renders the
+// loading skeleton forever. Forcing dynamic SSR bypasses static prerender and
+// resolves the hydration swap on every request. Trade-off: no CDN cache, but
+// this page is robots:noindex anyway.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function SetupPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">

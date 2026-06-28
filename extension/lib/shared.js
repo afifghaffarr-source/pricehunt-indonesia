@@ -1,8 +1,12 @@
 /**
- * BijakBeli Extension — Shared Helpers
+ * BijakBeli Extension — Shared CSV helpers.
  *
- * Pure functions used by both popup.js and sidepanel.js.
- * Loaded as ES module (Vitest) and as global script (Chrome extension).
+ * Pure functions imported by popup.js / sidepanel.js in Vitest tests only.
+ * The runtime extension does NOT load this file: popup.js and sidepanel.js
+ * each define their own local escapeCsv() arrow function (kept inline so the
+ * MV3 bundle stays small). Removing the `lib/shared.js` <script> tag from
+ * popup.html / sidepanel.html also avoids an MV3 strict-mode SyntaxError
+ * because classic <script> tags cannot use ES `export` keywords.
  */
 
 export function escapeCsv(val) {
