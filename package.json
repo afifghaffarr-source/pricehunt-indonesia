@@ -13,6 +13,7 @@
     "check:migrations": "node scripts/check-migration-versions.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:routes": "node scripts/test-extension-routes-e2e.mjs",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install --with-deps chromium",
     "db:migrate": "node scripts/db-migrate.mjs",
@@ -56,7 +57,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
-    "@playwright/test": "^1.60.0",
+    "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
