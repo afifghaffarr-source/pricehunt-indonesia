@@ -24,6 +24,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/auth";
 import { z } from "@/lib/validation";
 import { logAdminAction } from "@/lib/admin-audit";
+import { findBestMatchingProduct } from "@/lib/offer-product-link";
 
 // The status enum stored in offers.validation_status.
 // Restricted to these 5 strings — anything else returns 400.
@@ -82,7 +83,7 @@ export async function PATCH(
   const supabase = createAdminClient();
   const { data: existing, error: findError } = await supabase
     .from("offers")
-    .select("id, validation_status, title")
+    .select("id, validation_status, title, product_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -101,10 +102,31 @@ export async function PATCH(
   }
   const previousStatus = existing.validation_status;
 
-  // Only PATCH the validation_status. updated_at auto-bumps via Supabase.
+  // Auto-link orphan offers (product_id IS NULL) when approving. Many of
+  // the scraped offers have NULL product_id because they pre-date catalog
+  // seeding; without a link they're invisible in /search. If we find a
+  // confident match we link in the same UPDATE so the change is atomic.
+  let autoLink: Awaited<ReturnType<typeof findBestMatchingProduct>> | null = null;
+  if (
+    input.status === "valid" &&
+    existing.product_id == null &&
+    typeof existing.title === "string" &&
+    existing.title.length > 0
+  ) {
+    autoLink = await findBestMatchingProduct(supabase, existing.title);
+  }
+
+  // Update validation_status (and product_id when auto-link succeeded).
+  // updated_at auto-bumps via Supabase.
+  const updatePayload: Record<string, unknown> = {
+    validation_status: input.status,
+  };
+  if (autoLink) {
+    updatePayload.product_id = autoLink.product_id;
+  }
   const { error } = await supabase
     .from("offers")
-    .update({ validation_status: input.status } as never)
+    .update(updatePayload as never)
     .eq("id", id);
 
   if (error) {
@@ -129,6 +151,15 @@ export async function PATCH(
       from_status: previousStatus,
       to_status: input.status,
       has_notes: !!input.notes,
+      auto_link: autoLink
+        ? {
+            product_id: autoLink.product_id,
+            product_name: autoLink.product_name,
+            product_slug: autoLink.product_slug,
+            score: autoLink.score,
+            matched_tokens: autoLink.matched_tokens,
+          }
+        : null,
     },
     request,
   });
@@ -139,6 +170,13 @@ export async function PATCH(
       id,
       validation_status: input.status,
       previous_status: previousStatus,
+      auto_link: autoLink
+        ? {
+            product_id: autoLink.product_id,
+            product_slug: autoLink.product_slug,
+            product_name: autoLink.product_name,
+          }
+        : null,
     },
   });
 }
