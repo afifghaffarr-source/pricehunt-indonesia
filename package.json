@@ -93,5 +93,8 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "metadata": {
+    "__deploy_trigger__": "19"
+  }
 }
