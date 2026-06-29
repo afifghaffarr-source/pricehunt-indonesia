@@ -23,8 +23,10 @@ async function loadToken(): Promise<string | null> {
   try {
     const res = await fetch("/api/auth/csrf", { method: "GET", credentials: "same-origin" });
     if (!res.ok) return null;
-    const data = (await res.json()) as { token?: string };
-    return data?.token ?? null;
+    const data = (await res.json()) as { csrf_token?: string; csrfToken?: string; token?: string };
+    // Server returns { csrf_token }, but accept common alternates in case
+    // any other CSRF issuer uses a different shape.
+    return data?.csrf_token ?? data?.csrfToken ?? data?.token ?? null;
   } catch {
     return null;
   }
