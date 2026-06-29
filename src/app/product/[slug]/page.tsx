@@ -27,7 +27,7 @@ import { PriceComparisonPreview } from "@/components/product/PriceComparisonPrev
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { JsonLd, productJsonLd, breadcrumbJsonLd } from "@/lib/seo";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -59,18 +59,65 @@ export async function generateMetadata({
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const product = await getProductBySlugFromDB(slug);
+
+  // Wrap DB fetch in try/catch so any Supabase / network / transform error
+  // gracefully falls through to notFound.tsx ("Produk Tidak Ditemukan")
+  // instead of bubbling up to error.tsx ("Produk Tidak Dapat Dimuat"),
+  // which feels broken to users.
+  let product: Awaited<ReturnType<typeof getProductBySlugFromDB>> = null;
+  try {
+    product = await getProductBySlugFromDB(slug);
+  } catch (e) {
+    // Log server-side; respond with a clean 404 for the visitor.
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[product/[slug]] failed to load product:", e);
+    }
+    notFound();
+  }
 
   if (!product) {
     notFound();
   }
 
-  // If product has no prices at all, show not found
-  // (product exists in DB but has no offers - stale data).
-  // The stored product.lowestPrice column is acceptable for this guard — it
-  // is NOT used for display; we recompute live values below.
-  if (product.lowestPrice === 0 && product.prices.length === 0) {
-    notFound();
+  // If product has no prices at all, fall through to not-found.
+  // (Product exists in DB but has zero linked offers — likely a freshly
+  // seeded catalog entry awaiting its first scrape. Showing 404 is
+  // confusing here; instead we show a friendly "coming soon" empty
+  // state so the URL still resolves and the visitor knows the product
+  // exists but has no prices yet.)
+  const hasNoOffers = product.lowestPrice === 0 && product.prices.length === 0;
+  if (hasNoOffers) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+        <Link href="/search" className={buttonVariants({ variant: "ghost" }) + " mb-4"}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Kembali
+        </Link>
+        <div className="mx-auto flex min-h-[40vh] max-w-lg flex-col items-center justify-center text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <Clock className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h1 className="mb-2 text-2xl font-bold">{product.name}</h1>
+          <p className="mb-1 text-sm font-medium text-muted-foreground">
+            {product.category}
+          </p>
+          <p className="mt-4 mb-2 text-base font-semibold">
+            Belum ada harga yang tersedia
+          </p>
+          <p className="mb-6 max-w-sm text-sm text-muted-foreground">
+            Produk ini ada di katalog kami dan sedang menunggu data harga dari marketplace. Cek kembali beberapa hari lagi, atau jelajahi produk serupa.
+          </p>
+          <div className="flex gap-3">
+            <Link href="/search" className={buttonVariants({ variant: "default" })}>
+              Cari Produk Lain
+            </Link>
+            <Link href="/" className={buttonVariants({ variant: "outline" })}>
+              Beranda
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const user = await getUser();
