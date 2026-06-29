@@ -79,6 +79,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  // Local cast: Phase 1 plumbing attaches `defaultVariant` at runtime in
+  // getProductBySlugFromDB, but the global `Product` type is left clean
+  // until Phase 3's picker UI lands and promotes `defaultVariant` to a
+  // first-class field. See src/lib/supabase/products.ts:158 inline cast.
+  const productWithVariant = product as Awaited<ReturnType<typeof getProductBySlugFromDB>> & {
+    defaultVariant: import("@/types/product-types").ProductVariant | null;
+  };
+
   // If product has no prices at all, fall through to not-found.
   // (Product exists in DB but has zero linked offers — likely a freshly
   // seeded catalog entry awaiting its first scrape. Showing 404 is
@@ -201,6 +209,16 @@ export default async function ProductDetailPage({ params }: PageProps) {
           cheapestMarketplace={cheapestMarketplace}
           isWishlisted={isWishlisted}
         />
+
+        {/* Phase 1 variant plumbing: surface that the default variant was
+            resolved via getProductBySlugFromDB. The real variant picker
+            UI is Phase 3 — this is just a wiring verification so we know
+            the field is populated end-to-end. */}
+        {productWithVariant.defaultVariant && (
+          <p className="text-muted-foreground mb-4 text-sm">
+            Varian tersedia: {productWithVariant.defaultVariant.is_default ? "default" : productWithVariant.defaultVariant.slug}
+          </p>
+        )}
 
         <ProductQuickNav />
 

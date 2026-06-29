@@ -4,12 +4,14 @@
  */
 import { createClient, hasSupabaseEnv } from "./client";
 import type { Product } from "@/lib/types";
+import type { ProductVariant } from "@/types/product-types";
 import {
   transformProduct,
   transformPrices,
   escapeILIKEPattern,
 } from "./transforms";
 import { fetchPricesByProductIds, fetchPriceHistoryByProductId } from "./prices";
+import { getDefaultVariantForProduct } from "./product-variants";
 
 /**
  * Get offers with trust metadata for a product.
@@ -134,15 +136,22 @@ export async function getProductBySlugFromDB(slug: string): Promise<Product | nu
 
   if (error || !product) return null;
 
-  // Query 2 + 3 in parallel: prices + history
-  const [pricesByProduct, priceHistory] = await Promise.all([
+  // Query 2 + 3 in parallel: prices + history. T7 adds the default variant
+  // (Phase 1 plumbing: surfaces `defaultVariant` on the returned product so
+  // the /product/[slug] page can read it, but the picker UI is Phase 3).
+  const [pricesByProduct, priceHistory, defaultVariant] = await Promise.all([
     fetchPricesByProductIds([product.id as string]),
     fetchPriceHistoryByProductId(product.id as string),
+    getDefaultVariantForProduct(product.id as string),
   ]);
 
   const result = transformProduct(product);
   result.prices = transformPrices(pricesByProduct[product.id as string] || []);
   result.priceHistory = priceHistory;
+  // Cast: `defaultVariant` is intentionally not on the global `Product`
+  // type (kept out of `src/lib/types.ts` until Phase 3's picker UI lands
+  // and the variant prop is scaled to the full Product surface).
+  (result as unknown as { defaultVariant: ProductVariant | null }).defaultVariant = defaultVariant;
 
   return result;
 }
