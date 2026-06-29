@@ -16,6 +16,57 @@ from ingestion_client import IngestionClient, IngestionResult
 logger = logging.getLogger(__name__)
 
 
+import re
+
+# Variant attribute regexes (Indonesian + English)
+_STORAGE_RE  = re.compile(r"(\d+)\s*(gb|tb|mb)", re.I)
+_RAM_RE      = re.compile(r"(\d+)\s*gb\s*ram|ram\s*(\d+)\s*gb", re.I)
+_COLOR_RE    = re.compile(
+    r"\b(hitam|putih|merah|biru|hijau|ungu|emas|perak|"
+    r"black|white|red|blue|green|purple|pink|gold|silver|gray|grey)\b",
+    re.I,
+)
+_MODEL_RE    = re.compile(r"\b(pro|max|plus|ultra|lite|mini)\b", re.I)
+_CONNECT_RE  = re.compile(r"\b(5g|4g|wifi|nfc|esim|dual[\s-]?sim)\b", re.I)
+
+
+def _normalize_variant(text: str | None) -> dict[str, str | None]:
+    """Tokenize a variant label into structured attributes.
+
+    Returns dict with keys: storage, ram, color, model, connectivity.
+    All values are lowercased (except storage/ram case preserved as e.g. '128GB').
+    """
+    if not text or not text.strip():
+        return {"storage": None, "ram": None, "color": None, "model": None, "connectivity": None}
+
+    s = text.lower()
+    storage_match = _STORAGE_RE.search(s)
+    ram_match = _RAM_RE.search(s)
+    color_match = _COLOR_RE.search(s)
+    # Take the LAST model match so hierarchical tier names like
+    # "iPhone 16 Pro Max" resolve to "max" (most-specific), not "pro".
+    _model_matches = _MODEL_RE.findall(s)
+    model_match = _model_matches[-1] if _model_matches else None
+    connect_match = _CONNECT_RE.search(s)
+
+    return {
+        "storage": (
+            f"{storage_match.group(1)}{storage_match.group(2).upper()}"
+            if storage_match else None
+        ),
+        "ram": (
+            f"{(ram_match.group(1) or ram_match.group(2))}GB"
+            if ram_match else None
+        ),
+        "color": color_match.group(0).lower() if color_match else None,
+        "model": model_match.lower() if model_match else None,
+        "connectivity": (
+            connect_match.group(0).replace(" ", "").replace("-", "").lower()
+            if connect_match else None
+        ),
+    }
+
+
 class BaseCollector(ABC):
     """
     Abstract base class for marketplace collectors.
