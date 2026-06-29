@@ -24,7 +24,7 @@ import random
 import json
 from typing import Optional, Dict, Any
 from playwright.async_api import async_playwright, Page
-from base_collector import BaseCollector
+from base_collector import BaseCollector, _normalize_variant
 from config import get_config
 from camofox_scraper import CamofoxScraper, TokopediaProduct, CamofoxError
 
@@ -251,6 +251,16 @@ class TokopediaCollector(BaseCollector):
                         if 'totalSold' in value:
                             product_info['sold'] = value.get('totalSold', 0)
 
+                        # Phase 2: Variant children — Tokopedia 2026 stores these as
+                        # "ProductVariant:<id>:variantChildren" in Apollo cache
+                        if key.endswith(":variantChildren") and isinstance(value, dict):
+                            children = value if isinstance(value.get('children'), list) else [value]
+                            for child in children:
+                                if 'label' in child:
+                                    product_info['variant'] = str(child['label']).strip()
+                                    product_info['variant_normalized'] = _normalize_variant(product_info['variant'])
+                                    break  # first child is fine; user selection handled client-side
+
                     if product_info.get('name') or product_info.get('price'):
                         product_info['currency'] = 'IDR'
 
@@ -261,6 +271,11 @@ class TokopediaCollector(BaseCollector):
                         # Format price display if needed
                         if product_info.get('price') and not product_info.get('price_display'):
                             product_info['price_display'] = f"Rp{product_info['price']:,}"
+
+                        # Step 4 enrichment: normalize variant if Apollo branch
+                        # found a variant label but skipped the normalized form.
+                        if product_info.get('variant') and not product_info.get('variant_normalized'):
+                            product_info['variant_normalized'] = _normalize_variant(product_info['variant'])
 
                         return product_info
 
@@ -354,6 +369,21 @@ class TokopediaCollector(BaseCollector):
             seller_elem = await page.query_selector('[data-testid="llbPDPFooterShopName"]')
             if seller_elem:
                 product_data['seller'] = (await seller_elem.inner_text()).strip()
+
+            # Variant from DOM (selection state varies; use first selected or first item)
+            variant_selectors = [
+                '[data-testid="lblPDPDetailVariantLabel"]',
+                '[data-testid="pdpProductVariant"]',
+                '.css-1e0ezml',  # Tokopedia dynamic class (2026)
+            ]
+            for selector in variant_selectors:
+                elem = await page.query_selector(selector)
+                if elem:
+                    text = (await elem.inner_text()).strip()
+                    if text and text != product_data.get('name', ''):
+                        product_data['variant'] = text
+                        product_data['variant_normalized'] = _normalize_variant(text)
+                        break
 
             return product_data if product_data.get('name') else None
 
