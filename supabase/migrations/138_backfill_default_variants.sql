@@ -29,4 +29,14 @@ WHERE p.id = pv.product_id
   AND pv.is_default = TRUE
   AND p.default_variant_id IS NULL;
 
+-- 4. Backfill price_snapshots.variant_id via parent offer chain.
+-- A snapshot's `variant_id` should match the offer it was created for;
+-- this keeps price-history charts variant-aware from day one.
+UPDATE price_snapshots ps
+SET variant_id = o.variant_id
+FROM offers o
+WHERE ps.offer_id = o.id
+  AND o.variant_id IS NOT NULL
+  AND ps.variant_id IS NULL;
+
 COMMIT;
