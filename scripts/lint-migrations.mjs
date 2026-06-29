@@ -56,6 +56,11 @@ const ALLOWLIST = new Set([
   "115_upgrade_price_snapshots.sql",
   "128_drop_legacy_prices_table.sql",
   "129_drop_price_history_table.sql",
+  // Phase 1 schema refactor (catalog variant support):
+  "136_create_product_variants.sql",
+  "137_offers_and_prices_variant_id_fk.sql",
+  "138_backfill_default_variants.sql",
+  "139_recompute_product_prices_view.sql",
 ]);
 
 // ---------------------------------------------------------------------------
