@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/auth";
 import { z } from "@/lib/validation";
 import { logAdminAction } from "@/lib/admin-audit";
@@ -74,7 +75,11 @@ export async function PATCH(
   const input = parsed.value as { status: AllowedStatus; notes: string | null };
 
   // Capture the previous status so the audit row can record the diff.
-  const supabase = await createClient();
+  // Use the admin (service-role) client: migration 124's RLS only grants
+  // UPDATE to service_role — authenticated users (cookies) cannot write
+  // offers even when requireAdmin() has verified them. Admin is already
+  // verified above.
+  const supabase = createAdminClient();
   const { data: existing, error: findError } = await supabase
     .from("offers")
     .select("id, validation_status, title")
