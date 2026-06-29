@@ -631,6 +631,29 @@ class ShopeeProduct:
     @classmethod
     def from_extraction(cls, url: str, data: dict[str, Any]) -> "ShopeeProduct":
         body = data.get("bodyText", "")
+        # Phase 2: variant extraction.
+        # Primary: __NEXT_DATA__ JSON — Shopee PDP hydrates
+        # `models[0].name` with the currently-selected variant label.
+        # Fallback: DOM-style regex on visible bodyText — the selected value
+        # inside `[data-testid="pdpVariationValue"]` appears as the next
+        # non-empty line after the "Variasi" label.
+        variant = None
+        next_data_blob = ""
+        if isinstance(data, dict):
+            next_data_blob = data.get("__NEXT_DATA__", "") or ""
+        if next_data_blob:
+            m = re.search(
+                r'"models"\s*:\s*\[\s*\{[^{}]*?"name"\s*:\s*"([^"]+)"',
+                next_data_blob,
+            )
+            if m:
+                variant = m.group(1).strip()
+        if not variant:
+            m = re.search(r"Variasi\s*[:\n]\s*([^\n]+)", body, re.IGNORECASE)
+            if m:
+                candidate = m.group(1).strip()
+                if candidate and len(candidate) >= 2 and candidate.lower() != "variasi":
+                    variant = candidate
         return cls(
             url=url,
             title=data.get("title"),
@@ -644,7 +667,7 @@ class ShopeeProduct:
             seller_name=_extract_regex(body, r"Nama Toko\s*([A-Za-z0-9 &.\-]+?)(?:\s+Follow|\s+Chat|$)"),
             seller_location=_extract_regex(body, r"Kota\s+([A-Za-z][A-Za-z\s]+?)(?=\s*Ongkir|$)"),
             raw_data=data,
-            variant=None,
+            variant=variant,
         )
 
 
@@ -682,6 +705,15 @@ class BukalapakProduct:
     @classmethod
     def from_extraction(cls, url: str, data: dict[str, Any]) -> "BukalapakProduct":
         body = data.get("bodyText", "")
+        # Phase 2: variant extraction. Bukalapak PDP shows the selected
+        # variant as "Varian: <name>" (or "Varian\n<name>" when the
+        # colon is stripped by JS). DOM fallback handles split formats.
+        variant = None
+        m = re.search(r"Varian\s*[:\n]\s*([^\n]+)", body, re.IGNORECASE)
+        if m:
+            candidate = m.group(1).strip()
+            if candidate and len(candidate) >= 2 and candidate.lower() != "varian":
+                variant = candidate
         return cls(
             url=url,
             title=data.get("title"),
@@ -692,7 +724,7 @@ class BukalapakProduct:
             rating_count=_parse_int(_extract_regex(body, r"(\d+)\s*Ulasan")),
             seller_name=_extract_regex(body, r"([A-Za-z0-9 &.\-]+?)\s+Follow"),
             raw_data=data,
-            variant=None,
+            variant=variant,
         )
 
 
@@ -826,6 +858,34 @@ class BlibliProduct:
                 if 3 < len(candidate) < 100:
                     seller_name = candidate
 
+        # Phase 2: variant extraction. Blibli PDP shows the selected
+        # variant under the label "Varian dipilih:" (Indonesian for
+        # "selected variant"). DOM fallback covers legacy pages where
+        # the bare "Varian" label is used instead.
+        variant = None
+        m = re.search(
+            r"Varian dipilih\s*[:\n]\s*([^\n]+)", body, re.IGNORECASE
+        )
+        if m:
+            candidate = m.group(1).strip()
+            if (
+                candidate
+                and len(candidate) >= 2
+                and not candidate.lower().startswith("varian")
+            ):
+                variant = candidate
+        if not variant:
+            # DOM fallback — bare "Varian\n<name>" on older PDP versions.
+            m = re.search(r"Varian\s*[:\n]\s*([^\n]+)", body, re.IGNORECASE)
+            if m:
+                candidate = m.group(1).strip()
+                if (
+                    candidate
+                    and len(candidate) >= 2
+                    and not candidate.lower().startswith("varian dipilih")
+                ):
+                    variant = candidate
+
         return cls(
             url=url,
             title=title,
@@ -836,7 +896,7 @@ class BlibliProduct:
             rating_value=rating_value,
             seller_name=seller_name,
             raw_data=data,
-            variant=None,
+            variant=variant,
         )
 
 
