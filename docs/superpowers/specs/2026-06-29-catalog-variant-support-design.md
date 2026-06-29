@@ -1,7 +1,7 @@
 ---
 title: BijakBeli Variant Support — Multi-phase Refactor (Phase 1: Schema)
 date: 2026-06-29
-status: Draft
+status: Phase 1 done — migrations + types + helpers + wiring shipped on `feat/variant-support-phase-1` (commits `47ba235`..`7693b24`). Migrations NOT YET applied to live Supabase (Studio or `npm run db:migrate` with DATABASE_URL needed before T9 smoke test flips green).
 spec: catalog-variant-support
 phase: 1 of 5 (Schema → Scraper → UI → Search → Re-seed)
 ---
