@@ -44,7 +44,7 @@ import urllib.error
 import urllib.request
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +86,7 @@ class TokopediaProduct:
     seller_name: str | None
     seller_location: str | None
     raw_data: dict[str, Any]  # Full schema output for debugging
+    variant: Optional[str] = None  # Phase 2: variant label from PDP, e.g. "128GB Hitam"
 
     @classmethod
     def from_extraction(cls, url: str, data: dict[str, Any]) -> "TokopediaProduct":
@@ -112,6 +113,7 @@ class TokopediaProduct:
             ),
             seller_location=_extract_regex(body, r"Kota\s+([A-Za-z][A-Za-z\s]*?)(?=\s*Ongkir|\s*Reguler|\s*Dikirim|$)"),
             raw_data=data,
+            variant=None,
         )
 
 
@@ -624,6 +626,7 @@ class ShopeeProduct:
     seller_name: str | None
     seller_location: str | None
     raw_data: dict[str, Any]
+    variant: Optional[str] = None  # Phase 2: variant label from PDP, e.g. "128GB Hitam"
 
     @classmethod
     def from_extraction(cls, url: str, data: dict[str, Any]) -> "ShopeeProduct":
@@ -641,6 +644,7 @@ class ShopeeProduct:
             seller_name=_extract_regex(body, r"Nama Toko\s*([A-Za-z0-9 &.\-]+?)(?:\s+Follow|\s+Chat|$)"),
             seller_location=_extract_regex(body, r"Kota\s+([A-Za-z][A-Za-z\s]+?)(?=\s*Ongkir|$)"),
             raw_data=data,
+            variant=None,
         )
 
 
@@ -673,6 +677,7 @@ class BukalapakProduct:
     rating_count: int | None
     seller_name: str | None
     raw_data: dict[str, Any]
+    variant: Optional[str] = None  # Phase 2: variant label from PDP, e.g. "128GB Hitam"
 
     @classmethod
     def from_extraction(cls, url: str, data: dict[str, Any]) -> "BukalapakProduct":
@@ -687,6 +692,7 @@ class BukalapakProduct:
             rating_count=_parse_int(_extract_regex(body, r"(\d+)\s*Ulasan")),
             seller_name=_extract_regex(body, r"([A-Za-z0-9 &.\-]+?)\s+Follow"),
             raw_data=data,
+            variant=None,
         )
 
 
@@ -725,6 +731,7 @@ class BlibliProduct:
     rating_value: float | None
     seller_name: str | None
     raw_data: dict[str, Any]
+    variant: Optional[str] = None  # Phase 2: variant label from PDP, e.g. "128GB Hitam"
 
     @classmethod
     def from_extraction(cls, url: str, data: dict[str, Any]) -> "BlibliProduct":
@@ -829,6 +836,7 @@ class BlibliProduct:
             rating_value=rating_value,
             seller_name=seller_name,
             raw_data=data,
+            variant=None,
         )
 
 
@@ -866,6 +874,7 @@ class TikTokProduct:
     rating_count: int | None
     seller_name: str | None
     raw_data: dict[str, Any]
+    variant: Optional[str] = None  # Phase 2: variant label from PDP, e.g. "128GB Hitam"
 
     @classmethod
     def from_extraction(cls, url: str, data: dict[str, Any]) -> "TikTokProduct":
@@ -880,6 +889,7 @@ class TikTokProduct:
             rating_count=_parse_int(_extract_regex(body, r"([\d.,]+)\s*[Pp]enilaian")),
             seller_name=_extract_regex(body, r"([A-Za-z0-9 &.\-]+?)\s+Official"),
             raw_data=data,
+            variant=None,
         )
 
 
