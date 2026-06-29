@@ -15,6 +15,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const STOPWORDS = new Set([
+  // Marketing / claim words
   "resmi",
   "official",
   "store",
@@ -40,6 +41,23 @@ const STOPWORDS = new Set([
   "express",
   "pcs",
   "keping",
+  "from",
+  // Connectivity / variants that clash across product families
+  "5g",
+  "4g",
+  "wifi",
+  "lte",
+  "bluetooth",
+  // Storage sizes (very noisy — match too readily across products)
+  "8gb", "16gb", "32gb", "64gb", "128gb", "256gb", "512gb", "1tb",
+  "2tb", "8gb1tb", "16gb1tb", "256gb1tb", "512gb1tb", "1tb2tb",
+  "gb", "tb",
+  "ramp",
+  "ssd",
+  "hdd",
+  // Generic "product from shopee/tokopedia" titles (would match anything)
+  "product",
+  "send",
 ]);
 
 /** Extract alphanumeric tokens of length >= 2 (lowercased). */
@@ -107,16 +125,17 @@ export async function findBestMatchingProduct(
   const scored = candidates
     .map((c) => {
       const cTokens = tokenize(c.name ?? "");
-      const matched = cTokens.filter((ct) =>
-        tokens.includes(ct) || tokens.some((t) => ct.includes(t) || t.includes(ct)),
-      );
+      // Exact match only — substring matching created false positives
+      // (e.g. Dell XPS matched iPhone 16 because both names contain "16"
+      // / "256" substrings).
+      const matched = cTokens.filter((ct) => tokens.includes(ct));
       return {
         row: c,
         score: matched.length,
         matchedTokens: matched,
       };
     })
-    .filter((s) => s.score >= 2)
+    .filter((s) => s.score >= 3)
     .sort((a, b) => b.score - a.score);
 
   if (scored.length === 0) return null;
@@ -124,11 +143,11 @@ export async function findBestMatchingProduct(
   const best = scored[0];
   const second = scored[1];
 
-  // Require clear margin over runner-up to commit. With only 1 candidate
-  // it's still >=2 score which is strong signal for a 59-row catalog.
-  const requiredMargin = second ? 1 : 0;
+  // Require >=3 token matches AND clear margin over runner-up (the
+  // semantics threshold reduces false positives when product names share
+  // generic tokens like "iphone"/"16"/digit-strings across catalogs).
   const isClearlyBest =
-    best.score >= 2 && best.score - (second?.score ?? 0) >= requiredMargin;
+    best.score >= 3 && best.score - (second?.score ?? 0) >= 1;
 
   if (!isClearlyBest) return null;
 
