@@ -1370,7 +1370,7 @@ export async function runOrphanAutoLink(
     .from("products")
     .select("id, name, brand, category")
     .neq("is_active", false)   // skip archived products
-    .limit(500);  // bounded for perf; CF Workers ~10s budget
+    .limit(500);  // bounded for perf; Vercel Hobby = 10s function budget
 
   if (prodErr) {
     throw new Error(`orphan-auto-link: failed to fetch products: ${prodErr.message}`);
