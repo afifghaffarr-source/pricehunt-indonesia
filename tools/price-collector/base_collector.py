@@ -46,6 +46,11 @@ class BaseCollector(ABC):
             headless=headless,
             args=[
                 '--disable-dev-shm-usage',  # Reduce memory usage only
+                # Tokopedia (and some other Indonesian marketplaces) return
+                # net::ERR_HTTP2_PROTOCOL_ERROR on headless Chromium without
+                # this flag. Disabling HTTP/2 forces HTTP/1.1 which works
+                # reliably. See https://github.com/microsoft/playwright/issues/15473
+                '--disable-http2',
             ]
         )
         

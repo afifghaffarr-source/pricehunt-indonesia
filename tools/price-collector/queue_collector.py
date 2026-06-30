@@ -12,6 +12,15 @@ import requests
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Fix: "Playwright Sync API inside asyncio loop" error.
+# The `requests` library (with HTTP/2) or `rich` console can create a
+# running asyncio event loop in some environments. `sync_playwright()`
+# refuses to start when one is already running. `nest_asyncio.apply()`
+# patches asyncio to allow nested loops, which is the standard fix.
+# See https://github.com/microsoft/playwright-python/issues/1786
+import nest_asyncio
+nest_asyncio.apply()
+
 # Add parent dir to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -86,8 +95,12 @@ def crawl_target(target):
         return None
     
     try:
-        # Launch browser (visible for transparency, avoids some anti-bot)
-        collector.launch_browser(headless=False)
+        # Launch browser in headless mode for cron/automated runs.
+        # The original code used headless=False for "transparency" (a
+        # comment in base_collector says so) but that requires a display
+        # server, which cron jobs don't have. Headless=True is the
+        # correct setting for production scraping.
+        collector.launch_browser(headless=True)
         
         # Add delay to appear more human-like
         time.sleep(2)
@@ -155,7 +168,7 @@ def main():
     print("-" * 60)
     
     # Fetch targets from queue
-    targets = fetch_queue(limit=10, status="pending")
+    targets = fetch_queue(limit=10, status="queued")
     
     if not targets:
         print("ℹ️  No targets in queue")
