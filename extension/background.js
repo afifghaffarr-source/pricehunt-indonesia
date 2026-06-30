@@ -229,7 +229,8 @@ async function submitBatch(products, marketplace) {
           image_url: product.image_url || undefined,
           source: "browser_extension_v3",
           captured_at: product.capturedAt || new Date().toISOString(),
-          parser_version: "3.0.1",
+          parser_version: "3.1.0",
+          variant: product.variant || undefined,
         };
 
         const result = await submitProduct(payload);

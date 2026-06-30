@@ -202,6 +202,173 @@
   // Each extractor returns an array of product objects { title, price, url, ... }
   // Returns [] if nothing found. Selector strings are tried in order.
 
+  /**
+   * Extract selected variant(s) from PDP.
+   * Returns a string like "256GB / Natural" or null if no variant selectable.
+   * Per-marketplace selectors because each marketplace renders variant
+   * pickers differently. Falls back to combining all active selection texts.
+   */
+  function extractVariantFromPDP(marketplace) {
+    try {
+      let parts = [];
+
+      if (marketplace === "shopee") {
+        // Shopee: variant tiers render as clickable buttons/rows.
+        // Active selection has class containing "active" or "selected".
+        const groups = document.querySelectorAll(
+          '.product-variation .attribute-button, ' +
+          '[class*="variation"] [class*="option"], ' +
+          '.flex.items-center .bg-\[orangeprimary\], ' +
+          'div[class*="variant"] button[class*="active"], ' +
+          'div[class*="variant"] [class*="selected"], ' +
+          // Shopee 2025 layout: clickable pills in product-variation section
+          '.product-variation [class*="option"]:not([class*="disabled"])'
+        );
+        const seen = new Set();
+        groups.forEach((el) => {
+          // Only capture visibly selected items
+          const cls = (el.className || "").toLowerCase();
+          const isSelected =
+            cls.includes("active") || cls.includes("selected") ||
+            cls.includes("bg-orangeprimary") || cls.includes("shopee");
+          if (!isSelected) return;
+          const text = cleanText(el.textContent);
+          if (text && !seen.has(text)) { seen.add(text); parts.push(text); }
+        });
+
+        // Fallback: try JSON-LD for variant name
+        if (parts.length === 0) {
+          const jsonLd = extractVariantFromJSONLD();
+          if (jsonLd) parts.push(jsonLd);
+        }
+
+      } else if (marketplace === "tokopedia") {
+        // Tokopedia: variant dropdowns render as combination buttons.
+        // Selected ones have [data-testid*="Variant"] and aria-pressed=true
+        // or class containing "active".
+        const buttons = document.querySelectorAll(
+          '[data-testid*="variant"] button, ' +
+          '[data-testid*="Variant"] button, ' +
+          'button[data-testid*="combination"], ' +
+          '[class*="variant"] [class*="active"], ' +
+          '[class*="variant-option"][class*="selected"]'
+        );
+        const seen = new Set();
+        buttons.forEach((el) => {
+          const isSelected = el.getAttribute("aria-pressed") === "true" ||
+            (el.className || "").toLowerCase().includes("active") ||
+            (el.className || "").toLowerCase().includes("selected");
+          if (!isSelected) return;
+          const text = cleanText(el.textContent);
+          if (text && !seen.has(text)) { seen.add(text); parts.push(text); }
+        });
+
+        // Secondary: read from a "combination" data attribute
+        if (parts.length === 0) {
+          const combo = document.querySelector('[data-testid="lblPDPDetailSelectedVariant"]');
+          if (combo) {
+            const text = cleanText(combo.textContent);
+            if (text && text.toLowerCase() !== "pilih variant") parts.push(text);
+          }
+        }
+
+      } else if (marketplace === "lazada") {
+        // Lazada: variant options are in sku-selector boxes.
+        // Selected <li> has class "active" or "selected".
+        const opts = document.querySelectorAll(
+          '.sku-option--active, ' +
+          'li[class*="active"][class*="sku"], ' +
+          '.sku-property-list [class*="active"], ' +
+          '.pdp-mod-variant-label .pdp-mod-variant-item.active, ' +
+          '[class*="pdp-cart"] [class*="variant"] [class*="active"]'
+        );
+        const seen = new Set();
+        opts.forEach((el) => {
+          const text = cleanText(el.textContent || el.getAttribute("title") || el.getAttribute("data-name") || "");
+          // Lazada often includes the price in the text; strip price-looking strings
+          const cleaned = text.replace(/Rp\.?\s*[\d,.]+/gi, "").trim();
+          if (cleaned && !seen.has(cleaned)) { seen.add(cleaned); parts.push(cleaned); }
+        });
+
+        // Fallback: read from selected variant text box
+        if (parts.length === 0) {
+          const sel = document.querySelector(
+            '[class*="pdp-variant-options"][class*="selected"], ' +
+            '.pdp-mod-variant-label .selected, ' +
+            '[class*="sku-variations"] [class*="selected"]'
+          );
+          const text = cleanText(sel?.textContent || "");
+          if (text) parts.push(text);
+        }
+
+      } else if (marketplace === "blibli") {
+        // Blibli: variant dropdowns use custom select elements.
+        // Selected option visible as text in a container.
+        const sels = document.querySelectorAll(
+          '[class*="variant"][class*="selected"], ' +
+          '[class*="option"][class*="active"][class*="variant"], ' +
+          '[data-testid*="variant"][class*="active"], ' +
+          '.product-variant .selected'
+        );
+        const seen = new Set();
+        sels.forEach((el) => {
+          const text = cleanText(el.textContent || "");
+          if (text && !seen.has(text)) { seen.add(text); parts.push(text); }
+        });
+
+        // Fallback: read dropdown selected text
+        if (parts.length === 0) {
+          const dd = document.querySelector('[class*="variant-dropdown__selected"], [class*="variant-selected-value"]');
+          const text = cleanText(dd?.textContent || "");
+          if (text && text.toLowerCase() !== "pilih") parts.push(text);
+        }
+
+      } else if (marketplace === "bukalapak" || marketplace === "tiktok") {
+        // Fallback to JSON-LD for Bukalapak and TikTok Shop
+        const jsonLd = extractVariantFromJSONLD();
+        if (jsonLd) parts.push(jsonLd);
+      }
+
+      // Dedupe and join
+      parts = parts.filter((p) => p && p.length > 0 && p.length < 200);
+      if (parts.length === 0) return null;
+      return parts.join(" / ");
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /**
+   * Extract variant name from JSON-LD Product schema.
+   * Schema.org Product can have `sku`, `model`, or nested `Product` variants.
+   */
+  function extractVariantFromJSONLD() {
+    try {
+      const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+      for (const s of scripts) {
+        try {
+          const data = JSON.parse(s.textContent || "");
+          const products = Array.isArray(data) ? data : [data];
+          for (const p of products) {
+            if (p["@type"] === "Product" || p.name) {
+              // Check for variant in sku, model, or additionalProperty
+              if (p.sku) return cleanText(p.sku);
+              if (p.model) return cleanText(p.model);
+              if (p.additionalProperty) {
+                const props = Array.isArray(p.additionalProperty) ? p.additionalProperty : [p.additionalProperty];
+                const variantProp = props.find(
+                  (pr) => pr.name && /variant|color|size|storage|capacity/i.test(pr.name)
+                );
+                if (variantProp?.value) return cleanText(variantProp.value);
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return null;
+  }
+
   const SCRAPERS = {
     shopee: {
       // Search results page
@@ -281,6 +448,7 @@
           const price = parsePriceIDR(priceEl?.textContent);
           if (!title || !price) return items;
 
+          const variant = extractVariantFromPDP("shopee");
           items.push({
             title,
             price,
@@ -290,6 +458,7 @@
             sold_count: parseSoldCount(soldEl?.textContent),
             rating: parseRating(ratingEl?.textContent),
             seller_name: cleanText(sellerEl?.textContent) || null,
+            variant,
           });
         } catch (_) {}
         return items;
@@ -356,6 +525,7 @@
           const price = parsePriceIDR(priceEl?.textContent);
           if (!title || !price) return items;
 
+          const variant = extractVariantFromPDP("tokopedia");
           items.push({
             title,
             price,
@@ -365,6 +535,7 @@
             sold_count: parseSoldCount(soldEl?.textContent),
             rating: parseRating(ratingEl?.textContent),
             seller_name: cleanText(sellerEl?.textContent) || null,
+            variant,
           });
         } catch (_) {}
         return items;
@@ -416,6 +587,7 @@
           const price = parsePriceIDR(priceEl?.textContent);
           if (!title || !price) return items;
 
+          const variant = extractVariantFromPDP("lazada");
           items.push({
             title,
             price,
@@ -425,6 +597,7 @@
             sold_count: null,
             rating: null,
             seller_name: cleanText(sellerEl?.textContent) || null,
+            variant,
           });
         } catch (_) {}
         return items;
@@ -475,6 +648,7 @@
           const price = parsePriceIDR(priceEl?.textContent);
           if (!title || !price) return items;
 
+          const variant = extractVariantFromPDP("blibli");
           items.push({
             title,
             price,
@@ -484,6 +658,7 @@
             sold_count: null,
             rating: null,
             seller_name: cleanText(sellerEl?.textContent) || null,
+            variant,
           });
         } catch (_) {}
         return items;
@@ -558,6 +733,7 @@
                   sold_count: null,
                   rating: parseRating(p.aggregateRating?.ratingValue?.toString()),
                   seller_name: p.brand?.name || null,
+                  variant: extractVariantFromJSONLD(),
                 });
               }
             }
@@ -601,16 +777,17 @@
       if (products.length === 0) return;
     }
 
-    // Dedupe by URL within batch
+    // Dedupe by URL + variant within batch (same product can have multiple variants)
     const seen = new Set();
     products = products.filter((p) => {
-      if (seen.has(p.url)) return false;
-      seen.add(p.url);
+      const key = `${p.url}|${p.variant || ""}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
 
     // Skip if nothing changed (hash-based)
-    const hash = JSON.stringify(products.map((p) => [p.url, p.price]));
+    const hash = JSON.stringify(products.map((p) => [p.url, p.price, p.variant]));
     if (hash === lastSentHash) return;
     lastSentHash = hash;
 

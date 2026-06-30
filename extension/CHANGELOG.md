@@ -1,5 +1,23 @@
 # BijakBeli Chrome Extension — Changelog
 
+## v3.1.0 (2026-06-30) — Variant capture
+New: PDP scraper now captures selected variant info (storage, color, size, etc.)
+from all 6 marketplaces. This enables per-variant price tracking — the server
+can now link incoming offers to specific `product_variants` rows, making the
+variant comparison table render on product pages without waiting for the
+daily cron auto-linker.
+
+**Changes:**
+- `marketplace-scraper.js`: new `extractVariantFromPDP(marketplace)` function
+  with per-marketplace CSS selectors (Shopee active pills, Tokopedia
+  aria-pressed buttons, Lazada sku-option--active, Blibli selected dropdown)
+- `marketplace-scraper.js`: JSON-LD fallback now checks `sku`, `model`, and
+  `additionalProperty` for variant metadata
+- `marketplace-scraper.js`: dedup hash now includes `variant` field so the
+  same product with different variants sends both
+- `background.js`: `variant` field added to offer-snapshot POST payload
+- `parser_version` bumped from 3.0.1 → 3.1.0
+
 ## v3.0.1 (2026-06-28) — CWS launch build
 First public release registered with the Chrome Web Store.
 

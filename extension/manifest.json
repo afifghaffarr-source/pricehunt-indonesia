@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "BijakBeli.app",
   "short_name": "BijakBeli",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Bandingkan harga marketplace Indonesia saat browsing. Auto-scrape produk untuk bantu komunitas.",
   "author": "BijakBeli Team",
   "homepage_url": "https://www.bijakbeli.web.id/extension",
