@@ -210,8 +210,12 @@ export async function fetchPriceHistoryByProductId(
  * (the live snapshot). If the offer has no current_price (zero/null/NaN) it
  * is excluded from the min/max math so a stale zero doesn't poison the stats.
  *
- * `lastPrice` is the most recent in-stock offer's current_price (any
- * marketplace), used for the "last seen" cell in the variant stats table.
+ * `lastPrice` is the highest in-stock offer's current_price (any marketplace),
+ * used as a "last seen" reference. When the variant has no in-stock offers,
+ * it falls back to the highest overall price. NOTE: "highest" is by price
+ * (not by recency) — using max() is a cheap proxy for "what's the most the
+ * user might pay" without tracking per-offer timestamps. Consumers that need
+ * true recency should join `price_snapshots` instead.
  *
  * Returned in the order Supabase returns them (no explicit sort here — the
  * caller should sort by `minPrice` asc to put the cheapest variant first).
@@ -294,12 +298,27 @@ export async function fetchVariantPriceStats(
 
   const stats: VariantPriceStats[] = [];
   for (const [variantId, bucket] of byVariant) {
+    // Bug fix: minPrice/maxPrice must be computed from IN-STOCK offers
+    // only. Otherwise the "Termurah" badge can highlight a price the
+    // user can't actually buy (e.g. an OOS offer at 15jt vs in-stock
+    // at 25jt — Termurah points to 15jt, user clicks, finds it sold
+    // out). This matches the filter the existing best-offer logic
+    // uses (`getBestOffer` in offers.ts) and what fetchVariantPriceHistory
+    // already does.
+    //
+    // When no in-stock offer exists, minPrice/maxPrice are null so the
+    // component shows "Belum ada penawaran" (hasData=false) instead of
+    // a misleading price. lastPrice still falls back to all-prices so
+    // we have a "last seen" reference even when nothing is buyable.
+    const hasInStock = bucket.inStockPrices.length > 0;
+    const inStockMin = hasInStock ? Math.min(...bucket.inStockPrices) : null;
+    const inStockMax = hasInStock ? Math.max(...bucket.inStockPrices) : null;
     stats.push({
       variantId,
       offerCount: bucket.prices.length,
       inStockCount: bucket.inStockPrices.length,
-      minPrice: bucket.prices.length > 0 ? Math.min(...bucket.prices) : null,
-      maxPrice: bucket.prices.length > 0 ? Math.max(...bucket.prices) : null,
+      minPrice: inStockMin,
+      maxPrice: inStockMax,
       // "last price" = highest in-stock price (the most recent offer we have)
       // when no in-stock rows exist, fall back to the latest overall price.
       lastPrice:

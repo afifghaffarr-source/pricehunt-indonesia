@@ -85,12 +85,13 @@ describe("fetchVariantPriceStats", () => {
     expect(stats).toEqual([]);
   });
 
-  it("aggregates min/max/offerCount per variant", async () => {
+  it("aggregates min/max/offerCount per variant (in-stock only for min/max)", async () => {
     offersRowsByTable["offers"] = [
       { id: "o1", variant_id: "v256", current_price: 15_000_000, last_checked_at: "2026-06-01T00:00:00Z", stock_status: "in_stock" },
       { id: "o2", variant_id: "v256", current_price: 16_000_000, last_checked_at: "2026-06-02T00:00:00Z", stock_status: "in_stock" },
       { id: "o3", variant_id: "v512", current_price: 18_000_000, last_checked_at: "2026-06-01T00:00:00Z", stock_status: "in_stock" },
-      // Out of stock — still counts in offerCount but not inStockCount.
+      // Out of stock — counts in offerCount but excluded from min/max
+      // so the "Termurah" badge can never point at an unbuyable price.
       { id: "o4", variant_id: "v512", current_price: 20_000_000, last_checked_at: "2026-06-02T00:00:00Z", stock_status: "out_of_stock" },
       // Null variant_id — should be filtered out.
       { id: "o5", variant_id: null, current_price: 9_999_999, last_checked_at: "2026-06-01T00:00:00Z", stock_status: "in_stock" },
@@ -104,11 +105,29 @@ describe("fetchVariantPriceStats", () => {
     expect(v256.offerCount).toBe(2);
     expect(v256.inStockCount).toBe(2);
     expect(v256.lastUpdated).toBe("2026-06-02T00:00:00Z");
+    // v512 has 1 in-stock (18jt) + 1 OOS (20jt). min/max must come
+    // from the in-stock offer only, NOT the OOS one.
     expect(v512.minPrice).toBe(18_000_000);
-    expect(v512.maxPrice).toBe(20_000_000);
+    expect(v512.maxPrice).toBe(18_000_000);
     expect(v512.offerCount).toBe(2);
-    // Only the 18jt offer is in stock; the 20jt is out_of_stock.
     expect(v512.inStockCount).toBe(1);
+  });
+
+  it("returns null minPrice/maxPrice when no in-stock offers exist", async () => {
+    offersRowsByTable["offers"] = [
+      // All OOS — counts exist but min/max should be null
+      // so the component shows "Belum ada penawaran" instead of a
+      // misleading price the user can't buy.
+      { id: "o1", variant_id: "v1", current_price: 12_000_000, last_checked_at: "2026-06-01T00:00:00Z", stock_status: "out_of_stock" },
+      { id: "o2", variant_id: "v1", current_price: 14_000_000, last_checked_at: "2026-06-02T00:00:00Z", stock_status: "out_of_stock" },
+    ];
+    const stats = await fetchVariantPriceStats("p1");
+    expect(stats).toHaveLength(1);
+    expect(stats[0].minPrice).toBeNull();
+    expect(stats[0].maxPrice).toBeNull();
+    expect(stats[0].offerCount).toBe(2);
+    expect(stats[0].inStockCount).toBe(0);
+    expect(stats[0].lastPrice).toBe(14_000_000); // fallback to all-prices max
   });
 
   it("ignores zero / null / non-finite prices", async () => {

@@ -200,6 +200,8 @@ function formatRelativeDate(iso: string): string {
   const diffMs = now - then;
   if (diffMs < 0) return "";
   const minutes = Math.floor(diffMs / 60_000);
+  // Less than a minute → "baru saja" (avoids "0 mnt lalu" which feels broken).
+  if (minutes < 1) return "baru saja";
   if (minutes < 60) return `${minutes} mnt lalu`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} jam lalu`;
