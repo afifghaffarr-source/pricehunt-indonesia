@@ -87,6 +87,13 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
+      // Static downloads: bypass CDN cache so new versions propagate instantly
+      {
+        source: "/downloads/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+        ],
+      },
       // ⚠️ REMOVED: Global API cache was dangerous for private endpoints
       // Individual API routes now set their own appropriate cache headers
       // Private routes (user data, admin, alerts) use Cache-Control: no-store
