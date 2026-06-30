@@ -1,6 +1,14 @@
-# Chrome Web Store Listing — BijakBeli.app v3.0.1
+# Chrome Web Store Listing — BijakBeli.app v3.1.0
 
 Submission-ready text for Chrome Web Store Developer Dashboard.
+
+> **v3.1.0 changelog** (per `extension/CHANGELOG.md`):
+> - 🆕 Capture PDP variant info (storage, color, size) dari semua 6 marketplace
+> - 🆕 Per-marketplace selectors: Shopee active pills, Tokopedia aria-pressed,
+>   Lazada sku-option--active, Blibli selected dropdown, JSON-LD fallback
+> - 🆕 Dedup hash sekarang include `variant` — produk sama dengan varian beda
+>   kirim keduanya (tidak salah dedup)
+> - 🎨 No UI changes (internal scraper improvements only)
 
 ---
 

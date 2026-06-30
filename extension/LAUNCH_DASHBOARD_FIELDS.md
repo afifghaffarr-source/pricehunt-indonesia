@@ -1,10 +1,15 @@
 # Chrome Web Store Dashboard — Paste-Ready Field Values
 
-When filling the CWS Developer Dashboard, copy values from this document
-verbatim. Format: each section matches the dashboard tab order. We've
+When filling the CWS Developer Dashboard for **v3.1.0**, copy values from this
+document verbatim. Format: each section matches the dashboard tab order. We've
 drafted the values so you can paste straight into the form.
 
 > **Dashboard URL:** https://chrome.google.com/webstore/devconsole
+>
+> **v3.1.0 release date:** 2026-06-30
+> **Test count:** 820 Vitest + 3 E2E skipped = **823 passing** (was 665 + 16 = 681 in v3.0.1)
+> **Package:** `bijakbeli-extension-v3.1.0.zip` (34,508 bytes, 14 files)
+> **Manifest version:** 3.1.0
 
 ---
 

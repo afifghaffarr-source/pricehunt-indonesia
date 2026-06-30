@@ -1,11 +1,20 @@
-# Chrome Web Store Submission Checklist — BijakBeli v3.0.1
+# Chrome Web Store Submission Checklist — BijakBeli
 
-## Status (audit complete: 2026-06-28)
+> **Latest version:** v3.1.0 (2026-06-30) — variant capture
+> **Previous submission:** v3.0.1 (2026-06-28) — CWS launch build
+>
+> For **v3.1.0 upload procedure**, see: `extension/CWS_UPLOAD_v3.1.0.md`
 
-- ✅ Code-side gaps P0–P5 closed (`master @ 19471f7`)
-- ✅ 681 tests passing (Vitest 665 + E2E 16)
-- ✅ Lint, typecheck, build clean
-- ✅ All required assets captured by `npm run capture:extension-screenshots`
+## Status (audit complete: 2026-06-30)
+
+- ✅ Code-side gaps P0–P5 closed (`master @ 8c2fccc` after audit hardening)
+- ✅ **823 tests passing** (Vitest 820 + E2E 3 skipped — up from 665 + 16 = 681 in v3.0.1)
+- ✅ Lint clean, typecheck clean, build clean
+- ✅ Vercel alias swap fixed — `www.bijakbeli.web.id` now resolves to deployment
+   `h9jw7xbjx` (was stuck on 15-day-old `gulq8ubaa`)
+- ✅ All assets ready: 5 screenshots + 2 promo tiles in
+   `scripts/marketing-assets/captured/`
+- ✅ Pre-flight `extension/preflight-check.sh` exit 0 (9/9 checks pass)
 
 ## Pre-submission blockers
 
