@@ -202,3 +202,208 @@ export async function fetchPriceHistoryByProductId(
 
   return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
 }
+
+/**
+ * Per-variant price summary (Phase 7 — variant-aware stats).
+ *
+ * One row per variant for a product. Aggregated from `offers.current_price`
+ * (the live snapshot). If the offer has no current_price (zero/null/NaN) it
+ * is excluded from the min/max math so a stale zero doesn't poison the stats.
+ *
+ * `lastPrice` is the most recent in-stock offer's current_price (any
+ * marketplace), used for the "last seen" cell in the variant stats table.
+ *
+ * Returned in the order Supabase returns them (no explicit sort here — the
+ * caller should sort by `minPrice` asc to put the cheapest variant first).
+ */
+export interface VariantPriceStats {
+  variantId: string;
+  offerCount: number;
+  inStockCount: number;
+  minPrice: number | null;
+  maxPrice: number | null;
+  lastPrice: number | null;
+  lastUpdated: string | null;
+}
+
+const EMPTY_VARIANT_STATS: VariantPriceStats = {
+  variantId: "",
+  offerCount: 0,
+  inStockCount: 0,
+  minPrice: null,
+  maxPrice: null,
+  lastPrice: null,
+  lastUpdated: null,
+};
+
+/**
+ * Fetch per-variant price stats for a product.
+ *
+ * Single round-trip: pulls all active offers for the product, groups them
+ * by `variant_id`, and computes per-variant aggregates in JS. Cheap because
+ * products have at most ~100 offers in practice and the row count is well
+ * within Supabase's row cap.
+ *
+ * Variants with zero offers are NOT returned (caller decides whether to
+ * surface them as "no data" cards — for now the page only renders variants
+ * that appear here).
+ */
+export async function fetchVariantPriceStats(
+  productId: string,
+): Promise<VariantPriceStats[]> {
+  if (!hasSupabaseEnv()) return [];
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("offers")
+    .select("id, variant_id, current_price, last_checked_at, stock_status")
+    .eq("product_id", productId)
+    .eq("is_active", true)
+    .not("variant_id", "is", null);
+
+  if (error || !data) return [];
+
+  // Group by variant_id. The schema has FK CASCADE so deleted variants
+  // can't appear here, but we still tolerate null (skipped above).
+  const byVariant = new Map<string, {
+    prices: number[];
+    inStockPrices: number[];
+    lastChecked: string | null;
+  }>();
+
+  for (const row of data) {
+    const vid = row.variant_id as string | null;
+    if (!vid) continue;
+    const price = row.current_price as number | null;
+    const checked = row.last_checked_at as string | null;
+    const stock = row.stock_status as string | null;
+
+    if (!byVariant.has(vid)) {
+      byVariant.set(vid, { prices: [], inStockPrices: [], lastChecked: null });
+    }
+    const bucket = byVariant.get(vid)!;
+
+    if (typeof price === "number" && Number.isFinite(price) && price > 0) {
+      bucket.prices.push(price);
+      if (stock === "in_stock") bucket.inStockPrices.push(price);
+    }
+    if (checked && (!bucket.lastChecked || checked > bucket.lastChecked)) {
+      bucket.lastChecked = checked;
+    }
+  }
+
+  const stats: VariantPriceStats[] = [];
+  for (const [variantId, bucket] of byVariant) {
+    stats.push({
+      variantId,
+      offerCount: bucket.prices.length,
+      inStockCount: bucket.inStockPrices.length,
+      minPrice: bucket.prices.length > 0 ? Math.min(...bucket.prices) : null,
+      maxPrice: bucket.prices.length > 0 ? Math.max(...bucket.prices) : null,
+      // "last price" = highest in-stock price (the most recent offer we have)
+      // when no in-stock rows exist, fall back to the latest overall price.
+      lastPrice:
+        bucket.inStockPrices.length > 0
+          ? Math.max(...bucket.inStockPrices)
+          : bucket.prices.length > 0
+            ? Math.max(...bucket.prices)
+            : null,
+      lastUpdated: bucket.lastChecked,
+    });
+  }
+  return stats;
+}
+
+/**
+ * Per-variant history point. Lighter than `PriceHistoryPoint` — the
+ * variant-level line shows a single aggregated price (the cheapest in-stock
+ * offer on that date) rather than a marketplace-keyed map.
+ */
+export interface VariantPricePoint {
+  date: string;
+  price: number;
+}
+
+/**
+ * Fetch per-variant price history for a product.
+ *
+ * Returns `Record<variantId, VariantPricePoint[]>` where each array is
+ * sorted oldest → newest. The shape is intentionally flat (no marketplace
+ * axis) so the chart can render one line per variant. Empty variants are
+ * omitted from the map.
+ *
+ * Algorithm: for each (date, variant) bucket we take the min
+ * `current_price` across the active offers in stock. This is the same
+ * metric shown in the stats table — keeps chart + stats in lockstep.
+ *
+ * `days` defaults to 30 to match the existing marketplace chart's lookback.
+ */
+export async function fetchVariantPriceHistory(
+  productId: string,
+  days: number = 30,
+): Promise<Record<string, VariantPricePoint[]>> {
+  if (!hasSupabaseEnv()) return {};
+  const supabase = await createClient();
+
+  // Compute cutoff once so the WHERE clause narrows the row scan.
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+
+  const { data, error } = await supabase
+    .from("price_snapshots")
+    .select(`
+      current_price,
+      captured_at,
+      offers!inner(
+        product_id,
+        variant_id,
+        stock_status
+      )
+    `)
+    .eq("offers.product_id", productId)
+    .not("offers.variant_id", "is", null)
+    .gte("captured_at", cutoff.toISOString());
+
+  if (error) {
+    console.error("price_snapshots variant history query failed:", error);
+    return {};
+  }
+
+  // Group by (date, variantId) — keep the min in-stock price per bucket.
+  const byKey = new Map<string, { date: string; variantId: string; price: number }>();
+  for (const row of data || []) {
+    const offerRaw = row.offers;
+    const o = Array.isArray(offerRaw) ? offerRaw[0] : offerRaw;
+    if (!o) continue;
+    const variantId = (o as { variant_id: string | null }).variant_id;
+    if (!variantId) continue;
+    const stock = (o as { stock_status: string | null }).stock_status;
+    // Only in-stock rows contribute to the line — out-of-stock offers
+    // would distort the "what would I pay" story.
+    if (stock !== "in_stock") continue;
+    const price = row.current_price as number;
+    if (!Number.isFinite(price) || price <= 0) continue;
+    const capturedAt = row.captured_at as string;
+    const date = capturedAt.split("T")[0];
+    if (!date) continue;
+    const key = `${date}::${variantId}`;
+    const existing = byKey.get(key);
+    if (!existing || price < existing.price) {
+      byKey.set(key, { date, variantId, price });
+    }
+  }
+
+  // Fold into per-variant arrays sorted oldest → newest.
+  const byVariant: Record<string, VariantPricePoint[]> = {};
+  for (const { date, variantId, price } of byKey.values()) {
+    if (!byVariant[variantId]) byVariant[variantId] = [];
+    byVariant[variantId].push({ date, price });
+  }
+  for (const arr of Object.values(byVariant)) {
+    arr.sort((a, b) => a.date.localeCompare(b.date));
+  }
+  return byVariant;
+}
+
+// Re-export the empty stat helper so callers can use it as a default.
+export { EMPTY_VARIANT_STATS };

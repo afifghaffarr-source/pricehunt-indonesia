@@ -25,6 +25,25 @@ interface PriceHistoryChartProps {
   title?: string;
   className?: string;
   showLegend?: boolean;
+  /**
+   * Phase 7 — Variant-aware series. When provided (non-empty), the chart
+   * renders one line per variant instead of one per marketplace. The
+   * `data` prop is ignored in variant mode.
+   *
+   * Each series's `data` is sorted oldest → newest. Colors come from the
+   * caller (typically matched to the variant picker chips so the user can
+   * correlate the line to the chip group at a glance).
+   */
+  series?: VariantChartSeries[];
+  /** Override title when in variant mode. */
+  variantModeTitle?: string;
+}
+
+export interface VariantChartSeries {
+  id: string;
+  label: string;
+  color: string;
+  data: { date: string; price: number }[];
 }
 
 const marketplaces: Marketplace[] = [
@@ -43,7 +62,7 @@ function formatYAxis(value: number) {
   return value.toString();
 }
 
-function CustomTooltip({
+function MarketplaceTooltip({
   active,
   payload,
   label,
@@ -80,53 +99,139 @@ function CustomTooltip({
   );
 }
 
+function VariantTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string; dataKey?: string }>;
+  label?: string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const validPayload = payload.filter((entry) => entry.value != null);
+  if (validPayload.length === 0) return null;
+  return (
+    <div className="rounded-lg border bg-background p-3 shadow-lg">
+      <p className="mb-2 text-sm font-medium">{label}</p>
+      {validPayload.map((entry) => (
+        <div
+          key={entry.dataKey ?? entry.name}
+          className="flex items-center justify-between gap-4 text-sm"
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span>{entry.name}</span>
+          </div>
+          <span className="font-semibold">{formatRupiah(entry.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function PriceHistoryChart({
   data,
   title = "Riwayat Harga (30 Hari)",
   className = "",
   showLegend = true,
+  series,
+  variantModeTitle,
 }: PriceHistoryChartProps) {
+  // Phase 7 — mode is determined by the prop, not a toggle. The parent
+  // decides which view to show (page currently shows marketplace mode by
+  // default; variant mode is opt-in via `series`).
+  const variantMode = !!series && series.length > 0;
+
   // Process and optimize chart data
-  const { chartData, stats } = useMemo(() => {
-    // Sort by date and validate
+  const { chartData, stats, emptyMessage } = useMemo(() => {
+    if (variantMode) {
+      // Variant mode: union all dates across series, then for each
+      // date look up the price in each series (null if missing).
+      const allDates = new Set<string>();
+      for (const s of series!) {
+        for (const p of s.data) allDates.add(p.date);
+      }
+      const sortedDates = Array.from(allDates).sort();
+
+      const formatted = sortedDates.map((date) => {
+        const row: Record<string, number | string | null> = {
+          date: format(new Date(date), "dd MMM", { locale: id }),
+          fullDate: format(new Date(date), "dd MMMM yyyy", { locale: id }),
+        };
+        for (const s of series!) {
+          const hit = s.data.find((p) => p.date === date);
+          row[s.id] = hit ? hit.price : null;
+        }
+        return row;
+      });
+
+      // Limit to 50 points for performance (sample evenly).
+      let processedData = formatted;
+      if (formatted.length > 50) {
+        const step = Math.ceil(formatted.length / 50);
+        processedData = formatted.filter((_, index) => index % step === 0);
+      }
+
+      // Compute global min/max across all series for the Y-axis.
+      const allPrices: number[] = [];
+      for (const s of series!) {
+        for (const p of s.data) {
+          if (Number.isFinite(p.price) && p.price > 0) allPrices.push(p.price);
+        }
+      }
+      const stats = {
+        count: processedData.length,
+        min: allPrices.length > 0 ? Math.min(...allPrices) : 0,
+        max: allPrices.length > 0 ? Math.max(...allPrices) : 0,
+        seriesCount: series!.length,
+      };
+      return {
+        chartData: processedData,
+        stats,
+        emptyMessage: "Belum ada data riwayat harga per varian",
+      };
+    }
+
+    // Marketplace mode (original behavior).
     const sorted = [...data]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .filter((point) => {
-        // Keep points that have at least one valid price
         return marketplaces.some(
-          (mp) => point.prices[mp] != null && point.prices[mp] > 0
+          (mp) => point.prices[mp] != null && point.prices[mp] > 0,
         );
       });
 
-    // Limit to 50 points for performance
     let processedData = sorted;
     if (sorted.length > 50) {
       const step = Math.ceil(sorted.length / 50);
       processedData = sorted.filter((_, index) => index % step === 0);
     }
 
-    // Format dates with date-fns for better Indonesian locale support
     const formatted = processedData.map((point) => ({
       date: format(new Date(point.date), "dd MMM", { locale: id }),
       fullDate: format(new Date(point.date), "dd MMMM yyyy", { locale: id }),
       ...point.prices,
     }));
 
-    // Calculate stats
     const allPrices = processedData.flatMap((point) =>
       marketplaces
         .map((mp) => point.prices[mp])
-        .filter((price): price is number => price != null && price > 0)
+        .filter((price): price is number => price != null && price > 0),
     );
 
     const stats = {
       count: processedData.length,
       min: allPrices.length > 0 ? Math.min(...allPrices) : 0,
       max: allPrices.length > 0 ? Math.max(...allPrices) : 0,
+      seriesCount: 0,
     };
 
-    return { chartData: formatted, stats };
-  }, [data]);
+    return { chartData: formatted, stats, emptyMessage: "Belum ada data riwayat harga" };
+  }, [data, series, variantMode]);
 
   // Calculate Y-axis domain with padding
   const yAxisDomain = useMemo(() => {
@@ -139,16 +244,20 @@ export function PriceHistoryChart({
     ];
   }, [stats]);
 
+  const displayTitle = variantMode
+    ? (variantModeTitle ?? "Riwayat Harga per Varian (30 Hari)")
+    : title;
+
   // Empty state
   if (chartData.length === 0) {
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
+          <CardTitle className="text-lg">{displayTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex h-[300px] items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
-            Belum ada data riwayat harga
+            {emptyMessage}
           </div>
         </CardContent>
       </Card>
@@ -158,13 +267,29 @@ export function PriceHistoryChart({
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-lg">{displayTitle}</CardTitle>
+        {variantMode && (
+          <p className="text-sm text-muted-foreground">
+            Garis per varian · harga terendah harian antar-marketplace
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
-        <PriceHistoryChartInner chartData={chartData} showLegend={showLegend} yAxisDomain={yAxisDomain} />
+        <PriceHistoryChartInner
+          chartData={chartData as Array<{ date: string; fullDate: string; [key: string]: number | string | null }>}
+          showLegend={showLegend}
+          yAxisDomain={yAxisDomain}
+          variantMode={variantMode}
+          series={series}
+        />
         {/* Summary stats */}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{stats.count} data point</span>
+          <span>
+            {stats.count} data point
+            {variantMode && stats.seriesCount > 0
+              ? ` · ${stats.seriesCount} varian`
+              : ""}
+          </span>
           <span>
             Range: {formatRupiah(stats.min)} - {formatRupiah(stats.max)}
           </span>
@@ -188,10 +313,14 @@ function PriceHistoryChartInner({
   chartData,
   showLegend,
   yAxisDomain,
+  variantMode,
+  series,
 }: {
-  chartData: Array<{ date: string; fullDate: string; [mp: string]: number | string | null }>;
+  chartData: Array<{ date: string; fullDate: string; [key: string]: number | string | null }>;
   showLegend: boolean;
   yAxisDomain: [number | "auto" | "dataMin" | "dataMax", number | "auto" | "dataMin" | "dataMax"] | number[];
+  variantMode: boolean;
+  series?: VariantChartSeries[];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -222,6 +351,7 @@ function PriceHistoryChartInner({
       ref={containerRef}
       className="h-[300px] w-full min-w-0 md:h-[400px]"
       data-testid="price-history-chart"
+      data-mode={variantMode ? "variant" : "marketplace"}
     >
       {size.w > 0 && size.h > 0 ? (
         <LineChart
@@ -244,26 +374,46 @@ function PriceHistoryChartInner({
             domain={yAxisDomain}
             stroke="currentColor"
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={variantMode ? <VariantTooltip /> : <MarketplaceTooltip />} />
           {showLegend && (
             <Legend
               wrapperStyle={{ fontSize: "12px" }}
-              formatter={(value: string) => getMarketplaceName(value as Marketplace)}
+              formatter={(value: string) => {
+                if (variantMode && series) {
+                  const s = series.find((x) => x.id === value);
+                  return s ? s.label : value;
+                }
+                return getMarketplaceName(value as Marketplace);
+              }}
             />
           )}
-          {marketplaces.map((mp) => (
-            <Line
-              key={mp}
-              type="monotone"
-              dataKey={mp}
-              name={mp}
-              stroke={getMarketplaceColor(mp)}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 5 }}
-              connectNulls
-            />
-          ))}
+          {variantMode && series
+            ? series.map((s) => (
+                <Line
+                  key={s.id}
+                  type="monotone"
+                  dataKey={s.id}
+                  name={s.id}
+                  stroke={s.color}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 5 }}
+                  connectNulls
+                />
+              ))
+            : marketplaces.map((mp) => (
+                <Line
+                  key={mp}
+                  type="monotone"
+                  dataKey={mp}
+                  name={mp}
+                  stroke={getMarketplaceColor(mp)}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 5 }}
+                  connectNulls
+                />
+              ))}
         </LineChart>
       ) : null}
     </div>

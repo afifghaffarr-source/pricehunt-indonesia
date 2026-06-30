@@ -7,6 +7,8 @@ import {
   getProductAlerts,
   getProductOffers,
   getProductVariants,
+  fetchVariantPriceStats,
+  fetchVariantPriceHistory,
 } from "@/lib/supabase/data";
 import { getVariantBySlug } from "@/lib/supabase/product-variants";
 import { getUser } from "@/lib/supabase/auth";
@@ -15,7 +17,15 @@ import { calculatePriceStats } from "@/lib/product-price-stats";
 import { ProductHero } from "@/components/product/ProductHero";
 import { ProductQuickNav } from "@/components/product/ProductQuickNav";
 import { ProductPriceTable } from "@/components/product/ProductPriceTable";
-import { PriceHistoryChart } from "@/components/product/PriceHistoryChart";
+import {
+  PriceHistoryChart,
+  type VariantChartSeries,
+} from "@/components/product/PriceHistoryChart";
+import {
+  VariantPriceStatsTable,
+  type VariantPriceStatsRow,
+} from "@/components/product/VariantPriceStatsTable";
+import { chipLabelForVariant } from "./ProductVariantPicker";
 import { PriceAlertForm } from "@/components/product/PriceAlertForm";
 import { PushNotificationButton } from "@/components/common/PushNotificationButton";
 import { VexoDealVerdict } from "@/components/ai/VexoDealVerdict";
@@ -188,10 +198,79 @@ export default async function ProductDetailPage({
   // in parallel. The offers query is product-scoped; the variant filter
   // is applied in-memory in `enrichPricesWithOffers` (via the
   // `selectedVariantId` prop on ProductPriceTable).
-  const [variants, offers] = await Promise.all([
+  //
+  // Phase 7: also fetch per-variant stats + per-variant history so the
+  // page can render a "Harga per Varian" card and a variant-aware
+  // price-history chart. Both fan out from the same `variants` list and
+  // share the variant-id → label mapping, so a single parallel batch is
+  // the right shape.
+  const [variants, offers, variantStats, variantHistory] = await Promise.all([
     getProductVariants(product.id),
     getProductOffers(product.id),
+    fetchVariantPriceStats(product.id),
+    fetchVariantPriceHistory(product.id, 30),
   ]);
+
+  // Build the variant stats rows. We map variant_id → ProductVariant so we
+  // can show a friendly label and a deep-link slug for each row. Variants
+  // with no stats row are dropped (the stats table only renders variants
+  // that actually have offers — a variant with zero offers is more
+  // confusing than helpful).
+  const variantById = new Map(variants.map((v) => [v.id, v]));
+  const variantStatsRows: VariantPriceStatsRow[] = variantStats
+    .map((s) => {
+      const v = variantById.get(s.variantId);
+      if (!v) return null; // orphaned stats row (variant deleted) — skip
+      const slug = v.slug ?? v.id;
+      return {
+        ...s,
+        label: chipLabelForVariant(v),
+        slug,
+      };
+    })
+    .filter((r): r is VariantPriceStatsRow => r !== null);
+
+  // Build the chart series. We only include variants that have BOTH
+  // history data AND a matching ProductVariant row (the slug is needed
+  // for the legend label). Sort by cheapest-min so the legend reads
+  // "256GB (cheapest) → 1TB (most expensive)" — same order as the
+  // stats table for visual continuity.
+  const sortedByMinPrice = [...variantStatsRows].sort((a, b) => {
+    const aHas = a.minPrice != null;
+    const bHas = b.minPrice != null;
+    if (aHas && !bHas) return -1;
+    if (!aHas && bHas) return 1;
+    if (!aHas && !bHas) return 0;
+    return (a.minPrice as number) - (b.minPrice as number);
+  });
+  // Phase 7 — Color palette for variant lines. 8 distinct hues that
+  // work on both light and dark backgrounds. The list is intentionally
+  // longer than 5 because products with 5+ variants (e.g. iPhone with
+  // 128/256/512/1TB across 4-5 colors) are common.
+  const variantPalette = [
+    "#10b981", // emerald-500
+    "#0ea5e9", // sky-500
+    "#f59e0b", // amber-500
+    "#ef4444", // red-500
+    "#8b5cf6", // violet-500
+    "#ec4899", // pink-500
+    "#14b8a6", // teal-500
+    "#f97316", // orange-500
+  ];
+  const chartSeries: VariantChartSeries[] = sortedByMinPrice
+    .filter((row) => variantHistory[row.variantId]?.length)
+    .map((row, idx) => ({
+      id: row.variantId,
+      label: row.label,
+      color: variantPalette[idx % variantPalette.length],
+      data: variantHistory[row.variantId],
+    }));
+
+  // Show the variant-mode chart when at least 2 variants have history
+  // data — a single-line chart is the same shape as the marketplace
+  // view but with one fewer axis of information, so we keep the
+  // marketplace view as the default there.
+  const showVariantChart = chartSeries.length >= 2;
 
   if (user) {
     const [wishlisted, alerts] = await Promise.all([
@@ -370,6 +449,20 @@ export default async function ProductDetailPage({
             defaultVariantId={productWithVariant.defaultVariant?.id ?? null}
           />
 
+          {/* Phase 7 — VARIANT PRICE STATS TABLE
+              Rendered right after the price table so the user has just
+              seen the per-marketplace breakdown and can now scan the
+              per-variant summary. Skipped when there's nothing to show
+              (single-variant products with no offers, or products whose
+              variants all collapsed to the default bucket). */}
+          {variantStatsRows.length >= 2 && (
+            <VariantPriceStatsTable
+              rows={variantStatsRows}
+              selectedSlug={selectedVariant?.slug ?? null}
+              productSlug={slug}
+            />
+          )}
+
           {/* 7. TOTAL COST CALCULATOR */}
           {marketplacePrices.length > 0 && (
             <section id="total-cost" className="scroll-mt-20">
@@ -377,9 +470,14 @@ export default async function ProductDetailPage({
             </section>
           )}
 
-          {/* 8. PRICE HISTORY CHART */}
-          {product.priceHistory.length > 0 && (
-            <PriceHistoryChart data={product.priceHistory} />
+          {/* 8. PRICE HISTORY CHART (Phase 7 — variant-mode preferred when
+              at least 2 variants have history data, otherwise falls back
+              to the original per-marketplace view). */}
+          {(showVariantChart || product.priceHistory.length > 0) && (
+            <PriceHistoryChart
+              data={product.priceHistory}
+              series={showVariantChart ? chartSeries : undefined}
+            />
           )}
 
           {/* 9. PRICE ALERT FORM + PUSH NOTIFICATION */}
