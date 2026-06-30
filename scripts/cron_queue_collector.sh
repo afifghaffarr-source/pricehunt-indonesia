@@ -59,6 +59,14 @@ cd "$PROJECT_DIR"
 # 60s timeout for slow Indonesian marketplace sites (Tokopedia/Shopee
 # search pages can take 30-45s on a fresh headless browser cold start).
 export BROWSER_TIMEOUT=60000
+
+# Ensure Camoufox stealth server is running (fallback for Tokopedia anti-bot)
+export PATH="/home/ubuntu/.hermes/node/bin:$PATH"
+if ! camofox health >/dev/null 2>&1; then
+    echo "[$(date -Iseconds)] Starting Camoufox server for stealth fallback..." >> "$LOG_FILE"
+    camofox server start --background >/dev/null 2>&1 || true
+    sleep 3
+fi
 if timeout "$TIMEOUT_SEC" "$VENV_PY" "$COLLECTOR" >> "$LOG_FILE" 2>&1; then
     EXIT_CODE=0
     echo "[$(date -Iseconds)] DONE: success" >> "$LOG_FILE"
