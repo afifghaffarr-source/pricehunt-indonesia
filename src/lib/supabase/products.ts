@@ -11,7 +11,22 @@ import {
   escapeILIKEPattern,
 } from "./transforms";
 import { fetchPricesByProductIds, fetchPriceHistoryByProductId } from "./prices";
-import { getDefaultVariantForProduct } from "./product-variants";
+import {
+  getDefaultVariantForProduct,
+  listVariantsForProduct,
+} from "./product-variants";
+
+/**
+ * Phase 3: list all variants for a product (ordered default-first).
+ *
+ * Thin wrapper around `listVariantsForProduct` so the call site in the
+ * product page can go through the same `data` barrel as the rest of its
+ * product reads. Returns [] if the product has no variants (which should
+ * not happen post-Phase 1 backfill but is defended against).
+ */
+export async function getProductVariants(productId: string): Promise<ProductVariant[]> {
+  return listVariantsForProduct(productId);
+}
 
 /**
  * Get offers with trust metadata for a product.

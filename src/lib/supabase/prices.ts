@@ -26,7 +26,7 @@ export async function fetchPricesByProductIds(
   const { data, error } = await supabase
     .from("product_prices_view")
     .select(`
-      id, product_id, marketplace_id,
+      id, product_id, variant_id, marketplace_id,
       current_price, seller_name, seller_rating,
       url, stock_status, shipping_estimate, last_checked_at,
       is_official_store, source, origin,

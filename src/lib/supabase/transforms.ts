@@ -91,6 +91,9 @@ export function transformPrices(rows: Record<string, unknown>[]): MarketplacePri
     shippingCost: (row.shipping_estimate as number) || 0,
     lastUpdated: (row.last_checked_at as string) || new Date().toISOString(),
     isOfficialStore: Boolean(row.is_official_store),
+    // Phase 3: variant_id exposed by product_prices_view (migration 139).
+    // Null for legacy offers that have not yet been linked to a variant.
+    variantId: (row.variant_id as string | null | undefined) ?? null,
   }));
 }
 

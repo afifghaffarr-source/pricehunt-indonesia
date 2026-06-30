@@ -1,7 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getProductBySlugFromDB, isProductInWishlist, getProductAlerts, getProductOffers } from "@/lib/supabase/data";
+import {
+  getProductBySlugFromDB,
+  isProductInWishlist,
+  getProductAlerts,
+  getProductOffers,
+  getProductVariants,
+} from "@/lib/supabase/data";
+import { getVariantBySlug } from "@/lib/supabase/product-variants";
 import { getUser } from "@/lib/supabase/auth";
 import { formatRupiah, getDiscountPercent } from "@/lib/utils";
 import { calculatePriceStats } from "@/lib/product-price-stats";
@@ -28,9 +35,15 @@ import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { JsonLd, productJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { ArrowLeft, Clock } from "lucide-react";
+import { ProductVariantPicker } from "./ProductVariantPicker";
+import { ProductVariantBottomSheet } from "./ProductVariantBottomSheet";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  // Phase 3: `?v=<variantSlug>` selects the variant for filtering the
+  // price table + offers. Next.js 16 makes searchParams a Promise — we
+  // must `await` it (see AGENTS.md "This is NOT the Next.js you know").
+  searchParams: Promise<{ v?: string }>;
 }
 
 // Keep page dynamic (per-product data) but revalidate aggressively so
@@ -39,26 +52,55 @@ export const revalidate = 60;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
+  // searchParams is read for cache-keying the metadata so the
+  // description reflects the currently-selected variant. We don't
+  // need to await it inside an inline IIFE since it's already
+  // awaited above.
+  const { v: variantSlug } = await searchParams;
   const product = await getProductBySlugFromDB(slug);
   if (!product) return { title: "Produk Tidak Ditemukan" };
+
+  // Resolve the selected variant (or fall back to default) so we can
+  // filter the prices that the meta description mentions. Unknown
+  // `?v=` silently falls back to default (no 404 from metadata either).
+  const productWithVariant = product as typeof product & {
+    defaultVariant: import("@/types/product-types").ProductVariant | null;
+  };
+  const selectedVariant = await resolveSelectedVariant(
+    slug,
+    productWithVariant.defaultVariant,
+    variantSlug,
+  );
+  const filteredPrices = filterPricesByVariant(
+    product.prices,
+    selectedVariant?.id ?? null,
+    productWithVariant.defaultVariant?.id ?? null,
+  );
+
   // BUG-03: compute live lowest from in-stock offers so the meta description
   // matches what the page actually renders (don't trust the stale stored
   // product.lowestPrice column).
-  const liveLowest = product.prices.filter((p) => p.inStock);
-  const liveLowestPrice = liveLowest.length > 0 ? Math.min(...liveLowest.map((p) => p.price)) : product.lowestPrice;
+  const liveLowest = filteredPrices.filter((p) => p.inStock);
+  const liveLowestPrice =
+    liveLowest.length > 0 ? Math.min(...liveLowest.map((p) => p.price)) : product.lowestPrice;
+  const inStockCount = filteredPrices.filter((p) => p.inStock).length;
   return {
     title: product.name,
-    description: `Bandingkan harga ${product.name} dari ${product.prices.filter((p) => p.inStock).length} marketplace. Harga mulai ${formatRupiah(liveLowestPrice)}.`,
+    description: `Bandingkan harga ${product.name} dari ${inStockCount} marketplace. Harga mulai ${formatRupiah(liveLowestPrice)}.`,
     alternates: {
       canonical: `/product/${slug}`,
     },
   };
 }
 
-export default async function ProductDetailPage({ params }: PageProps) {
-  const { slug } = await params;
+export default async function ProductDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
+  const [{ slug }, { v: variantSlug }] = await Promise.all([params, searchParams]);
 
   // Wrap DB fetch in try/catch so any Supabase / network / transform error
   // gracefully falls through to notFound.tsx ("Produk Tidak Ditemukan")
@@ -133,8 +175,23 @@ export default async function ProductDetailPage({ params }: PageProps) {
   let isWishlisted = false;
   let userAlerts: { id: string; target_price: number; is_active: boolean }[] = [];
 
-  // Fetch real offers data with trust metadata
-  const offers = await getProductOffers(product.id);
+  // Phase 3: resolve the selected variant from `?v=<slug>` BEFORE fetching
+  // offers so we can filter the offers read in one pass. Unknown slugs
+  // silently fall back to the default variant.
+  const selectedVariant = await resolveSelectedVariant(
+    slug,
+    productWithVariant.defaultVariant,
+    variantSlug,
+  );
+
+  // Fetch all variants (for the picker) and the offers (for the table)
+  // in parallel. The offers query is product-scoped; the variant filter
+  // is applied in-memory in `enrichPricesWithOffers` (via the
+  // `selectedVariantId` prop on ProductPriceTable).
+  const [variants, offers] = await Promise.all([
+    getProductVariants(product.id),
+    getProductOffers(product.id),
+  ]);
 
   if (user) {
     const [wishlisted, alerts] = await Promise.all([
@@ -145,12 +202,16 @@ export default async function ProductDetailPage({ params }: PageProps) {
     userAlerts = alerts;
   }
 
-  // LIVE price stats — computed from in-stock offers in product.prices.
-  // BUG-03 fix: product.lowestPrice and product.highestPrice are stored on
-  // the products row and can drift from the live product_prices_view (the
-  // source the table + "Termurah di X" badge read from). Reading from the
-  // live array here keeps hero/decision/chart/table in lockstep.
-  const inStockPrices = product.prices.filter((p) => p.inStock);
+  // LIVE price stats — computed from in-stock offers in the FILTERED
+  // (variant-scoped) product.prices. This is the key change in Phase 3:
+  // every downstream number (hero price, decision card, chart, table)
+  // now reflects the selected variant, not the merged product total.
+  const filteredPrices = filterPricesByVariant(
+    product.prices,
+    selectedVariant?.id ?? null,
+    productWithVariant.defaultVariant?.id ?? null,
+  );
+  const inStockPrices = filteredPrices.filter((p) => p.inStock);
   const liveLowestPrice =
     inStockPrices.length > 0 ? Math.min(...inStockPrices.map((p) => p.price)) : 0;
   const liveHighestPrice =
@@ -161,11 +222,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
   // recommendation. Falls back to false only if no in-stock offers exist.
   const isOfficialStoreOnCheapest = cheapestMarketplace?.isOfficialStore ?? false;
 
-  // Price statistics for buy/wait decision and fake discount detection
+  // Price statistics for buy/wait decision and fake discount detection.
+  // Computed from the full price history (variant-agnostic) — historical
+  // data is rolled up at the product level, not the variant level.
   const priceStats = calculatePriceStats({ priceHistory: product.priceHistory });
 
-  // Prepare marketplace prices for TotalCostCalculator
-  const marketplacePrices = product.prices
+  // Prepare marketplace prices for TotalCostCalculator (filtered by variant).
+  const marketplacePrices = filteredPrices
     .filter((p) => p.inStock)
     .map((p) => ({
       marketplace: p.marketplace,
@@ -178,7 +241,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <>
-      <JsonLd data={productJsonLd(product, product.prices)} key="product" />
+      <JsonLd data={productJsonLd(product, filteredPrices)} key="product" />
       <JsonLd data={breadcrumbJsonLd(product)} key="breadcrumb" />
       <div className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
         <Link href="/search" className={buttonVariants({ variant: "ghost" }) + " mb-4"}>
@@ -190,7 +253,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             lastUpdated from MAX(prices[].lastUpdated) instead of hardcoded
             undefined. The bar now renders nothing if no real data exists. */}
         <TrustSignalsBar
-          marketplaceCount={product.prices.filter((p) => p.inStock).length}
+          marketplaceCount={inStockPrices.length}
           lastUpdated={inStockPrices.reduce<string | undefined>(
             (max, p) => (!max || p.lastUpdated > max ? p.lastUpdated : max),
             undefined,
@@ -210,15 +273,27 @@ export default async function ProductDetailPage({ params }: PageProps) {
           isWishlisted={isWishlisted}
         />
 
-        {/* Phase 1 variant plumbing: surface that the default variant was
-            resolved via getProductBySlugFromDB. The real variant picker
-            UI is Phase 3 — this is just a wiring verification so we know
-            the field is populated end-to-end. */}
-        {productWithVariant.defaultVariant && (
-          <p className="text-muted-foreground mb-4 text-sm">
-            Varian tersedia: {productWithVariant.defaultVariant.is_default ? "default" : productWithVariant.defaultVariant.slug}
-          </p>
-        )}
+        {/* Phase 3 — Variant picker.
+            Mobile (< md): collapsed into a single button + bottom sheet.
+            Desktop (≥ md): inline chip group.
+            Both write `?v=<slug>` to the URL; the server re-renders with
+            filtered offers. We render the picker even when there's only
+            one variant so the user gets a single "Default" pill — the
+            brief explicitly allows this. */}
+        <div className="mb-4 md:hidden">
+          <ProductVariantBottomSheet
+            productSlug={slug}
+            selectedVariant={selectedVariant}
+            variants={variants}
+          />
+        </div>
+        <div className="mb-6 hidden md:block">
+          <ProductVariantPicker
+            productSlug={slug}
+            selectedVariant={selectedVariant}
+            variants={variants}
+          />
+        </div>
 
         <ProductQuickNav />
 
@@ -234,13 +309,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
               sellerRating={cheapestMarketplace?.sellerRating}
               sellerReviewCount={cheapestMarketplace?.sellerReviewCount}
               isOfficialStore={isOfficialStoreOnCheapest}
-              stockStatus={product.prices.some((p) => p.inStock) ? "in_stock" : "out_of_stock"}
+              stockStatus={filteredPrices.some((p) => p.inStock) ? "in_stock" : "out_of_stock"}
             />
           </section>
 
           {/* 2. BEST OFFER CARDS */}
           <BestOfferCard
-            offers={product.prices.map((p) => ({
+            offers={filteredPrices.map((p) => ({
               marketplace: p.marketplace,
               price: p.price,
               url: p.url,
@@ -252,7 +327,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
           {/* 3. PRICE COMPARISON PREVIEW */}
           <PriceComparisonPreview
-            prices={product.prices.map((p) => ({
+            prices={filteredPrices.map((p) => ({
               marketplace: p.marketplace,
               price: p.price,
               url: p.url,
@@ -280,17 +355,19 @@ export default async function ProductDetailPage({ params }: PageProps) {
             lowestPrice={liveLowestPrice}
             highestPrice={liveHighestPrice}
             dealScore={product.dealScore}
-            marketplaceCount={product.prices.filter((p) => p.inStock).length}
+            marketplaceCount={inStockPrices.length}
             aiVerdict={product.aiVerdict}
           />
 
-          {/* 6. PRICE COMPARISON TABLE (with offer enrichment) */}
+          {/* 6. PRICE COMPARISON TABLE (with offer enrichment + variant filter) */}
           <ProductPriceTable
             prices={product.prices}
             offers={offers}
             productId={product.id}
             productName={product.name}
             lowestPrice={liveLowestPrice}
+            selectedVariantId={selectedVariant?.id ?? null}
+            defaultVariantId={productWithVariant.defaultVariant?.id ?? null}
           />
 
           {/* 7. TOTAL COST CALCULATOR */}
@@ -408,4 +485,48 @@ export default async function ProductDetailPage({ params }: PageProps) {
       </div>
     </>
   );
+}
+
+/**
+ * Resolve the variant selected via `?v=<slug>`. Resolution rules:
+ *   - `?v` is empty / missing: return the product's default variant.
+ *   - `?v=<known slug>` for the parent product: return that variant.
+ *   - `?v=<unknown slug>`: silently fall back to the default variant
+ *     (no 404 — the brief requires graceful degradation).
+ *
+ * The default variant is `productWithVariant.defaultVariant` which
+ * `getProductBySlugFromDB` already denormalises; this helper handles
+ * the URL lookup + fallback chain.
+ */
+async function resolveSelectedVariant(
+  productSlug: string,
+  defaultVariant: import("@/types/product-types").ProductVariant | null,
+  variantSlug: string | undefined,
+): Promise<import("@/types/product-types").ProductVariant | null> {
+  if (!variantSlug) return defaultVariant;
+  const variant = await getVariantBySlug(productSlug, variantSlug);
+  return variant ?? defaultVariant;
+}
+
+/**
+ * Server-side filter applied to `product.prices` for the live lowest /
+ * highest / hero computations. Mirrors `ProductPriceTable`'s in-component
+ * filter so the hero shows the same number as the table. The table also
+ * runs the filter independently to keep the component decoupled (so it
+ * can be reused outside the page).
+ */
+function filterPricesByVariant(
+  prices: import("@/lib/types").MarketplacePrice[],
+  selectedVariantId: string | null,
+  defaultVariantId: string | null,
+) {
+  if (!selectedVariantId) return prices;
+  const isDefaultSelection =
+    defaultVariantId !== null && selectedVariantId === defaultVariantId;
+  if (isDefaultSelection) {
+    return prices.filter(
+      (p) => p.variantId === selectedVariantId || p.variantId == null,
+    );
+  }
+  return prices.filter((p) => p.variantId === selectedVariantId);
 }

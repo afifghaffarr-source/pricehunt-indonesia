@@ -17,6 +17,12 @@ export interface MarketplacePrice {
   shippingCost: number;
   lastUpdated: string;
   isOfficialStore?: boolean;
+  /**
+   * Phase 3: FK to product_variants.id. Null for legacy offers (pre-Phase 1
+   * backfill) that have not yet been linked. When the user filters the
+   * product page by a specific variant, this field is what we match on.
+   */
+  variantId?: string | null;
 }
 
 export interface PriceHistoryPoint {
