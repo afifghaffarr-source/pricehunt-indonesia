@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Chrome Extension - BijakBeli.app",
-  description: "Download ekstensi Chrome BijakBeli v3.0.1 - auto-scrape marketplace Indonesia (Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop) untuk membantu komunitas.",
+  description: "Download ekstensi Chrome BijakBeli v3.1.0 - auto-scrape marketplace Indonesia (Shopee, Tokopedia, Lazada, Blibli, Bukalapak, TikTok Shop) untuk membantu komunitas.",
   alternates: {
     canonical: "/extension",
   },
@@ -100,7 +100,7 @@ export default async function ExtensionPage() {
               </p>
             </div>
           </div>
-          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.1.0.tar.gz" download>
             <Button variant="outline" className="border-amber-500/40 text-amber-900 hover:bg-amber-500/10 dark:text-amber-100">
               <Download className="mr-2 h-4 w-4" />
               Download .tar.gz
@@ -127,7 +127,7 @@ export default async function ExtensionPage() {
               </p>
             </div>
           </div>
-          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.1.0.tar.gz" download>
             <Button variant="outline" className="border-zinc-400 dark:border-zinc-700">
               <Download className="mr-2 h-4 w-4" />
               Download .tar.gz
@@ -143,7 +143,7 @@ export default async function ExtensionPage() {
       {/* Hero Section */}
       <div className="mb-12 text-center">
         <Badge variant="secondary" className="mb-4 border-primary/20">
-          v3.0.1 - Auto-Scrape
+          v3.1.0 - Auto-Scrape
         </Badge>
         <h1 className="mb-4 text-4xl font-bold tracking-tight">
           BijakBeli Chrome Extension
@@ -172,11 +172,11 @@ export default async function ExtensionPage() {
           </div>
           <CardTitle className="text-2xl">Download Extension</CardTitle>
           <CardDescription>
-            v3.0.1 - Gratis untuk semua pengguna
+            v3.1.0 - Gratis untuk semua pengguna
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.1.0.tar.gz" download>
             <Button size="lg" className="w-full text-lg">
               <Download className="mr-2 h-5 w-5" /> Download Extension
             </Button>
@@ -235,7 +235,7 @@ export default async function ExtensionPage() {
         <CardContent className="space-y-3">
           <div className="border-l-2 border-primary pl-4">
             <div className="mb-1 flex items-center gap-2">
-              <Badge variant="default">v3.0.1</Badge>
+              <Badge variant="default">v3.1.0</Badge>
               <span className="text-xs text-muted-foreground">2026-06-27 (Latest)</span>
             </div>
             <p className="text-sm font-medium text-foreground">URL Collision Fix</p>
@@ -587,7 +587,7 @@ export default async function ExtensionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/downloads/bijakbeli-extension-v3.0.1.tar.gz" download>
+          <Link href="/downloads/bijakbeli-extension-v3.1.0.tar.gz" download>
             <Button size="lg" className="text-lg">
               <Download className="mr-2 h-5 w-5" />
               Download Extension Sekarang
@@ -623,7 +623,7 @@ export default async function ExtensionPage() {
         >
           Source Code (GitHub)
         </a>
-        <span>v3.0.1 · Manifest V3</span>
+        <span>v3.1.0 · Manifest V3</span>
       </div>
     </div>
   );
