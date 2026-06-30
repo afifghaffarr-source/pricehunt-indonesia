@@ -51,6 +51,27 @@ export async function getVariantBySlug(
 }
 
 /**
+ * Phase 4 — Batch fetch variants by id.
+ *
+ * Used by `searchProductsFromDB` to resolve `variant_id` FKs on offers
+ * to storage/color/connectivity strings in a single round-trip. Returns
+ * the rows in input order, missing ids are silently skipped (caller
+ * treats a missing variant as a non-match for any axis filter).
+ */
+export async function fetchVariantsByIds(
+  variantIds: string[],
+): Promise<ProductVariant[]> {
+  if (variantIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("product_variants")
+    .select("*")
+    .in("id", variantIds);
+  if (error || !data) return [];
+  return data as ProductVariant[];
+}
+
+/**
  * Fetch the default variant (is_default = true) for a product.
  * Falls back to the first variant row if no row is flagged default.
  */

@@ -14,7 +14,43 @@ import { fetchPricesByProductIds, fetchPriceHistoryByProductId } from "./prices"
 import {
   getDefaultVariantForProduct,
   listVariantsForProduct,
+  fetchVariantsByIds,
 } from "./product-variants";
+
+/**
+ * Phase 4 — Variant filter for the search results.
+ *
+ * Each axis is an array of acceptable values. Multiple values within
+ * an axis are OR-ed (storage: ["256GB", "512GB"] matches EITHER); the
+ * axes themselves are AND-ed (storage: ["256GB"] + color: ["Midnight"]
+ * matches BOTH). A missing axis key is treated as "no filter on this
+ * axis". An empty array is treated as "no match allowed on this axis"
+ * (the filter would drop every offer) — callers should pass `undefined`
+ * instead of `[]` when no filter is needed.
+ */
+export interface VariantFilter {
+  storage?: string[];
+  color?: string[];
+  connectivity?: string[];
+}
+
+/**
+ * Phase 4 — Distinct variant values that exist in the result set.
+ *
+ * Powers the chip-group UI: only chip values that appear in at least
+ * one offer's variant are rendered. No counts (out of scope; see brief).
+ */
+export interface VariantValues {
+  storage: string[];
+  color: string[];
+  connectivity: string[];
+}
+
+const EMPTY_VARIANT_VALUES: VariantValues = {
+  storage: [],
+  color: [],
+  connectivity: [],
+};
 
 /**
  * Phase 3: list all variants for a product (ordered default-first).
@@ -178,14 +214,26 @@ export async function getProductBySlugFromDB(slug: string): Promise<Product | nu
  * paginate with an accurate count. `total` is the count of products
  * matching the same DB-level filter (query + category) — independent
  * of the page slice. Uses a cheap head-only count query.
+ *
+ * Phase 4: optional `variantFilter` narrows the result set so each
+ * product only surfaces offers matching the variant criteria. Products
+ * with zero matching offers are dropped from the page. `total` reflects
+ * the post-filter page count (cheap, no extra count query — the brief
+ * accepts the simplification since the search page only paginates one
+ * large page of 100 results). `variantValues` returns the distinct axis
+ * values seen across the un-filtered offer set so the chip UI can
+ * render only values that actually exist.
  */
 export async function searchProductsFromDB(
   query: string,
   category?: string,
   limit = 50,
-  offset = 0
-): Promise<{ products: Product[]; total: number }> {
-  if (!hasSupabaseEnv()) return { products: [], total: 0 };
+  offset = 0,
+  variantFilter?: VariantFilter
+): Promise<{ products: Product[]; total: number; variantValues: VariantValues }> {
+  if (!hasSupabaseEnv()) {
+    return { products: [], total: 0, variantValues: EMPTY_VARIANT_VALUES };
+  }
 
   const supabase = await createClient();
 
@@ -216,20 +264,132 @@ export async function searchProductsFromDB(
 
   const { data: products, error } = await dataBuilder;
   if (error || !products || products.length === 0) {
-    return { products: [], total };
+    return { products: [], total, variantValues: EMPTY_VARIANT_VALUES };
   }
 
   const productIds = products.map((p) => p.id as string);
   const pricesByProduct = await fetchPricesByProductIds(productIds);
 
-  const result = products.map((p) => {
+  // Phase 4: resolve variant_id FKs on each offer to storage/color/
+  // connectivity strings so we can compute (a) the chip group's
+  // available values and (b) the per-product filtered price list.
+  // Collect the unique variant_ids from ALL offers for these products
+  // (pre-filter) so the chip group shows every possible value.
+  const variantIdSet: string[] = [];
+  const seenVariants = new Set<string>();
+  for (const prices of Object.values(pricesByProduct)) {
+    for (const pr of prices) {
+      const vid = (pr as { variant_id?: string | null }).variant_id;
+      if (vid && !seenVariants.has(vid)) {
+        seenVariants.add(vid);
+        variantIdSet.push(vid);
+      }
+    }
+  }
+  const variants = await fetchVariantsByIds(variantIdSet);
+  const variantById = new Map<string, ProductVariant>();
+  for (const v of variants) variantById.set(v.id, v);
+
+  const variantValues = computeVariantValues(pricesByProduct, variantById);
+
+  // Phase 4: short-circuit when no filter is applied (the common case).
+  const isFilterActive = isVariantFilterActive(variantFilter);
+  if (!isFilterActive) {
+    const result = products.map((p) => {
+      const product = transformProduct(p);
+      const prices = pricesByProduct[p.id as string] || [];
+      product.prices = transformPrices(prices);
+      return product;
+    });
+    return { products: result, total, variantValues };
+  }
+
+  // Phase 4: post-filter the per-product price lists and drop products
+  // with zero matching offers.
+  const filteredProducts: Product[] = [];
+  for (const p of products) {
     const product = transformProduct(p);
     const prices = pricesByProduct[p.id as string] || [];
-    product.prices = transformPrices(prices);
-    return product;
-  });
+    const filteredPrices = prices.filter((pr) =>
+      offerMatchesVariantFilter(pr, variantById, variantFilter!),
+    );
+    if (filteredPrices.length === 0) continue;
+    product.prices = transformPrices(filteredPrices);
+    filteredProducts.push(product);
+  }
+  return { products: filteredProducts, total: filteredProducts.length, variantValues };
+}
 
-  return { products: result, total };
+/**
+ * True when the filter object has at least one non-empty axis array.
+ * Missing/empty axes are treated as "no constraint".
+ */
+function isVariantFilterActive(filter: VariantFilter | undefined): boolean {
+  if (!filter) return false;
+  if (filter.storage && filter.storage.length > 0) return true;
+  if (filter.color && filter.color.length > 0) return true;
+  if (filter.connectivity && filter.connectivity.length > 0) return true;
+  return false;
+}
+
+/**
+ * Compute the distinct axis values present across all offers for the
+ * given product set. Returns sorted arrays (de-duplicated) so the chip
+ * UI renders deterministically. Null-variant offers (legacy pre-Phase 1
+ * data) are ignored — the chip group only shows values with explicit
+ * axis metadata.
+ */
+function computeVariantValues(
+  pricesByProduct: Record<string, Record<string, unknown>[]>,
+  variantById: Map<string, ProductVariant>,
+): VariantValues {
+  const storage = new Set<string>();
+  const color = new Set<string>();
+  const connectivity = new Set<string>();
+  for (const prices of Object.values(pricesByProduct)) {
+    for (const pr of prices) {
+      const vid = (pr as { variant_id?: string | null }).variant_id;
+      if (!vid) continue;
+      const v = variantById.get(vid);
+      if (!v) continue;
+      if (v.storage) storage.add(v.storage);
+      if (v.color) color.add(v.color);
+      if (v.connectivity) connectivity.add(v.connectivity);
+    }
+  }
+  const sortStr = (a: string, b: string) => a.localeCompare(b);
+  return {
+    storage: Array.from(storage).sort(sortStr),
+    color: Array.from(color).sort(sortStr),
+    connectivity: Array.from(connectivity).sort(sortStr),
+  };
+}
+
+/**
+ * Decide whether a single offer's variant matches the active filter.
+ * Null-variant offers and missing-variant offers are excluded as soon
+ * as ANY filter axis is active (we don't have axis metadata to compare
+ * against, so we treat them as non-matching by default).
+ */
+function offerMatchesVariantFilter(
+  offer: Record<string, unknown>,
+  variantById: Map<string, ProductVariant>,
+  filter: VariantFilter,
+): boolean {
+  const vid = (offer as { variant_id?: string | null }).variant_id;
+  if (!vid) return false;
+  const v = variantById.get(vid);
+  if (!v) return false;
+  if (filter.storage && filter.storage.length > 0) {
+    if (!v.storage || !filter.storage.includes(v.storage)) return false;
+  }
+  if (filter.color && filter.color.length > 0) {
+    if (!v.color || !filter.color.includes(v.color)) return false;
+  }
+  if (filter.connectivity && filter.connectivity.length > 0) {
+    if (!v.connectivity || !filter.connectivity.includes(v.connectivity)) return false;
+  }
+  return true;
 }
 
 /**

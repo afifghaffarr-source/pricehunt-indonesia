@@ -21,6 +21,23 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { SlidersHorizontal, Globe } from "lucide-react";
+import {
+  VariantFilterChips,
+  type VariantFilterState,
+  type VariantValues,
+} from "@/components/search/VariantFilterChips";
+
+const emptyVariantFilter: VariantFilterState = {
+  storage: [],
+  color: [],
+  connectivity: [],
+};
+
+const emptyVariantValues: VariantValues = {
+  storage: [],
+  color: [],
+  connectivity: [],
+};
 
 const categories = [
   "Smartphone", "Laptop", "Audio", "Wearable",
@@ -37,6 +54,8 @@ export function SearchPageContent() {
     initialCategory || undefined
   );
   const [sortBy, setSortBy] = useState<string>("deal-score");
+  const [variantFilter, setVariantFilter] = useState<VariantFilterState>(emptyVariantFilter);
+  const [variantValues, setVariantValues] = useState<VariantValues>(emptyVariantValues);
   const [products, setProducts] = useState<Product[]>([]);
   const [discovered, setDiscovered] = useState<BijakBeliDiscoveredProduct[]>([]);
   const [vexoStatus, setVexoStatus] = useState<"loading" | "ok" | "error" | "unavailable">("unavailable");
@@ -52,6 +71,11 @@ export function SearchPageContent() {
         const params = new URLSearchParams();
         if (query) params.set("q", query);
         if (category) params.set("category", category);
+        // Phase 4: variant filter — emit one ?v=axis:value per selection.
+        // Multi-value per axis (OR), multi-axis (AND).
+        for (const s of variantFilter.storage) params.append("v", `storage:${s}`);
+        for (const c of variantFilter.color) params.append("v", `color:${c}`);
+        for (const cn of variantFilter.connectivity) params.append("v", `connectivity:${cn}`);
         params.set("limit", "100");
         // Don't include vexo in main search - handled separately
 
@@ -61,9 +85,19 @@ export function SearchPageContent() {
         if (!res.ok || data.error) {
           console.error("Search API error:", data.error);
           setProducts([]);
+          setVariantValues(emptyVariantValues);
           setLoading(false);
           return;
         }
+
+        // Phase 4: distinct chip values from the API (axis → values that
+        // exist in the current result set). The chip group only renders
+        // values that actually appear in at least one offer.
+        setVariantValues({
+          storage: data.variantValues?.storage || [],
+          color: data.variantValues?.color || [],
+          connectivity: data.variantValues?.connectivity || [],
+        });
 
         // Transform API response to Product type
         const result: Product[] = (data.results || []).map((p: ApiProductSearchResult) => {
@@ -122,7 +156,7 @@ export function SearchPageContent() {
     }
 
     fetchProducts();
-  }, [query, category, sortBy]);
+  }, [query, category, sortBy, variantFilter]);
 
   // Vexo search - only when explicitly enabled
   useEffect(() => {
@@ -238,6 +272,17 @@ export function SearchPageContent() {
             {category} ×
           </Badge>
         )}
+      </div>
+
+      {/* Phase 4: variant filter chips. Renders only axes with values
+          present in the current result set; a separate "Reset filter"
+          button appears when any axis has an active selection. */}
+      <div className="mb-6">
+        <VariantFilterChips
+          values={variantValues}
+          selected={variantFilter}
+          onChange={setVariantFilter}
+        />
       </div>
 
       {loading ? (
