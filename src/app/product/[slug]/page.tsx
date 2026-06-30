@@ -25,7 +25,7 @@ import {
   VariantPriceStatsTable,
   type VariantPriceStatsRow,
 } from "@/components/product/VariantPriceStatsTable";
-import { chipLabelForVariant } from "./ProductVariantPicker";
+import { chipLabelForVariant } from "@/lib/product-variants/labels";
 import { PriceAlertForm } from "@/components/product/PriceAlertForm";
 import { PushNotificationButton } from "@/components/common/PushNotificationButton";
 import { VexoDealVerdict } from "@/components/ai/VexoDealVerdict";

@@ -8,6 +8,10 @@
  * `router.replace(?v=<variantSlug>)` so the URL becomes the canonical
  * state and a deep-link re-renders the same selection.
  *
+ * `chipLabelForVariant` is re-exported from `@/lib/product-variants/labels`
+ * (a server-safe module) so client callers don't have to change their
+ * import path. The real implementation lives there.
+ *
  * Server-side: the page already reads `?v=` from searchParams and passes
  * `selectedVariant` (resolved via `getVariantBySlug` / default fallback).
  * This component is purely a URL writer + visual chip group; it does not
@@ -24,6 +28,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ProductVariant } from "@/types/product-types";
+import { chipLabelForVariant } from "@/lib/product-variants/labels";
 
 export type VariantAxis = "storage" | "color" | "connectivity";
 
@@ -72,13 +77,14 @@ export interface ProductVariantPickerProps {
 }
 
 /**
- * Returns the best human-readable chip label for a variant. Falls back
- * to the slug if storage/color/connectivity are all empty (e.g. the
- * product's only "Default" variant row).
+ * Returns the best human-readable chip label for a variant. Re-exported
+ * from `@/lib/product-variants/labels` (a server-safe module) so the
+ * page's server component can import it without hitting the
+ * "client function from server" error. The real implementation lives
+ * in that module — this line is just a passthrough so existing client
+ * callers don't have to change their import path.
  */
-export function chipLabelForVariant(v: ProductVariant): string {
-  return v.storage ?? v.color ?? v.connectivity ?? v.slug ?? "Default";
-}
+export { chipLabelForVariant } from "@/lib/product-variants/labels";
 
 export function ProductVariantPicker({
   productSlug,
