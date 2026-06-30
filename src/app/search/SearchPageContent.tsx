@@ -1,7 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ProductCard } from "@/components/product/ProductCard";
 import { DiscoveredProductCard } from "@/components/product/DiscoveredProductCard";
@@ -46,21 +46,86 @@ const categories = [
 
 export function SearchPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || "";
+
+  /**
+   * Parse `?v=axis:value` query params into a VariantFilterState.
+   * Each `?v=` may appear multiple times. Multi-value per axis (OR),
+   * multi-axis (AND). Invalid axes / malformed values are silently
+   * dropped. Missing axes are treated as "no filter on that axis".
+   */
+  const parseVariantFromUrl = useCallback((): VariantFilterState => {
+    const values = searchParams.getAll("v");
+    const out: VariantFilterState = { storage: [], color: [], connectivity: [] };
+    for (const raw of values) {
+      const sepIdx = raw.indexOf(":");
+      if (sepIdx <= 0) continue;
+      const axis = raw.slice(0, sepIdx).trim().toLowerCase();
+      const value = raw.slice(sepIdx + 1).trim();
+      if (!value) continue;
+      if (axis !== "storage" && axis !== "color" && axis !== "connectivity") {
+        continue;
+      }
+      if (!out[axis].includes(value)) {
+        out[axis].push(value);
+      }
+    }
+    return out;
+  }, [searchParams]);
 
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<string | undefined>(
     initialCategory || undefined
   );
   const [sortBy, setSortBy] = useState<string>("deal-score");
-  const [variantFilter, setVariantFilter] = useState<VariantFilterState>(emptyVariantFilter);
+  const [variantFilter, setVariantFilter] = useState<VariantFilterState>(() => parseVariantFromUrl());
   const [variantValues, setVariantValues] = useState<VariantValues>(emptyVariantValues);
   const [products, setProducts] = useState<Product[]>([]);
   const [discovered, setDiscovered] = useState<BijakBeliDiscoveredProduct[]>([]);
   const [vexoStatus, setVexoStatus] = useState<"loading" | "ok" | "error" | "unavailable">("unavailable");
   const [vexoEnabled] = useState(false); // Explicit opt-in
   const [loading, setLoading] = useState(true);
+
+  // Sync URL ↔ state when the user changes the variant filter.
+  // Use router.replace (not push) so the back button doesn't fill up
+  // with filter tweaks. Empty axes are omitted from the URL.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("v");
+    for (const s of variantFilter.storage) params.append("v", `storage:${s}`);
+    for (const c of variantFilter.color) params.append("v", `color:${c}`);
+    for (const cn of variantFilter.connectivity) params.append("v", `connectivity:${cn}`);
+    const queryString = params.toString();
+    const url = queryString ? `${pathname}?${queryString}` : pathname;
+    router.replace(url as Parameters<typeof router.replace>[0], { scroll: false });
+    // We deliberately depend only on variantFilter — the initial sync
+    // (from URL → state) happens in the useState initializer above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variantFilter]);
+
+  // Re-sync state from URL when the user navigates with browser back/forward.
+  useEffect(() => {
+    const fromUrl = parseVariantFromUrl();
+    if (
+      fromUrl.storage.join("|") !== variantFilter.storage.join("|") ||
+      fromUrl.color.join("|") !== variantFilter.color.join("|") ||
+      fromUrl.connectivity.join("|") !== variantFilter.connectivity.join("|")
+    ) {
+      setVariantFilter(fromUrl);
+    }
+    // We deliberately depend only on the searchParams to react to
+    // external navigation (back/forward, link clicks), not on
+    // variantFilter (which would create a loop).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -290,7 +355,12 @@ export function SearchPageContent() {
       ) : products.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product, index) => (
-            <ProductCard key={product.id} product={product} priority={index < 3} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              priority={index < 3}
+              activeVariantFilter={variantFilter}
+            />
           ))}
         </div>
       ) : (

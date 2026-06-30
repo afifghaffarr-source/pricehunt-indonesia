@@ -3,18 +3,44 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { DealScoreBadge } from "./DealScoreBadge";
 import { formatRupiah, getDiscountPercent } from "@/lib/utils";
 import type { Product } from "@/lib/types";
-import { TrendingDown, Package } from "lucide-react";
+import type { VariantFilterState } from "@/components/search/VariantFilterChips";
+import { TrendingDown, Package, Filter } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
   priority?: boolean;
+  /**
+   * When a variant filter is active, render a small badge on the card
+   * so the user can see at a glance which variants are being filtered.
+   * Shows the joined axis:value pairs from the filter. Hidden when the
+   * filter is empty.
+   */
+  activeVariantFilter?: VariantFilterState;
 }
 
-export function ProductCard({ product, priority = false }: ProductCardProps) {
+/** Render a compact "Filter: 256GB · Midnight" badge from a state. */
+function buildFilterBadgeText(filter: VariantFilterState): string | null {
+  const parts: string[] = [];
+  for (const s of filter.storage) parts.push(s);
+  for (const c of filter.color) parts.push(c);
+  for (const cn of filter.connectivity) parts.push(cn);
+  if (parts.length === 0) return null;
+  return parts.join(" · ");
+}
+
+export function ProductCard({
+  product,
+  priority = false,
+  activeVariantFilter,
+}: ProductCardProps) {
   const discount = getDiscountPercent(product.lowestPrice, product.highestPrice);
+  const filterBadgeText = activeVariantFilter
+    ? buildFilterBadgeText(activeVariantFilter)
+    : null;
 
   return (
     <Link href={`/product/${product.slug}`}>
@@ -45,6 +71,15 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           )}
         </div>
         <CardContent className="p-4">
+          {filterBadgeText && (
+            <div
+              data-testid="active-filter-badge"
+              className="mb-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700"
+            >
+              <Filter className="h-2.5 w-2.5" />
+              Filter: {filterBadgeText}
+            </div>
+          )}
           <p className="mb-1 text-xs text-muted-foreground transition-colors group-hover:text-primary">
             {product.category}
           </p>
