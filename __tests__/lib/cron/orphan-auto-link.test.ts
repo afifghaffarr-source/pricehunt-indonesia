@@ -249,6 +249,7 @@ describe("formatOrphanSummary", () => {
     const result = {
       processed: 31,
       linked: 24,
+      variants_linked: 18,
       still_orphan: 5,
       errors: 2,
       duration_ms: 8300,
@@ -266,6 +267,7 @@ describe("formatOrphanSummary", () => {
     expect(text).toContain("BijakBeli Orphan Auto-Link — 2026-06-30 19:00 WIB");
     expect(text).toContain("Diproses: 31");
     expect(text).toContain("Berhasil: 24");
+    expect(text).toContain("Varian: 18");
     expect(text).toContain("Dilewati: 5");
     expect(text).toContain("Gagal: 2");
     expect(text).toContain("Durasi: 8.3s");
@@ -283,6 +285,7 @@ describe("formatOrphanSummary", () => {
     const result = {
       processed: 0,
       linked: 0,
+      variants_linked: 0,
       still_orphan: 0,
       errors: 0,
       duration_ms: 12,

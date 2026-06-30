@@ -1,12 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { findBestProductMatch } from "@/lib/ingestion/matcher";
+import { resolveAndAttachVariant } from "@/lib/ingestion/variant-resolver";
+import { extractVariantFromTitle } from "@/lib/ingestion/extract-variant";
 import { logAdminAction } from "@/lib/admin-audit";
 import { sendTelegramMessageFromEnv } from "@/lib/telegram/send-message";
 
 export type OrphanAutoLinkResult = {
   processed:    number;
   linked:       number;
+  variants_linked: number;
   still_orphan: number;
   errors:       number;
   duration_ms:  number;
@@ -76,6 +79,7 @@ export function formatOrphanSummary(
     `BijakBeli Orphan Auto-Link — ${stamp}`,
     `Diproses: ${result.processed}`,
     `Berhasil: ${result.linked}`,
+    `Varian: ${result.variants_linked}`,
     `Dilewati: ${result.still_orphan}`,
     `Gagal: ${result.errors}`,
     `Durasi: ${durationS}s`,
@@ -132,7 +136,7 @@ export async function runOrphanAutoLink(
   // 3. Run matcher per candidate
   const seenProductIds = new Map<string, number>();
   const scored: Array<{ offer_id: string; product_id: string; score: number }> = [];
-  let linked = 0, stillOrphan = 0, errors = 0;
+  let linked = 0, stillOrphan = 0, errors = 0, variantsLinked = 0;
 
   // Tally candidates per marketplace for the Telegram summary. We track
   // ALL candidates (not just linked) so the breakdown matches the
@@ -176,6 +180,37 @@ export async function runOrphanAutoLink(
           linked++;
           seenProductIds.set(productId, (seenProductIds.get(productId) ?? 0) + 1);
           scored.push({ offer_id: offer.id, product_id: productId, score });
+
+          // Phase 7 — Auto-create/resolve variant from offer title.
+          // The scrape pipeline stores variant info in the title when
+          // the marketplace doesn't expose a structured variant field.
+          // We extract variant-defining attributes (storage, color,
+          // connectivity) from the title and resolveAndAttachVariant
+          // to get the proper product_variants row — creating it if
+          // needed. When the title has no parseable attributes, we
+          // leave variant_id as-is (null → caller's default).
+          const variantText = offer.variant || extractVariantFromTitle(offer.title);
+          if (variantText) {
+            try {
+              const resolved = await resolveAndAttachVariant(
+                supabase,
+                productId,
+                variantText,
+              );
+              if (resolved.variantId) {
+                await supabase
+                  .from("offers")
+                  .update({ variant_id: resolved.variantId })
+                  .eq("id", offer.id);
+                variantsLinked++;
+              }
+            } catch (e) {
+              // Non-fatal: variant resolution is best-effort. The
+              // product link is already saved; the offer will show
+              // under the default variant.
+              console.error(`[orphan-auto-link] variant resolve failed for offer ${offer.id}:`, e);
+            }
+          }
         } else {
           errors++;
           console.error(`[orphan-auto-link] update failed for offer ${offer.id}: ${updateErr.message}`);
@@ -195,6 +230,7 @@ export async function runOrphanAutoLink(
   const result: OrphanAutoLinkResult = {
     processed: (candidates ?? []).length,
     linked,
+    variants_linked: variantsLinked,
     still_orphan: stillOrphan,
     errors,
     duration_ms: Date.now() - start,
