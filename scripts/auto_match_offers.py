@@ -62,11 +62,12 @@ class SupabaseClient:
         }
     
     def fetch_orphaned_offers(self) -> List[Dict]:
-        """Fetch offers with product_id = NULL."""
+        """Fetch active offers with product_id = NULL."""
         url = f"{self.url}/rest/v1/offers"
         params = {
             'select': 'id,title,url,marketplace_id',
-            'product_id': 'is.null'
+            'product_id': 'is.null',
+            'is_active': 'eq.true'
         }
         
         response = requests.get(url, headers=self.headers, params=params)
@@ -94,8 +95,34 @@ class SupabaseClient:
         response.raise_for_status()
         return response.json()
     
-    def update_offer_product(self, offer_id: str, product_id: str) -> bool:
-        """Update offer with matched product_id."""
+    def update_offer_product(self, offer_id: str, product_id: str, marketplace_id: str = None) -> bool:
+        """Update offer with matched product_id.
+        Returns True if updated, False if skipped or failed."""
+        # Check for duplicate: if an active offer already exists with
+        # the same (product_id, marketplace_id), deactivate the orphan
+        # instead of creating a unique-constraint violation.
+        if marketplace_id:
+            check_url = f"{self.url}/rest/v1/offers"
+            check_params = {
+                'select': 'id',
+                'product_id': f'eq.{product_id}',
+                'marketplace_id': f'eq.{marketplace_id}',
+                'is_active': 'eq.true'
+            }
+            check_resp = requests.get(check_url, headers=self.headers, params=check_params)
+            if check_resp.status_code == 200:
+                existing = check_resp.json()
+                if existing:
+                    # Duplicate exists — deactivate the orphan offer instead
+                    logger.info(f"  ⏭️  Skipping update — existing offer {existing[0]['id'][:8]} already links "
+                                f"product_id={product_id[:8]} + marketplace_id={marketplace_id[:8]}. "
+                                f"Deactivating orphan {offer_id[:8]} instead.")
+                    deact_url = f"{self.url}/rest/v1/offers"
+                    deact_params = {'id': f'eq.{offer_id}'}
+                    deact_data = {'is_active': False, 'product_id': product_id}
+                    deact_resp = requests.patch(deact_url, headers=self.headers, params=deact_params, json=deact_data)
+                    return deact_resp.status_code == 204
+
         url = f"{self.url}/rest/v1/offers"
         params = {'id': f'eq.{offer_id}'}
         data = {'product_id': product_id}
@@ -271,6 +298,7 @@ def main():
                 matches.append({
                     'offer_id': offer_id,
                     'product_id': product_id,
+                    'marketplace_id': offer.get('marketplace_id'),
                     'confidence': confidence,
                     'strategy': strategy
                 })
@@ -294,8 +322,9 @@ def main():
             for match in matches:
                 offer_id = match['offer_id']
                 product_id = match['product_id']
+                marketplace_id = match.get('marketplace_id')
                 
-                if client.update_offer_product(offer_id, product_id):
+                if client.update_offer_product(offer_id, product_id, marketplace_id):
                     success_count += 1
                     logger.info(f"✅ Updated offer {offer_id[:8]}... → product {product_id[:8]}...")
                 else:
