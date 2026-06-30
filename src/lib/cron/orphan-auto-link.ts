@@ -206,9 +206,13 @@ export async function runOrphanAutoLink(
   // NOTE: AdminAuditInput uses `actorId` / `actorEmail` (not `actor`),
   // and `targetType` / `targetId` (snake_case key form is rejected by the
   // TS interface even though the DB column is snake_case).
+  // The `actor_id` column is `uuid` with a FK to auth.users, so a
+  // string like "cron" fails the insert. Pass `null` for system actors
+  // — the `action` field ("orphan_auto_link") already records that this
+  // was a system run, not a human.
   await logAdminAction({
-    actorId: "cron",
-    actorEmail: null,
+    actorId: null,
+    actorEmail: "system@bijakbeli.app",
     action: "orphan_auto_link",
     targetType: "offers_bulk",
     targetId: "batch",
