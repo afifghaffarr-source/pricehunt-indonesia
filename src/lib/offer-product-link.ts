@@ -101,7 +101,7 @@ export type AutoLinkMatch = {
  * PostgREST queries — no client-side scoring of all 59 products in JS.
  */
 export async function findBestMatchingProduct(
-  supabase: SupabaseClient<any>,
+  supabase: SupabaseClient,
   offerTitle: string,
 ): Promise<AutoLinkMatch | null> {
   const tokens = identifyingTokens(tokenize(offerTitle ?? ""));

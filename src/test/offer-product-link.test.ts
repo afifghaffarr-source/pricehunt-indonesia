@@ -7,17 +7,18 @@ import { findBestMatchingProduct } from "@/lib/offer-product-link";
  * uses: `.from().select().or().limit()`. Captures the or-filter so we can
  * assert what tokens were extracted from the title.
  */
-type CapturingMock = SupabaseClient<any> & {
+type CapturingMock = SupabaseClient & {
   _lastOr: string | null;
   _fakeProducts: Array<{ id: string; name: string; slug: string }>;
 };
 
 function makeMock(products: Array<{ id: string; name: string; slug: string }>): CapturingMock {
-  const m: any = {
-    _lastOr: null,
+  const m = {
+    _lastOr: null as string | null,
     _fakeProducts: products,
     from() {
-      const query: any = {};
+      const query: Record<string, unknown> = {};
+      query.select = () => query;
       query.select = () => query;
       query.or = (filters: string) => {
         m._lastOr = filters;
