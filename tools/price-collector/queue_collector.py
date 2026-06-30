@@ -79,7 +79,8 @@ def get_collector(domain: str):
 
 def crawl_target(target):
     """
-    Crawl a target URL using appropriate marketplace collector
+    Crawl a target URL using appropriate marketplace collector.
+    Two-tier fallback: Playwright (primary) → Camofox (stealth fallback).
     """
     url = target["url"]
     domain = target.get("domain", "")
@@ -88,43 +89,121 @@ def crawl_target(target):
     print(f"   Domain: {domain}")
     print(f"   Priority: {target['priority_score']}")
     
+    # Tier 1: Playwright-based collector (primary)
     collector = get_collector(domain)
+    scrape_path = None
     
-    if not collector:
-        print(f"⚠️  Skipping {domain} (no collector available)")
-        return None
-    
-    try:
-        # Launch browser in headless mode for cron/automated runs.
-        # The original code used headless=False for "transparency" (a
-        # comment in base_collector says so) but that requires a display
-        # server, which cron jobs don't have. Headless=True is the
-        # correct setting for production scraping.
-        collector.launch_browser(headless=True)
-        
-        # Add delay to appear more human-like
-        time.sleep(2)
-        
-        # Extract product data
-        raw_data = collector.extract_product_data(url)
-        
-        # Normalize data
-        normalized = collector.normalize_extracted_data(raw_data)
-        
-        # Close browser
-        collector.close_browser()
-        
-        # Add metadata
-        normalized["source"] = "browser_collector"
-        normalized["crawl_target_id"] = target["id"]
-        
-        return normalized
-    
-    except Exception as e:
-        print(f"❌ Crawl error: {e}")
-        if collector and collector.browser:
+    if collector:
+        try:
+            collector.launch_browser(headless=True)
+            time.sleep(2)
+            raw_data = collector.extract_product_data(url)
+            normalized = collector.normalize_extracted_data(raw_data)
             collector.close_browser()
+            
+            if normalized and normalized.get("title"):
+                normalized["source"] = "browser_collector"
+                normalized["crawl_target_id"] = target["id"]
+                normalized["scrape_path"] = "playwright"
+                print(f"  ✅ Success via playwright")
+                return normalized
+            else:
+                print(f"  ⚠️  Playwright returned empty data, trying camofox fallback...")
+        except Exception as e:
+            print(f"  ⚠️  Playwright error: {e}")
+            if collector and collector.browser:
+                collector.close_browser()
+    
+    # Tier 2: Camofox stealth fallback (bypasses Tokopedia anti-bot)
+    if os.getenv("CAMOFOX_DISABLED", "0") != "1":
+        try:
+            normalized = crawl_with_camofox(url, domain, target)
+            if normalized:
+                print(f"  ✅ Success via camofox")
+                return normalized
+            else:
+                print(f"  ❌ Camofox returned no data")
+        except Exception as e:
+            print(f"  ❌ Camofox error: {e}")
+    else:
+        print(f"  ⏭️  Camofox disabled (CAMOFOX_DISABLED=1)")
+    
+    return None
+
+
+def crawl_with_camofox(url, domain, target):
+    """Use Camofox REST API to scrape a product page.
+    Stealth Firefox bypasses Tokopedia anti-bot that blocks Playwright."""
+    import urllib.request
+    
+    CAMOFOX_HOST = os.getenv("CAMOFOX_HOST", "http://localhost:9377")
+    
+    # Open tab on a real URL (about:blank is rejected by camofox)
+    tab_data = json.dumps({
+        "userId": "queue_collector",
+        "sessionKey": domain.split(".")[0] if domain else "default",
+        "url": url
+    }).encode()
+    
+    req = urllib.request.Request(
+        f"{CAMOFOX_HOST}/tabs",
+        data=tab_data,
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+    resp = json.loads(urllib.request.urlopen(req, timeout=15).read())
+    tab_id = resp["tabId"]
+    
+    # Wait for SPA hydration
+    time.sleep(5)
+    
+    # Extract product data via eval (camofox doesn't support structured schemas)
+    title_js = "document.querySelector('h1')?.innerText || document.title || ''"
+    price_js = """
+    (function() {
+        const text = document.body.innerText;
+        const m = text.match(/Rp\\s?([\\d.]+)/);
+        return m ? m[1].replace(/\\./g, '') : null;
+    })()
+    """
+    
+    def camofox_eval(js):
+        eval_data = json.dumps({"expression": js, "userId": "queue_collector"}).encode()
+        eval_req = urllib.request.Request(
+            f"{CAMOFOX_HOST}/tabs/{tab_id}/evaluate",
+            data=eval_data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        eval_resp = json.loads(urllib.request.urlopen(eval_req, timeout=15).read())
+        return eval_resp.get("result")
+    
+    title = camofox_eval(title_js)
+    price_raw = camofox_eval(price_js)
+    price = int(price_raw) if price_raw else None
+    
+    # Close tab
+    try:
+        close_req = urllib.request.Request(
+            f"{CAMOFOX_HOST}/tabs/{tab_id}?userId=queue_collector",
+            method="DELETE"
+        )
+        urllib.request.urlopen(close_req, timeout=5)
+    except:
+        pass
+    
+    if not title:
         return None
+    
+    return {
+        "title": title,
+        "price": price,
+        "url": url,
+        "source": "camofox_collector",
+        "crawl_target_id": target["id"],
+        "scrape_path": "camofox",
+        "domain": domain,
+    }
 
 
 def submit_offer(offer_data):
