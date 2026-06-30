@@ -139,6 +139,7 @@ describe("buildOfferInsertData", () => {
       input,
       normalized,
       productId: "prod-1",
+      variantId: null,
       marketplaceId: "mp-1",
       sourceType: "browser_collector",
       confidence: confidenceResult,
@@ -166,6 +167,7 @@ describe("buildOfferInsertData", () => {
       input: baseInput(),
       normalized: normalizeOfferInput(baseInput())!,
       productId: null,
+      variantId: null,
       marketplaceId: "mp-1",
       sourceType: "browser_collector",
       confidence: confidenceResult,
@@ -179,6 +181,7 @@ describe("buildOfferInsertData", () => {
       input: baseInput(),
       normalized: normalizeOfferInput(baseInput())!,
       productId: "prod-1",
+      variantId: null,
       marketplaceId: "mp-1",
       sourceType: "browser_collector",
       confidence: confidenceResult,
@@ -203,6 +206,7 @@ describe("buildOfferInsertData", () => {
       }),
       normalized: normalizeOfferInput(baseInput())!,
       productId: "prod-1",
+      variantId: null,
       marketplaceId: "mp-1",
       sourceType: "browser_collector",
       confidence: confidenceResult,
@@ -352,5 +356,90 @@ describe("buildConfidenceInput", () => {
     expect(normalized.stockStatus).toBe("unknown");
     const ci = buildConfidenceInput(input, normalized, "browser_collector");
     expect(ci.hasStock).toBe(false);
+  });
+});
+
+describe("buildOfferInsertData — variant_id handling (Phase 2)", () => {
+  const baseInputPhase2 = {
+    marketplace: "tokopedia",
+    product_url: "https://tokopedia.com/x",
+    title: "iPhone 16 128GB Hitam",
+    price: "18500000",
+  } as any;
+  const baseNormalized = { title: "iPhone 16", price: 18500000, condition: "new", originalPrice: null, stockStatus: null, shippingEstimate: null } as any;
+  const baseConfidence = { score: 80, label: "high" } as any;
+
+  it("includes variant_id when provided", () => {
+    const out = buildOfferInsertData({
+      input: baseInputPhase2,
+      normalized: baseNormalized,
+      productId: "p1",
+      variantId: "v-uuid-001",
+      marketplaceId: "m1",
+      sourceType: "browser_collector",
+      confidence: baseConfidence,
+      now: new Date("2026-06-30T00:00:00Z"),
+    });
+    expect(out.variant_id).toBe("v-uuid-001");
+  });
+
+  it("sets variant_id to null when not provided", () => {
+    const out = buildOfferInsertData({
+      input: baseInputPhase2,
+      normalized: baseNormalized,
+      productId: "p1",
+      variantId: null,
+      marketplaceId: "m1",
+      sourceType: "browser_collector",
+      confidence: baseConfidence,
+      now: new Date("2026-06-30T00:00:00Z"),
+    });
+    expect(out.variant_id).toBeNull();
+  });
+
+  it("preserves variant TEXT separately from variant_id FK", () => {
+    const inputWithVariant = { ...baseInputPhase2, variant: "128GB Hitam" } as any;
+    const out = buildOfferInsertData({
+      input: inputWithVariant,
+      normalized: baseNormalized,
+      productId: "p1",
+      variantId: "v-uuid-002",
+      marketplaceId: "m1",
+      sourceType: "browser_collector",
+      confidence: baseConfidence,
+      now: new Date("2026-06-30T00:00:00Z"),
+    });
+    expect(out.variant).toBe("128GB Hitam");
+    expect(out.variant_id).toBe("v-uuid-002");
+  });
+
+  it("handles empty-string variantId gracefully (treated as null)", () => {
+    const out = buildOfferInsertData({
+      input: baseInputPhase2,
+      normalized: baseNormalized,
+      productId: "p1",
+      variantId: "",
+      marketplaceId: "m1",
+      sourceType: "browser_collector",
+      confidence: baseConfidence,
+      now: new Date("2026-06-30T00:00:00Z"),
+    });
+    expect(out.variant_id).toBe("");
+    // Route will not pass empty string — it filters via `if (resolved.variantId)` before assigning.
+  });
+
+  it("includes null variantId when productId is null", () => {
+    const out = buildOfferInsertData({
+      input: baseInputPhase2,
+      normalized: baseNormalized,
+      productId: null,         // orphan offer
+      variantId: null,         // resolver was skipped
+      marketplaceId: "m1",
+      sourceType: "browser_collector",
+      confidence: baseConfidence,
+      now: new Date("2026-06-30T00:00:00Z"),
+    });
+    expect(out.product_id).toBeNull();
+    expect(out.variant_id).toBeNull();
   });
 });

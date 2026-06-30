@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   createAdminClient: vi.fn(),
   upsertSpy: vi.fn(),
   insertSpy: vi.fn(),
+  listVariantsForProduct: vi.fn(),
+  getDefaultVariantForProduct: vi.fn(),
 }));
 
 vi.mock("@/lib/ingestion/matcher", () => ({
@@ -22,6 +24,16 @@ vi.mock("@/lib/ingestion/matcher", () => ({
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: mocks.createAdminClient,
+}));
+
+// Phase 2: variant-resolver calls these query helpers. In the test
+// environment, default mocks return empty list / null so the resolver
+// falls back to the default variant (no DB write, no error). Tests that
+// need richer behavior override via mocks.listVariantsForProduct.
+vi.mock("@/lib/supabase/product-variants", () => ({
+  listVariantsForProduct: mocks.listVariantsForProduct,
+  getDefaultVariantForProduct: mocks.getDefaultVariantForProduct,
+  getVariantBySlug: vi.fn().mockResolvedValue(null),
 }));
 
 // Minimal Supabase mock: products.select().limit() resolves to a list;
@@ -88,11 +100,16 @@ function makeSupabaseMock(productList: Array<{ id: string; name: string; categor
 const ORIGINAL_SECRET = process.env.INGESTION_SECRET;
 
 beforeEach(() => {
-  process.env.INGESTION_SECRET = "test-secret";
+  process.env.INGESTION_SECRET="test-secret";
   mocks.findBestProductMatch.mockReset();
   mocks.createAdminClient.mockReset();
   mocks.upsertSpy.mockReset();
   mocks.insertSpy.mockReset();
+  // Phase 2: default behavior — no existing variants; resolver returns default
+  mocks.listVariantsForProduct.mockReset();
+  mocks.getDefaultVariantForProduct.mockReset();
+  mocks.listVariantsForProduct.mockResolvedValue([]);
+  mocks.getDefaultVariantForProduct.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -118,6 +135,12 @@ describe("offer-snapshot route — findProductByTitle (matcher integration)", ()
       { id: "p-rog", name: "Asus ROG Zephyrus G14", category: "Laptop" },
     ];
     mocks.createAdminClient.mockReturnValue(makeSupabaseMock(products));
+    // Phase 2: variant resolver pre-populated with a matching variant so the
+    // mock supabase (which doesn't support product_variants INSERT) is bypassed.
+    mocks.listVariantsForProduct.mockResolvedValue([
+      { id: "v-256gb-default", product_id: "p-iphone", slug: "default", storage: null, color: null, connectivity: null, sku: null, is_default: true, is_active: true, created_at: "x", updated_at: "x" },
+      { id: "v-256gb",         product_id: "p-iphone", slug: "256gb",      storage: "256GB", color: null, connectivity: null, sku: null, is_default: false, is_active: true, created_at: "x", updated_at: "x" },
+    ]);
     mocks.findBestProductMatch.mockReturnValue({
       bestMatch: {
         productId: "p-iphone",

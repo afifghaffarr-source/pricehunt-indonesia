@@ -18,6 +18,7 @@ import { z } from "zod";
 import { normalizeMarketplace } from "@/lib/ingestion/normalizer";
 import { calculateConfidenceScore } from "@/lib/ingestion/confidence";
 import { findBestProductMatch } from "@/lib/ingestion/matcher";
+import { resolveAndAttachVariant } from "@/lib/ingestion/variant-resolver";
 import {
   buildOfferInsertData,
   buildSnapshotInsertData,
@@ -258,6 +259,24 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
       warnings.push("Could not match to existing product. Offer will be saved without product_id.");
     }
 
+    // 4b. Phase 2: Resolve variant → product_variants.id
+    // When scraper emitted a variant label and a product was matched,
+    // resolve to a variant_id (existing or newly-created row).
+    let variantId: string | null = null;
+    if (productId && input.variant) {
+      const resolved = await resolveAndAttachVariant(
+        supabase,
+        productId,
+        input.variant,
+      );
+      if (resolved.variantId) {
+        variantId = resolved.variantId;
+        if (resolved.action === "created_new") {
+          warnings.push(`Created new variant row for "${input.variant}".`);
+        }
+      }
+    }
+
     // 5. Calculate confidence (pure)
     const sourceType = mapSourceToSourceType(input.source);
     const confidence = calculateConfidenceScore(buildConfidenceInput(input, normalized, sourceType));
@@ -267,6 +286,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OfferSnap
       input,
       normalized,
       productId,
+      variantId,
       marketplaceId: marketplace.id,
       sourceType,
       confidence,

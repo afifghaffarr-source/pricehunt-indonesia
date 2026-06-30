@@ -119,12 +119,13 @@ export function buildOfferInsertData(params: {
   input: OfferSnapshotInput;
   normalized: NormalizedOffer;
   productId: string | null;
+  variantId: string | null;
   marketplaceId: string;
   sourceType: SourceType;
   confidence: ConfidenceResult;
   now: Date;
 }) {
-  const { input, normalized, productId, marketplaceId, sourceType, confidence, now } = params;
+  const { input, normalized, productId, variantId, marketplaceId, sourceType, confidence, now } = params;
   const nowIso = now.toISOString();
 
   return {
@@ -142,6 +143,7 @@ export function buildOfferInsertData(params: {
     is_official_store: input.is_official_store,
     condition: normalized.condition,
     variant: input.variant || null,
+    variant_id: variantId,
     current_price: normalized.price,
     original_price: normalized.originalPrice,
     stock_status: normalized.stockStatus,
