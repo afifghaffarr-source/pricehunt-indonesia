@@ -23,6 +23,11 @@ from typing import Dict, List, Optional
 import requests
 from dotenv import load_dotenv
 
+# Local: Python port of src/lib/ingestion/extract-variant.ts. Used to
+# auto-link offers to product_variants at insertion time (see insert_offer).
+sys.path.insert(0, str(Path(__file__).parent))
+from extract_variant import find_matching_variant_id  # noqa: E402
+
 # Load env
 load_dotenv(Path(__file__).parent.parent / '.env.local')
 
@@ -207,6 +212,44 @@ def insert_offer(item: Dict, product_id: str, dry_run: bool = False) -> bool:
     )
     
     if resp.status_code == 201:
+        # Phase 8: Extract variant from title and link to product_variants.
+        # This prevents future orphans with variant_id=NULL — the cleanup
+        # cron (orphan-auto-link) would have caught them later, but doing
+        # it at insertion time is cheaper and gives accurate stats from
+        # day one. See scripts/extract_variant.py for the parser (Python
+        # port of src/lib/ingestion/extract-variant.ts).
+        offer_id = None
+        try:
+            inserted = resp.json()
+            if inserted and isinstance(inserted, list):
+                offer_id = inserted[0].get("id")
+        except Exception:
+            pass
+
+        if offer_id and offer_data.get("title"):
+            try:
+                variant_id = find_matching_variant_id(
+                    product_id=product_id,
+                    title=offer_data["title"],
+                    supabase_url=SUPABASE_URL,
+                    service_key=SERVICE_KEY,
+                )
+                if variant_id:
+                    requests.patch(
+                        f"{SUPABASE_URL}/rest/v1/offers?id=eq.{offer_id}",
+                        json={"variant_id": variant_id},
+                        headers={
+                            "apikey": SERVICE_KEY,
+                            "Authorization": f"Bearer {SERVICE_KEY}",
+                            "Prefer": "return=minimal",
+                        },
+                    )
+                    print(f"  🔗 Linked variant: {offer_data['title'][:50]}...")
+            except Exception as e:
+                # Non-fatal: variant linking is best-effort. The offer is
+                # already saved; the orphan-auto-link cron will retry.
+                print(f"  ⚠️  Variant link failed (non-fatal): {e}")
+
         return True
     else:
         print(f"  ❌ Failed to insert offer: {resp.status_code} - {resp.text[:100]}")
