@@ -1,4 +1,3 @@
-import { SearchBar } from "@/components/search/SearchBar";
 import { SmartSearchBar } from "@/components/search/SmartSearchBar";
 import { PopularSearchChips } from "@/components/search/PopularSearchChips";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -40,7 +39,11 @@ export default async function HomePage() {
     getCategoriesFromDB(),
   ]);
 
-  const trendingProducts = allProducts.slice(0, 4);
+  // P0: filter out products with no valid price or no in-stock marketplaces
+  // before slicing trending — prevents showing "Rp 0" / "0 marketplace" cards.
+  const trendingProducts = allProducts
+    .filter((p) => p.lowestPrice > 0 && p.prices.some((pr) => pr.inStock))
+    .slice(0, 4);
 
   return (
     <>
@@ -73,11 +76,14 @@ export default async function HomePage() {
               BijakBeli menganalisis harga dari 6 marketplace Indonesia, mendeteksi diskon mencurigakan, dan memberi rekomendasi kapan waktu terbaik membeli berdasarkan data historis.
             </p>
             <div className="mt-10">
-              <SearchBar size="lg" />
-            </div>
-            <div className="mt-4">
               <SmartSearchBar />
             </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              atau{" "}
+              <Link href="/search" className="font-medium text-primary hover:underline">
+                cari produk biasa →
+              </Link>
+            </p>
             <div className="mt-6">
               <p className="mb-3 text-sm font-medium text-muted-foreground">Coba cari:</p>
               <PopularSearchChips searches={popularSearches} />
@@ -88,43 +94,22 @@ export default async function HomePage() {
               <p className="text-sm font-medium text-muted-foreground">
                 Membandingkan harga dari marketplace terpercaya:
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-6 opacity-60 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                  <div className="h-8 w-8 rounded bg-orange-500/10 flex items-center justify-center">
-                    <span className="text-orange-600">S</span>
-                  </div>
-                  Shopee
-                </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                  <div className="h-8 w-8 rounded bg-green-500/10 flex items-center justify-center">
-                    <span className="text-green-600">T</span>
-                  </div>
-                  Tokopedia
-                </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                  <div className="h-8 w-8 rounded bg-blue-500/10 flex items-center justify-center">
-                    <span className="text-blue-600">B</span>
-                  </div>
-                  Blibli
-                </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                  <div className="h-8 w-8 rounded bg-red-500/10 flex items-center justify-center">
-                    <span className="text-red-600">L</span>
-                  </div>
-                  Lazada
-                </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                  <div className="h-8 w-8 rounded bg-yellow-500/10 flex items-center justify-center">
-                    <span className="text-yellow-600">B</span>
-                  </div>
-                  Bukalapak
-                </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                  <div className="h-8 w-8 rounded bg-purple-500/10 flex items-center justify-center">
-                    <span className="text-purple-600">JD</span>
-                  </div>
-                  JD.ID
-                </div>
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 opacity-70 grayscale transition-all hover:opacity-100 hover:grayscale-0">
+                {[
+                  "Tokopedia",
+                  "Shopee",
+                  "Bukalapak",
+                  "Lazada",
+                  "Blibli",
+                  "TikTok Shop",
+                ].map((name) => (
+                  <span
+                    key={name}
+                    className="text-sm font-bold tracking-tight text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {name}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
