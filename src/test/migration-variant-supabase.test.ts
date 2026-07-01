@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const supabase = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
+const sb = supabase!; // safe: describe.skipIf guarantees env is present when tests run
 
 describe.skipIf(!url || !key)("[SUPABASE LIVE] migration 136-139 verification", () => {
   it("products count equals default variants count", async () => {
@@ -12,9 +13,9 @@ describe.skipIf(!url || !key)("[SUPABASE LIVE] migration 136-139 verification", 
     // longer holds. We just check that every product has AT LEAST one
     // default variant (which the FK / unique-partial-index on
     // `is_default` enforces — see migration 136).
-    const { data: productRows } = await supabase
+    const { data: productRows } = await sb
       .from("products").select("id");
-    const { data: defaultRows } = await supabase
+    const { data: defaultRows } = await sb
       .from("product_variants").select("product_id")
       .eq("is_default", true);
     const productsWithDefault = new Set(defaultRows?.map((r) => r.product_id) ?? []);
@@ -24,12 +25,12 @@ describe.skipIf(!url || !key)("[SUPABASE LIVE] migration 136-139 verification", 
     expect(allCovered).toBe(true);
   });
   it("offers with product_id set also have variant_id set", async () => {
-    const { data: orphans } = await supabase
+    const { data: orphans } = await sb
       .from("offers").select("id").not("product_id", "is", null).is("variant_id", null).limit(5);
     expect(orphans).toEqual([]);
   });
   it("product_prices_view includes variant_id column", async () => {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("product_prices_view").select("variant_id").limit(1);
     expect(error).toBeNull();
     expect(data).not.toBeNull();
