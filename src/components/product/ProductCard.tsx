@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { DealScoreBadge } from "./DealScoreBadge";
+import { PriceSparkline } from "./PriceSparkline";
 import { formatRupiah, getDiscountPercent } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import type { VariantFilterState } from "@/components/search/VariantFilterChips";
@@ -36,6 +39,13 @@ export function ProductCard({
   priority = false,
   activeVariantFilter,
 }: ProductCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // Mock 30-day price history (replace with real product.priceHistory when available)
+  const mockPriceHistory = Array.from({ length: 30 }, (_, i) => 
+    product.lowestPrice + Math.random() * (product.highestPrice - product.lowestPrice)
+  );
+  
   const discount = getDiscountPercent(product.lowestPrice, product.highestPrice);
   const filterBadgeText = activeVariantFilter
     ? buildFilterBadgeText(activeVariantFilter)
@@ -43,7 +53,11 @@ export function ProductCard({
 
   return (
     <Link href={`/product/${product.slug}`}>
-      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/50">
+      <Card
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/50"
+      >
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-muted to-muted/50">
           {product.imageUrl ? (
             <Image
@@ -59,6 +73,21 @@ export function ProductCard({
               <Package className="h-16 w-16 text-muted-foreground/30" />
             </div>
           )}
+          
+          {/* Sparkline overlay on hover */}
+          <AnimatePresence>
+            {isHovered && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <PriceSparkline data={mockPriceHistory} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
           {/* Gradient overlay on hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           
