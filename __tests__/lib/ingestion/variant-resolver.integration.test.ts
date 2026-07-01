@@ -63,11 +63,12 @@ import { resolveAndAttachVariant } from "@/lib/ingestion/variant-resolver";
 const hasKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 describe.skipIf(!hasKey)("variant-resolver integration (live Supabase)", () => {
-  const supabase = createAdminClient() as unknown as SupabaseClient;
+  let supabase: SupabaseClient;
   let testProductId: string;
   let testSlug: string | null = null;
 
   beforeAll(() => {
+    supabase = createAdminClient() as unknown as SupabaseClient;
     // Share the admin client with the mocked read helpers.
     adminHolder.client = supabase;
   });
