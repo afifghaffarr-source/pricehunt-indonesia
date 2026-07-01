@@ -280,51 +280,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <SectionHeading
-          title="Belanja Cerdas Dimulai dari Sini"
-          subtitle="Fitur yang membantu Anda mengambil keputusan lebih baik"
-          align="center"
-        />
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardContent className="flex flex-col items-center p-6 text-center">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Search className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="mb-2 font-semibold">Bandingkan tanpa buka banyak tab</h3>
-              <p className="text-sm text-muted-foreground">
-                Lihat harga dari 6 marketplace sekaligus. Tidak perlu buka satu
-                per satu.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex flex-col items-center p-6 text-center">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
-                <TrendingDown className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="mb-2 font-semibold">Pantau harga incaran</h3>
-              <p className="text-sm text-muted-foreground">
-                Lihat grafik riwayat harga 30 hari untuk tahu waktu terbaik
-                membeli.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex flex-col items-center p-6 text-center">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/10">
-                <Zap className="h-6 w-6 text-purple-600" />
-              </div>
-              <h3 className="mb-2 font-semibold">Rekomendasi beli atau tunggu</h3>
-              <p className="text-sm text-muted-foreground">
-                Rekomendasi cerdas kapan waktu terbaik untuk membeli produk
-                incaran Anda.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
 
       {trendingProducts.length > 0 && (
         <section className="bg-muted/50">
@@ -385,7 +340,7 @@ export default async function HomePage() {
             align="center"
           />
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {categories.map((category) => (
+            {categories.slice(0, 8).map((category) => (
               <Link
                 key={category}
                 href={`/search?category=${encodeURIComponent(category)}`}
@@ -398,6 +353,16 @@ export default async function HomePage() {
               </Link>
             ))}
           </div>
+          {categories.length > 8 && (
+            <div className="mt-6 text-center">
+              <Link
+                href="/search"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Lihat semua kategori →
+              </Link>
+            </div>
+          )}
         </section>
       )}
 
@@ -498,16 +463,6 @@ export default async function HomePage() {
         <div className="space-y-4">
           <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
             <summary className="flex cursor-pointer items-center justify-between font-semibold">
-              Apakah BijakBeli gratis?
-              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
-            </summary>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Ya, BijakBeli sepenuhnya gratis untuk digunakan. Anda dapat membandingkan harga, mendapatkan alert, dan mengakses semua fitur intelligence tanpa biaya apapun.
-            </p>
-          </details>
-
-          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-semibold">
               Seberapa akurat data harga yang ditampilkan?
               <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
             </summary>
@@ -533,16 +488,6 @@ export default async function HomePage() {
             </summary>
             <p className="mt-4 text-sm text-muted-foreground">
               BijakBeli menganalisis riwayat harga produk selama 30-90 hari terakhir. Jika harga &ldquo;original&rdquo; yang dicoret tiba-tiba naik drastis sebelum diskon, atau jika diskon terlihat tidak konsisten dengan pola harga historis, sistem akan menandai sebagai diskon yang terindikasi mencurigakan.
-            </p>
-          </details>
-
-          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-semibold">
-              Apakah data saya aman?
-              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
-            </summary>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Ya. BijakBeli tidak menyimpan informasi pembayaran atau data sensitif Anda. Kami hanya menyimpan wishlist, price alert, dan preferensi yang Anda set. Data Anda dilindungi dan tidak dibagikan kepada pihak ketiga.
             </p>
           </details>
 
