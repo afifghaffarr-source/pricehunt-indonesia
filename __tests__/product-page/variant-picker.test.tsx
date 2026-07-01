@@ -218,7 +218,7 @@ describe("ProductVariantPicker — static markup", () => {
     // The selected (128GB) chip must carry the emerald background class.
     const selected = html.match(/data-selected="true"[\s\S]*?<\/button>/);
     expect(selected, "expected one selected chip").toBeTruthy();
-    expect(selected![0]).toMatch(/bg-\[#10B981\]/);
+    expect(selected![0]).toMatch(/bg-\[#047857\]/);
     expect(selected![0]).toMatch(/text-white/);
   });
 
