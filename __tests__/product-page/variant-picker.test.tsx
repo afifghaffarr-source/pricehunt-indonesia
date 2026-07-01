@@ -19,7 +19,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { render, fireEvent, cleanup } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 import type { ProductVariant } from "@/types/product-types";
 import {
   ProductVariantPicker,

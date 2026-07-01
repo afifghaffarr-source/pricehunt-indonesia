@@ -35,7 +35,7 @@ function makeMock(products: Array<{ id: string; name: string; slug: string }>): 
       return query;
     },
   };
-  return m as CapturingMock;
+  return m as unknown as CapturingMock;
 }
 
 describe("findBestMatchingProduct", () => {

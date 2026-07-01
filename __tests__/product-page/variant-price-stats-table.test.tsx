@@ -23,7 +23,6 @@ import { VariantPriceStatsTable, type VariantPriceStatsRow } from "@/components/
 
 // NNBSP between "Rp" and digits — emitted by Intl.NumberFormat("id-ID", ...).
 const NNBSP = "\u00A0";
-const rp = (n: number) => `Rp${NNBSP}${new Intl.NumberFormat("id-ID").format(n)},00`;
 
 function mkRow(
   id: string,

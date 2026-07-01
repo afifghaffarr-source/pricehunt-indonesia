@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 
 /**

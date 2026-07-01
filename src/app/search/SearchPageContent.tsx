@@ -27,12 +27,6 @@ import {
   type VariantValues,
 } from "@/components/search/VariantFilterChips";
 
-const emptyVariantFilter: VariantFilterState = {
-  storage: [],
-  color: [],
-  connectivity: [],
-};
-
 const emptyVariantValues: VariantValues = {
   storage: [],
   color: [],

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { DealScoreBadge } from "./DealScoreBadge";
 import { formatRupiah, getDiscountPercent } from "@/lib/utils";
 import type { Product } from "@/lib/types";
