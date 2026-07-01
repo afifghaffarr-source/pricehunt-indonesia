@@ -521,7 +521,7 @@ export default async function HomePage() {
               <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
             </summary>
             <p className="mt-4 text-sm text-muted-foreground">
-              BijakBeli mendukung 6 marketplace terbesar di Indonesia: Tokopedia, Shopee, Bukalapak, Lazada, Blibli, dan JD.ID. Kami terus menambah coverage marketplace lainnya.
+              BijakBeli mendukung 6 marketplace terbesar di Indonesia: Tokopedia, Shopee, Bukalapak, Lazada, Blibli, dan TikTok Shop. Kami terus menambah coverage marketplace lainnya.
             </p>
           </details>
 
