@@ -1,0 +1,124 @@
+
+> bijakbeli-app@0.1.0 build
+> next build
+
+▲ Next.js 16.2.7 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  · optimizePackageImports
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 26.2s
+  Running TypeScript ...
+  Finished TypeScript in 25.3s ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/64) ...
+  Generating static pages using 1 worker (16/64) 
+  Generating static pages using 1 worker (32/64) 
+  Generating static pages using 1 worker (48/64) 
+✓ Generating static pages using 1 worker (64/64) in 2.6s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ƒ /admin/data-collection
+├ ƒ /admin/products/[id]
+├ ƒ /admin/registry
+├ ƒ /alerts
+├ ƒ /analytics
+├ ƒ /api/admin/data-collection/conflicts
+├ ƒ /api/admin/data-collection/manual-offer
+├ ƒ /api/admin/data-collection/offers
+├ ƒ /api/admin/data-collection/offers/[id]/validate
+├ ƒ /api/admin/data-collection/rechecks
+├ ƒ /api/admin/data-collection/rechecks/[id]
+├ ƒ /api/admin/data-collection/resolve-conflict
+├ ƒ /api/admin/deploy-status
+├ ƒ /api/ai-advisor
+├ ƒ /api/alerts/check
+├ ƒ /api/analytics
+├ ƒ /api/auth/csrf
+├ ƒ /api/auth/forgot-password
+├ ƒ /api/auth/reset-password
+├ ƒ /api/auth/session
+├ ƒ /api/backup
+├ ƒ /api/cron/alerts
+├ ƒ /api/cron/digest
+├ ƒ /api/cron/orphan-auto-link
+├ ƒ /api/cron/prices
+├ ƒ /api/deals
+├ ƒ /api/export/price-history
+├ ƒ /api/export/wishlist
+├ ƒ /api/extension/current-price
+├ ƒ /api/health
+├ ƒ /api/health/db
+├ ƒ /api/ingestion
+├ ƒ /api/ingestion/offer-snapshot
+├ ƒ /api/internal/vexo-search
+├ ƒ /api/leaderboard
+├ ƒ /api/og/search
+├ ƒ /api/predict
+├ ƒ /api/price-report
+├ ƒ /api/products
+├ ƒ /api/products/[id]
+├ ƒ /api/products/[id]/reviews
+├ ƒ /api/push/subscribe
+├ ƒ /api/recheck-request
+├ ƒ /api/recommendation/buy-or-wait
+├ ƒ /api/recommendation/fake-discount
+├ ƒ /api/recommendations
+├ ƒ /api/recommendations/feedback
+├ ƒ /api/refresh/calculate-priorities
+├ ƒ /api/refresh/queue
+├ ƒ /api/refresh/trigger
+├ ƒ /api/registry
+├ ƒ /api/registry/health
+├ ƒ /api/reviews/[id]
+├ ƒ /api/reviews/[id]/helpful
+├ ƒ /api/search
+├ ƒ /api/user/export
+├ ƒ /api/vexo/ai
+├ ƒ /api/vexo/health
+├ ƒ /api/vexo/images
+├ ƒ /api/vexo/marketplace
+├ ƒ /api/vexo/search
+├ ƒ /auth/forgot-password
+├ ƒ /auth/login
+├ ƒ /auth/register
+├ ƒ /auth/reset-password
+├ ○ /blog/bijakbeli-extension-launch
+├ ƒ /compare
+├ ƒ /dashboard
+├ ƒ /dashboard/alerts
+├ ƒ /deals
+├ ○ /deals/opengraph-image
+├ ƒ /extension
+├ ƒ /extension/compare
+├ ƒ /extension/faq
+├ ƒ /extension/faq.json
+├ ƒ /extension/installed
+├ ƒ /extension/privacy-policy
+├ ƒ /extension/setup
+├ ƒ /leaderboard
+├ ○ /legal
+├ ○ /legal/privacy
+├ ○ /legal/terms
+├ ○ /offline
+├ ○ /opengraph-image
+├ ƒ /product/[slug]
+├ ƒ /product/-/opengraph-image
+├ ƒ /recommendations
+├ ƒ /robots.txt
+├ ƒ /search
+├ ƒ /settings
+├ ƒ /settings/notifications
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

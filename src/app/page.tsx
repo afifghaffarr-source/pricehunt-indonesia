@@ -6,6 +6,8 @@ import { getProductsFromDB, getCategoriesFromDB } from "@/lib/supabase/data";
 import { popularSearches } from "@/lib/mock-data";
 import { AnimatedBackground } from "@/components/hero/AnimatedBackground";
 import { HeroSplineScene } from "@/components/hero/HeroSplineScene";
+import { InteractivePriceChart } from "@/components/demo/InteractivePriceChart";
+import { AnimatedCounter } from "@/components/demo/AnimatedCounter";
 import {
   ArrowRight,
   Bell,
@@ -91,187 +93,56 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Intelligence Preview - Show, don't just tell */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-background via-muted/30 to-background">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <Badge variant="outline" className="mb-4">
-              <Zap className="mr-1 h-3 w-3" />
-              Intelligence in Action
-            </Badge>
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              Lihat BijakBeli Bekerja
-            </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-              Bukan sekadar daftar harga. BijakBeli menganalisis pola, mendeteksi anomali, dan memberi rekomendasi berdasarkan data.
-            </p>
-          </div>
-
-          {/* Example Intelligence Dashboard */}
-          <div className="mt-12 rounded-2xl border-2 bg-background p-6 shadow-md sm:p-8">
-            <div className="mb-6 flex items-start justify-between">
+      {/* Interactive Demo Section */}
+      <section className="container px-4 py-16">
+        <div className="text-center mb-8">
+          <Badge variant="outline" className="mb-4">
+            <BarChart3 className="mr-1 h-3 w-3" />
+            Contoh Analisis Real-Time
+          </Badge>
+          <h2 className="text-3xl font-bold sm:text-4xl">
+            Lihat Bagaimana AI Kami Menganalisis Harga
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
+            Bukan sekadar daftar harga. BijakBeli menganalisis pola dan memberikan rekomendasi berdasarkan data.
+          </p>
+        </div>
+        
+        <Card className="mx-auto max-w-4xl">
+          <CardContent className="p-6">
+            <div className="mb-4">
+              <h3 className="text-2xl font-bold">iPhone 15 Pro Max 256GB</h3>
+              <p className="text-muted-foreground">Natural Titanium</p>
+            </div>
+            
+            <InteractivePriceChart
+              data={[
+                { date: '01 Jun', price: 20500000 },
+                { date: '05 Jun', price: 20200000 },
+                { date: '10 Jun', price: 19800000 },
+                { date: '15 Jun', price: 19500000 },
+                { date: '20 Jun', price: 19300000 },
+                { date: '25 Jun', price: 18950000 },
+                { date: '30 Jun', price: 18850000 },
+              ]}
+            />
+            
+            <div className="mt-6 flex flex-col gap-4 border-t pt-6 md:flex-row md:items-center md:justify-between">
               <div>
-                <h3 className="text-lg font-semibold">iPhone 15 Pro Max 256GB</h3>
-                <p className="text-sm text-muted-foreground">Contoh analisis real-time</p>
+                <p className="text-sm text-muted-foreground">Hemat hingga</p>
+                <AnimatedCounter end={450000} />
               </div>
-              <Badge className="bg-green-700 text-white">
-                Deal Score: 87/100
-              </Badge>
+              
+              <Link
+                href="/search"
+                className={buttonVariants({ size: 'lg' })}
+              >
+                Cari Produk Lain
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              {/* Buy or Wait Recommendation */}
-              <Card className="group border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 transition-all duration-300 hover:shadow-md hover:scale-[1.01] dark:from-green-950/20 dark:to-emerald-950/20">
-                <CardContent className="p-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <div className="rounded-full bg-green-600 p-1 transition-transform group-hover:scale-[1.02]">
-                      <TrendingDown className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="text-sm font-semibold text-green-700 dark:text-green-400">
-                      Beli Sekarang
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Harga 8% di bawah median 30 hari. Diskon terlihat wajar.
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Fake Discount Check */}
-              <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
-                <CardContent className="p-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <div className="rounded-full bg-emerald-600 p-1">
-                      <Shield className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                      Diskon Asli
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Harga ori konsisten dengan riwayat. Confidence: 92%
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Price Comparison */}
-              <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20">
-                <CardContent className="p-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <div className="rounded-full bg-blue-600 p-1">
-                      <Search className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">
-                      6 Toko
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Hemat Rp 450.000 vs toko termahal
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-      {/* Extension CTA - Phase D */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-background to-blue-50 dark:from-purple-950/20 dark:via-background dark:to-blue-950/20">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-            <div>
-              <Badge variant="secondary" className="mb-4">
-                <Download className="mr-1 h-3 w-3" />
-                Browser Extension
-              </Badge>
-              <h2 className="text-3xl font-bold sm:text-4xl">
-                Perbandingan Harga Langsung di Marketplace
-              </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Install extension BijakBeli dan lihat perbandingan harga otomatis saat Anda browsing di Tokopedia, Shopee, atau marketplace lainnya.
-              </p>
-              <ul className="mt-6 space-y-3">
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Otomatis deteksi produk yang sedang Anda lihat</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Tampilkan harga dari 6 marketplace dalam satu sidebar</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Alert diskon palsu dan rekomendasi beli/tunggu</span>
-                </li>
-              </ul>
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link
-                  href="/extension"
-                  className={buttonVariants({ size: "lg" })}
-                >
-                  <Download className="mr-2 h-5 w-5" />
-                  Download Extension
-                </Link>
-                <Link
-                  href="/extension"
-                  className={buttonVariants({ variant: "outline", size: "lg" })}
-                >
-                  Pelajari Lebih Lanjut
-                </Link>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="rounded-2xl border-2 bg-gradient-to-br from-white to-gray-50 p-8 shadow-lg dark:from-gray-900 dark:to-gray-800">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
-                    <Download className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="font-semibold">BijakBeli Extension</div>
-                    <div className="text-xs text-muted-foreground">Chrome • Edge • Brave</div>
-                  </div>
-                </div>
-                <div className="space-y-3 text-sm">
-                  <div className="rounded-lg border bg-background/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Status</span>
-                      <Badge variant="secondary" className="bg-green-500/10 text-green-700">
-                        Active
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-background/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Marketplace Detected</span>
-                      <span className="font-medium">Tokopedia</span>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-background/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Prices Found</span>
-                      <span className="font-medium">6 toko</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-            <div className="mt-6 rounded-lg border bg-muted/50 p-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Harga termurah</span>
-                <span className="font-bold">Rp 18.999.000</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Median 30 hari</span>
-                <span className="text-muted-foreground line-through">Rp 20.650.000</span>
-              </div>
-            </div>
-
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              Analisis ini update otomatis setiap produk yang Anda cari
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* How It Works - Phase D */}

@@ -36,7 +36,9 @@ export function InteractivePriceChart({ data }: InteractivePriceChartProps) {
           fontSize={12}
         />
         <Tooltip
-          formatter={(value: number) => formatRupiah(value)}
+          formatter={(value) => 
+            typeof value === 'number' ? formatRupiah(value) : '-'
+          }
           contentStyle={{
             backgroundColor: 'rgb(15 23 42)',
             border: '1px solid rgb(148 163 184 / 0.2)',
