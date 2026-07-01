@@ -28,6 +28,7 @@ import {
 } from "@/app/product/[slug]/ProductVariantPicker";
 import { ProductVariantBottomSheet } from "@/app/product/[slug]/ProductVariantBottomSheet";
 import { filterPricesByVariant } from "@/components/product/ProductPriceTable";
+import type { MarketplacePrice } from "@/lib/types";
 
 // ----- fixtures -----
 
@@ -152,10 +153,10 @@ describe("chipLabelForVariant", () => {
 
 describe("filterPricesByVariant", () => {
   const prices = [
-    { marketplace: "tokopedia", price: 1, variantId: "v-default", inStock: true } as Record<string, unknown>,
-    { marketplace: "shopee", price: 2, variantId: "v-256", inStock: true } as Record<string, unknown>,
-    { marketplace: "lazada", price: 3, variantId: null, inStock: true } as Record<string, unknown>,
-  ];
+    { marketplace: "tokopedia", price: 1, variantId: "v-default", inStock: true },
+    { marketplace: "shopee", price: 2, variantId: "v-256", inStock: true },
+    { marketplace: "lazada", price: 3, variantId: null, inStock: true },
+  ] as unknown as MarketplacePrice[];
 
   it("returns all prices when no selection", () => {
     expect(filterPricesByVariant(prices, null, "v-default")).toHaveLength(3);
