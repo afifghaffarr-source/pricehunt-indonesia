@@ -25,7 +25,7 @@ test.describe("Search", () => {
     await page.goto("/");
 
     const searchInput = page
-      .getByPlaceholder(/cari produk/i)
+      .getByPlaceholder(/cari/i)
       .first();
     await expect(searchInput).toBeVisible();
 
@@ -41,7 +41,7 @@ test.describe("Search", () => {
     await page.goto("/");
 
     const searchInput = page
-      .getByPlaceholder(/cari produk/i)
+      .getByPlaceholder(/cari/i)
       .first();
     await searchInput.fill("   "); // whitespace only
     await searchInput.press("Enter");

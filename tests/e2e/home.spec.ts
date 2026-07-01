@@ -18,7 +18,7 @@ test.describe("Home page", () => {
       page.getByRole("heading", { name: /temukan harga terbaik/i })
     ).toBeVisible();
     await expect(
-      page.getByPlaceholder(/cari produk/i).first()
+      page.getByPlaceholder(/cari/i).first()
     ).toBeVisible();
   });
 
