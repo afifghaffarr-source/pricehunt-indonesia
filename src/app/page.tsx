@@ -4,6 +4,8 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { SectionHeading } from "@/components/common/SectionHeading";
 import { getProductsFromDB, getCategoriesFromDB } from "@/lib/supabase/data";
 import { popularSearches } from "@/lib/mock-data";
+import { AnimatedBackground } from "@/components/hero/AnimatedBackground";
+import { HeroSplineScene } from "@/components/hero/HeroSplineScene";
 import {
   ArrowRight,
   Bell,
@@ -50,68 +52,40 @@ export default async function HomePage() {
       <JsonLd data={organizationJsonLd()} key="organization" />
       <JsonLd data={websiteJsonLd()} key="website" />
       <div>
-      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50 via-background to-background dark:from-emerald-950/20">
-        {/* Animated gradient orbs */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-20 -top-20 h-96 w-96 animate-blob rounded-full bg-emerald-300/30 opacity-70 blur-3xl mix-blend-multiply dark:bg-emerald-500/20" />
-          <div className="animation-delay-2000 absolute -right-20 -top-20 h-96 w-96 animate-blob rounded-full bg-green-300/30 opacity-70 blur-3xl mix-blend-multiply dark:bg-green-500/20" />
-          <div className="animation-delay-4000 absolute -bottom-20 left-1/2 h-96 w-96 animate-blob rounded-full bg-emerald-300/30 opacity-70 blur-3xl mix-blend-multiply dark:bg-emerald-500/20" />
-        </div>
+      <section className="relative min-h-dvh overflow-hidden">
+        <AnimatedBackground />
         
-        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="secondary" className="mb-6 text-sm">
-              Asisten belanja pintar untuk pembeli Indonesia
+        <div className="container relative z-10 flex min-h-dvh flex-col items-center justify-center gap-8 px-4 py-16 lg:flex-row lg:gap-16">
+          <HeroSplineScene />
+          
+          <div className="flex max-w-2xl flex-col gap-6 text-center lg:text-left">
+            <Badge className="w-fit self-center lg:self-start" variant="secondary">
+              <Sparkles className="mr-1 h-3 w-3" />
+              AI-Powered Price Intelligence
             </Badge>
-            <h1 className="text-balance text-4xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-              Temukan harga terbaik,
-              <br />
-              deteksi diskon palsu,
-              <br />
-              <span className="bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 bg-clip-text text-transparent animate-gradient">
-                beli di waktu yang tepat
-              </span>
+            
+            <h1 className="text-balance bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl md:text-6xl">
+              Beli yang Tepat, di Waktu yang Tepat
             </h1>
-            <p className="mt-6 text-lg leading-relaxed text-muted-foreground sm:text-xl">
-              BijakBeli menganalisis harga dari 6 marketplace Indonesia, mendeteksi diskon mencurigakan, dan memberi rekomendasi kapan waktu terbaik membeli berdasarkan data historis.
+            
+            <p className="text-lg text-muted-foreground">
+              Bandingkan harga dari 6+ marketplace terpercaya. Temukan deal terbaik dengan AI kami.
             </p>
-            <div className="mt-10">
+            
+            <div className="w-full">
               <SmartSearchBar />
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">
+            
+            <p className="text-sm text-muted-foreground">
               atau{" "}
               <Link href="/search" className="font-medium text-primary hover:underline">
                 cari produk biasa →
               </Link>
             </p>
-            <div className="mt-6">
+            
+            <div>
               <p className="mb-3 text-sm font-medium text-muted-foreground">Coba cari:</p>
               <PopularSearchChips searches={popularSearches} />
-            </div>
-
-            {/* Trust Signals */}
-            <div className="mt-12 flex flex-col items-center gap-6 border-t pt-8">
-              <p className="text-sm font-medium text-muted-foreground">
-                Membandingkan harga dari marketplace terpercaya:
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-                {[
-                  { name: "Tokopedia", dot: "bg-green-500" },
-                  { name: "Shopee", dot: "bg-orange-500" },
-                  { name: "Bukalapak", dot: "bg-red-500" },
-                  { name: "Lazada", dot: "bg-blue-500" },
-                  { name: "Blibli", dot: "bg-blue-600" },
-                  { name: "TikTok Shop", dot: "bg-black dark:bg-white" },
-                ].map(({ name, dot }) => (
-                  <span
-                    key={name}
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <span className={`size-2 rounded-full ${dot}`} />
-                    {name}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
         </div>
