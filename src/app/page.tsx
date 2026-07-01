@@ -94,19 +94,20 @@ export default async function HomePage() {
               <p className="text-sm font-medium text-muted-foreground">
                 Membandingkan harga dari marketplace terpercaya:
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 opacity-70 grayscale transition-all hover:opacity-100 hover:grayscale-0">
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
                 {[
-                  "Tokopedia",
-                  "Shopee",
-                  "Bukalapak",
-                  "Lazada",
-                  "Blibli",
-                  "TikTok Shop",
-                ].map((name) => (
+                  { name: "Tokopedia", dot: "bg-green-500" },
+                  { name: "Shopee", dot: "bg-orange-500" },
+                  { name: "Bukalapak", dot: "bg-red-500" },
+                  { name: "Lazada", dot: "bg-blue-500" },
+                  { name: "Blibli", dot: "bg-blue-600" },
+                  { name: "TikTok Shop", dot: "bg-black dark:bg-white" },
+                ].map(({ name, dot }) => (
                   <span
                     key={name}
-                    className="text-sm font-bold tracking-tight text-muted-foreground transition-colors hover:text-foreground"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
                   >
+                    <span className={`size-2 rounded-full ${dot}`} />
                     {name}
                   </span>
                 ))}
