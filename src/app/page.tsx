@@ -60,10 +60,10 @@ export default async function HomePage() {
         
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="secondary" className="mb-6 text-sm animate-bounce">
+            <Badge variant="secondary" className="mb-6 text-sm">
               Asisten belanja pintar untuk pembeli Indonesia
             </Badge>
-            <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+            <h1 className="text-balance text-4xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
               Temukan harga terbaik,
               <br />
               deteksi diskon palsu,
@@ -197,6 +197,90 @@ export default async function HomePage() {
                 </CardContent>
               </Card>
             </div>
+
+      {/* Extension CTA - Phase D */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-background to-blue-50 dark:from-purple-950/20 dark:via-background dark:to-blue-950/20">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+            <div>
+              <Badge variant="secondary" className="mb-4">
+                <Download className="mr-1 h-3 w-3" />
+                Browser Extension
+              </Badge>
+              <h2 className="text-3xl font-bold sm:text-4xl">
+                Perbandingan Harga Langsung di Marketplace
+              </h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                Install extension BijakBeli dan lihat perbandingan harga otomatis saat Anda browsing di Tokopedia, Shopee, atau marketplace lainnya.
+              </p>
+              <ul className="mt-6 space-y-3">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Otomatis deteksi produk yang sedang Anda lihat</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Tampilkan harga dari 6 marketplace dalam satu sidebar</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Alert diskon palsu dan rekomendasi beli/tunggu</span>
+                </li>
+              </ul>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  href="/extension"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  <Download className="mr-2 h-5 w-5" />
+                  Download Extension
+                </Link>
+                <Link
+                  href="/extension"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                >
+                  Pelajari Lebih Lanjut
+                </Link>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="rounded-2xl border-2 bg-gradient-to-br from-white to-gray-50 p-8 shadow-lg dark:from-gray-900 dark:to-gray-800">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
+                    <Download className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">BijakBeli Extension</div>
+                    <div className="text-xs text-muted-foreground">Chrome • Edge • Brave</div>
+                  </div>
+                </div>
+                <div className="space-y-3 text-sm">
+                  <div className="rounded-lg border bg-background/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Status</span>
+                      <Badge variant="secondary" className="bg-green-500/10 text-green-700">
+                        Active
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border bg-background/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Marketplace Detected</span>
+                      <span className="font-medium">Tokopedia</span>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border bg-background/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Prices Found</span>
+                      <span className="font-medium">6 toko</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
             <div className="mt-6 rounded-lg border bg-muted/50 p-4">
               <div className="flex items-center justify-between text-sm">
@@ -366,89 +450,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Extension CTA - Phase D */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-background to-blue-50 dark:from-purple-950/20 dark:via-background dark:to-blue-950/20">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-            <div>
-              <Badge variant="secondary" className="mb-4">
-                <Download className="mr-1 h-3 w-3" />
-                Browser Extension
-              </Badge>
-              <h2 className="text-3xl font-bold sm:text-4xl">
-                Perbandingan Harga Langsung di Marketplace
-              </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Install extension BijakBeli dan lihat perbandingan harga otomatis saat Anda browsing di Tokopedia, Shopee, atau marketplace lainnya.
-              </p>
-              <ul className="mt-6 space-y-3">
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Otomatis deteksi produk yang sedang Anda lihat</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Tampilkan harga dari 6 marketplace dalam satu sidebar</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Alert diskon palsu dan rekomendasi beli/tunggu</span>
-                </li>
-              </ul>
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link
-                  href="/extension"
-                  className={buttonVariants({ size: "lg" })}
-                >
-                  <Download className="mr-2 h-5 w-5" />
-                  Download Extension
-                </Link>
-                <Link
-                  href="/extension"
-                  className={buttonVariants({ variant: "outline", size: "lg" })}
-                >
-                  Pelajari Lebih Lanjut
-                </Link>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="rounded-2xl border-2 bg-gradient-to-br from-white to-gray-50 p-8 shadow-lg dark:from-gray-900 dark:to-gray-800">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
-                    <Download className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="font-semibold">BijakBeli Extension</div>
-                    <div className="text-xs text-muted-foreground">Chrome • Edge • Brave</div>
-                  </div>
-                </div>
-                <div className="space-y-3 text-sm">
-                  <div className="rounded-lg border bg-background/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Status</span>
-                      <Badge variant="secondary" className="bg-green-500/10 text-green-700">
-                        Active
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-background/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Marketplace Detected</span>
-                      <span className="font-medium">Tokopedia</span>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-background/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Prices Found</span>
-                      <span className="font-medium">6 toko</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* FAQ Section - Phase D */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
@@ -461,42 +462,42 @@ export default async function HomePage() {
         </div>
 
         <div className="space-y-4">
-          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden overflow-hidden">
             <summary className="flex cursor-pointer items-center justify-between font-semibold">
               Seberapa akurat data harga yang ditampilkan?
-              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+              <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
             </summary>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-300">
               BijakBeli mengumpulkan data harga secara otomatis dari marketplace. Harga dapat berubah sewaktu-waktu, jadi kami sarankan untuk selalu cek harga final di marketplace saat checkout. Data historis kami update berkala untuk analisis yang akurat.
             </p>
           </details>
 
-          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden overflow-hidden">
             <summary className="flex cursor-pointer items-center justify-between font-semibold">
               Marketplace mana saja yang didukung?
-              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+              <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
             </summary>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-300">
               BijakBeli mendukung 6 marketplace terbesar di Indonesia: Tokopedia, Shopee, Bukalapak, Lazada, Blibli, dan TikTok Shop. Kami terus menambah coverage marketplace lainnya.
             </p>
           </details>
 
-          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden overflow-hidden">
             <summary className="flex cursor-pointer items-center justify-between font-semibold">
               Bagaimana cara kerja deteksi diskon palsu?
-              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+              <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
             </summary>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-300">
               BijakBeli menganalisis riwayat harga produk selama 30-90 hari terakhir. Jika harga &ldquo;original&rdquo; yang dicoret tiba-tiba naik drastis sebelum diskon, atau jika diskon terlihat tidak konsisten dengan pola harga historis, sistem akan menandai sebagai diskon yang terindikasi mencurigakan.
             </p>
           </details>
 
-          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden">
+          <details className="group rounded-lg border bg-background p-6 [&_summary::-webkit-details-marker]:hidden overflow-hidden">
             <summary className="flex cursor-pointer items-center justify-between font-semibold">
               Bagaimana cara kerja price alert?
-              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+              <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
             </summary>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-300">
               Setelah Anda set target harga untuk suatu produk, BijakBeli akan memantau harga secara otomatis. Saat harga mencapai atau di bawah target Anda, kami akan mengirim notifikasi via email atau push notification (jika diaktifkan).
             </p>
           </details>
