@@ -126,7 +126,7 @@ export function ProductVariantBottomSheet({
                       onClick={() => handleSelect(isSelected ? null : slug)}
                       className={
                         isSelected
-                          ? "inline-flex h-9 items-center rounded-full bg-[#10B981] px-4 text-sm font-medium text-white"
+                          ? "inline-flex h-9 items-center rounded-full bg-[#047857] px-4 text-sm font-medium text-white"
                           : "inline-flex h-9 items-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900"
                       }
                     >
@@ -152,7 +152,7 @@ export function ProductVariantBottomSheet({
                           }
                           className={
                             isSelected
-                              ? "inline-flex h-9 items-center rounded-full bg-[#10B981] px-4 text-sm font-medium text-white"
+                              ? "inline-flex h-9 items-center rounded-full bg-[#047857] px-4 text-sm font-medium text-white"
                               : "inline-flex h-9 items-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900"
                           }
                         >

@@ -181,7 +181,7 @@ function ChipRow({ label, variants, selectedId, onSelect }: ChipRowProps) {
               onClick={() => onSelect(isSelected ? null : slug)}
               className={
                 isSelected
-                  ? "inline-flex h-9 items-center rounded-full bg-[#10B981] px-4 text-sm font-medium text-white shadow-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/40"
+                  ? "inline-flex h-9 items-center rounded-full bg-[#047857] px-4 text-sm font-medium text-white shadow-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#047857]/40"
                   : "inline-flex h-9 items-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-200"
               }
             >
