@@ -152,9 +152,9 @@ describe("chipLabelForVariant", () => {
 
 describe("filterPricesByVariant", () => {
   const prices = [
-    { marketplace: "tokopedia", price: 1, variantId: "v-default", inStock: true } as any,
-    { marketplace: "shopee", price: 2, variantId: "v-256", inStock: true } as any,
-    { marketplace: "lazada", price: 3, variantId: null, inStock: true } as any,
+    { marketplace: "tokopedia", price: 1, variantId: "v-default", inStock: true } as Record<string, unknown>,
+    { marketplace: "shopee", price: 2, variantId: "v-256", inStock: true } as Record<string, unknown>,
+    { marketplace: "lazada", price: 3, variantId: null, inStock: true } as Record<string, unknown>,
   ];
 
   it("returns all prices when no selection", () => {

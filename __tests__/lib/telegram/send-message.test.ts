@@ -137,7 +137,7 @@ describe("sendTelegramMessage", () => {
     // returns. Real timeout behaviour is covered by the AbortController
     // built-in (set in send-message.ts).
     let receivedSignal: AbortSignal | null = null;
-    fetchMock = vi.fn(async (_url: unknown, init: any) => {
+    fetchMock = vi.fn(async (_url: unknown, init: { signal?: AbortSignal } | undefined) => {
       receivedSignal = init?.signal ?? null;
       return {
         ok: true,

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ProductVariant } from "@/types/product-types";
 
 // Mock the upstream query helpers
 vi.mock("@/lib/supabase/product-variants", () => ({
@@ -9,7 +11,7 @@ vi.mock("@/lib/supabase/product-variants", () => ({
 import { listVariantsForProduct, getDefaultVariantForProduct } from "@/lib/supabase/product-variants";
 import { resolveAndAttachVariant } from "@/lib/ingestion/variant-resolver";
 
-const unusedSupabase = {} as any;
+const unusedSupabase = {} as unknown as SupabaseClient;
 
 beforeEach(() => {
   vi.mocked(listVariantsForProduct).mockReset();
@@ -21,7 +23,7 @@ describe("resolveAndAttachVariant", () => {
     vi.mocked(listVariantsForProduct).mockResolvedValue([
       { id: "v1", product_id: "p1", slug: "default", storage: null, color: null, connectivity: null, sku: null, is_default: true, is_active: true, created_at: "x", updated_at: "x" },
       { id: "v2", product_id: "p1", slug: "128gb-hitam", storage: "128GB", color: "hitam", connectivity: null, sku: null, is_default: false, is_active: true, created_at: "x", updated_at: "x" },
-    ] as any);
+    ] as ProductVariant[]);
 
     const res = await resolveAndAttachVariant(unusedSupabase, "p1", "128GB Hitam");
     expect(res.action).toBe("matched_existing");
@@ -31,12 +33,12 @@ describe("resolveAndAttachVariant", () => {
   it("returns created_new when no existing variant matches", async () => {
     vi.mocked(listVariantsForProduct).mockResolvedValue([
       { id: "v1", product_id: "p1", slug: "default", storage: null, color: null, connectivity: null, sku: null, is_default: true, is_active: true, created_at: "x", updated_at: "x" },
-    ] as any);
+    ] as ProductVariant[]);
     const stubSupabase = {
       from: () => ({
         insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: "v_new" }, error: null }) }) }),
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const res = await resolveAndAttachVariant(stubSupabase, "p1", "256GB Putih");
     expect(res.action).toBe("created_new");
@@ -48,7 +50,7 @@ describe("resolveAndAttachVariant", () => {
       id: "v_default", product_id: "p1", slug: "default", storage: null, color: null,
       connectivity: null, sku: null, is_default: true, is_active: true,
       created_at: "x", updated_at: "x",
-    } as any);
+    } as ProductVariant);
 
     const res = await resolveAndAttachVariant(unusedSupabase, "p1", null);
     expect(res.action).toBe("unchanged_no_variant");
@@ -61,9 +63,9 @@ describe("resolveAndAttachVariant", () => {
       connectivity: null, sku: null, is_default: i === 0, is_active: true,
       created_at: "x", updated_at: "x",
     }));
-    vi.mocked(listVariantsForProduct).mockResolvedValue(variants as any);
+    vi.mocked(listVariantsForProduct).mockResolvedValue(variants as ProductVariant[]);
     // Supabase mock NOT consulted because cap-exceeded returns before insert
-    const stubSupabase = { from: vi.fn() } as any;
+    const stubSupabase = { from: vi.fn() } as unknown as SupabaseClient;
 
     const res = await resolveAndAttachVariant(stubSupabase, "p1", "999GB Pink");
     expect(res.action).toBe("cap_exceeded");
@@ -71,7 +73,7 @@ describe("resolveAndAttachVariant", () => {
   });
 
   it("uses slug derived from product slug base when creating new variant", async () => {
-    vi.mocked(listVariantsForProduct).mockResolvedValue([] as any);  // empty list
+    vi.mocked(listVariantsForProduct).mockResolvedValue([] as ProductVariant[]);  // empty list
     const stubSupabase = {
       from: (table: string) => {
         if (table === "products") {
@@ -90,7 +92,7 @@ describe("resolveAndAttachVariant", () => {
         }
         return {};
       },
-    } as any;
+    } as unknown as SupabaseClient;
 
     const res = await resolveAndAttachVariant(stubSupabase, "p1", "512GB Blue");
     expect(res.action).toBe("created_new");

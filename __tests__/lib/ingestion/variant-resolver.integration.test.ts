@@ -63,7 +63,7 @@ import { resolveAndAttachVariant } from "@/lib/ingestion/variant-resolver";
 const hasKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 describe.skipIf(!hasKey)("variant-resolver integration (live Supabase)", () => {
-  const supabase = createAdminClient() as any;
+  const supabase = createAdminClient() as unknown as SupabaseClient;
   let testProductId: string;
   let testSlug: string | null = null;
 
@@ -109,7 +109,7 @@ describe.skipIf(!hasKey)("variant-resolver integration (live Supabase)", () => {
       await supabase
         .from("product_variants")
         .delete()
-        .match({ product_id: testProductId, slug: testSlug } as any);
+        .match({ product_id: testProductId, slug: testSlug } as Record<string, unknown>);
     }
   });
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 vi.mock("@/lib/ingestion/matcher", () => ({
   findBestProductMatch: vi.fn(),
@@ -21,7 +22,11 @@ import { findBestProductMatch } from "@/lib/ingestion/matcher";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAdminAction } from "@/lib/admin-audit";
 
-function mkSupabase(candidates: any[], products: any[], updateShouldFail = false) {
+function mkSupabase(
+  candidates: Record<string, unknown>[],
+  products: Record<string, unknown>[],
+  updateShouldFail = false,
+): SupabaseClient {
   return {
     from: (table: string) => {
       if (table === "offers") {
@@ -49,7 +54,7 @@ function mkSupabase(candidates: any[], products: any[], updateShouldFail = false
       }
       return { select: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) };
     },
-  } as any;
+  } as unknown as SupabaseClient;
 }
 
 describe("runOrphanAutoLink", () => {
@@ -233,7 +238,7 @@ describe("runOrphanAutoLink — telegram summary (Phase 6)", () => {
   });
 
   it("does not throw when Telegram throws (defensive try/catch)", async () => {
-    const candidates: any[] = [];
+    const candidates: Record<string, unknown>[] = [];
     vi.mocked(createAdminClient).mockReturnValue(mkSupabase(candidates, []));
     sendTelegramMessageFromEnv.mockRejectedValue(new Error("should never reach the throw branch"));
 
