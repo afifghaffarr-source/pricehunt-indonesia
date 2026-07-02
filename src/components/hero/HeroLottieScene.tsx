@@ -13,9 +13,9 @@ const Lottie = dynamic(() => import('lottie-react'), {
 });
 
 export function HeroLottieScene() {
-  // Generic floating tech/shopping animation
-  // Using a working Lottie CDN URL - can be replaced later
-  const animationUrl = 'https://assets9.lottiefiles.com/packages/lf20_jcikwtux.json';
+  // Coins/money animation - fits price comparison theme
+  // Using a working Lottie CDN URL from LottieFiles
+  const animationUrl = 'https://assets5.lottiefiles.com/packages/lf20_ystsffqy.json';
 
   return (
     <div className="relative hidden h-[600px] w-[800px] lg:block">
