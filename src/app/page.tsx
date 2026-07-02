@@ -5,7 +5,7 @@ import { SectionHeading } from "@/components/common/SectionHeading";
 import { getProductsFromDB, getCategoriesFromDB } from "@/lib/supabase/data";
 import { popularSearches } from "@/lib/mock-data";
 import { AnimatedBackground } from "@/components/hero/AnimatedBackground";
-import { HeroSplineScene } from "@/components/hero/HeroSplineScene";
+import { HeroLottieScene } from "@/components/hero/HeroLottieScene";
 import { InteractivePriceChart } from "@/components/demo/InteractivePriceChart";
 import { AnimatedCounter } from "@/components/demo/AnimatedCounter";
 import {
@@ -58,7 +58,7 @@ export default async function HomePage() {
         <AnimatedBackground />
         
         <div className="container relative z-10 flex min-h-dvh flex-col items-center justify-center gap-8 px-4 py-16 lg:flex-row lg:gap-16">
-          <HeroSplineScene />
+          <HeroLottieScene />
           
           <div className="flex max-w-2xl flex-col gap-6 text-center lg:text-left">
             <Badge className="w-fit self-center lg:self-start" variant="secondary">
