@@ -695,46 +695,50 @@ git commit -m "docs: add visual enhancement performance metrics"
 
 ---
 
-## Task 11: Create Spline 3D Scene (Manual Step)
+## Task 11: Create Hero Visual Animation ~~(Spline 3D Scene)~~ [COMPLETED - DEVIATED]
 
-**Goal:** Create actual Spline scene and update placeholder URL
+**Original Goal:** Create Spline 3D scene  
+**Actual Implementation:** Explored 3 alternative approaches, selected Framer Motion SVG
 
-**Manual Steps (User Action Required):**
+**Deviation Rationale:** User couldn't create Spline scene manually. Explored faster alternatives that don't require external tooling.
 
-1. Go to https://spline.design/ and sign up for free account
-2. Create new project "BijakBeli Hero Scene"
-3. Add 3 low-poly models from library:
-   - Generic smartphone
-   - Generic laptop
-   - Generic headphones
-4. Arrange in floating layout (vary Y-axis positions)
-5. Add orbital rotation animation:
-   - Select all 3 objects
-   - Add Event: Rotate → Y-axis, 360°, 60s duration, infinite loop
-6. Configure lighting:
-   - Directional light: position top-right, intensity 0.8
-   - Ambient light: intensity 0.3
-7. Set materials: Glossy plastic (metalness 0.7, roughness 0.4)
-8. Export for web:
-   - Click Export → Web (Embed)
-   - Copy scene URL: `https://prod.spline.design/[SCENE_ID]/scene.splinecode`
+**Implementations Created (2026-07-02):**
 
-- [ ] Update src/components/hero/HeroSplineScene.tsx with actual scene URL
-```typescript
-// Replace line with PLACEHOLDER
-scene="https://prod.spline.design/[ACTUAL_SCENE_ID_FROM_SPLINE]/scene.splinecode"
+1. **Option 1: Lottie JSON Fetch** (commit 5f00ba3)
+   - Fetches animation from LottieFiles CDN
+   - Pro: Professional animations, small JSON size
+   - Con: Network fetch delay, loading skeleton needed
+   - File: `src/components/hero/HeroLottieScene.tsx`
+
+2. **Option 2: Pure CSS 3D Coins** (commit c0de4c4)
+   - CSS keyframes with floating gold coins
+   - Pro: Zero dependencies, instant render
+   - Con: Limited animation complexity, harder to modify
+   - File: `src/components/hero/HeroCSSScene.tsx`
+
+3. **Option 3: Framer Motion SVG** (commit b66e79e) ✅ **SELECTED & DEPLOYED**
+   - SVG coins with physics-based Framer Motion animations
+   - Pro: Zero marginal cost (FM already used), smooth, easy to modify
+   - Con: Slightly larger than pure CSS
+   - File: `src/components/hero/HeroMotionScene.tsx`
+
+**Decision:** Option 3 selected because Framer Motion already used in ProductCard sparkline, InteractivePriceChart, and AnimatedCounter - zero marginal bundle cost.
+
+- [x] Created 3 alternative implementations
+- [x] Tested all 3 options (build passing)
+- [x] Selected Option 3 (Framer Motion SVG)
+- [x] Updated src/app/page.tsx to use HeroMotionScene
+- [x] Deployed to production (www.bijakbeli.web.id)
+- [x] E2E tests passed
+- [x] Lighthouse passed
+- [x] Documentation: docs/hero-animation-comparison.md
+
+**Commits:**
 ```
-
-- [ ] Test Spline scene loads
-```bash
-npm run dev
-# Desktop viewport (>1024px) — 3D scene should render and slowly rotate
-```
-
-- [ ] Commit
-```bash
-git add src/components/hero/HeroSplineScene.tsx
-git commit -m "feat(hero): update Spline scene with production URL"
+5f00ba3 feat(hero): implement Lottie animation with JSON fetch (Option 1)
+c0de4c4 feat(hero): CSS 3D floating coins animation (Option 2)
+b66e79e feat(hero): Framer Motion SVG floating coins (Option 3)
+7bfb524 docs: add hero animation options comparison (3 approaches)
 ```
 
 ---
