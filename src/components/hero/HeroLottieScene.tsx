@@ -1,39 +1,14 @@
-'use client';
-
-import dynamic from 'next/dynamic';
-import { Suspense } from 'react';
-
-const Lottie = dynamic(() => import('lottie-react'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center">
-      <div className="h-32 w-32 animate-pulse rounded-full bg-purple-500/20" />
-    </div>
-  ),
-});
-
+// Temporary placeholder - Lottie will be re-added with proper JSON fetch
 export function HeroLottieScene() {
-  // Coins/money animation - fits price comparison theme
-  // Using a working Lottie CDN URL from LottieFiles
-  const animationUrl = 'https://assets5.lottiefiles.com/packages/lf20_ystsffqy.json';
-
   return (
     <div className="relative hidden h-[600px] w-[800px] lg:block">
-      <Suspense
-        fallback={
-          <div className="h-full w-full animate-pulse rounded-lg bg-purple-500/10" />
-        }
-      >
-        <Lottie
-          animationData={animationUrl}
-          loop
-          autoplay
-          className="h-full w-full"
-          style={{ width: '100%', height: '100%' }}
-        />
-      </Suspense>
-      <div className="absolute bottom-4 right-4 text-xs text-muted-foreground/50">
-        Animation powered by Lottie
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="h-64 w-64 mx-auto rounded-full bg-gradient-to-br from-purple-500/20 via-blue-500/20 to-cyan-500/20 animate-pulse" />
+          <p className="text-xs text-muted-foreground/50">
+            Price Intelligence Visualization
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -55,7 +55,7 @@ export default function Error({
 
         <p className="text-sm text-gray-500">
           Jika masalah terus berlanjut, silakan{" "}
-          <a href="/legal" className="text-blue-600 hover:underline">
+          <a href="/legal" className="text-blue-600 underline hover:text-blue-700">
             hubungi kami
           </a>
           .
