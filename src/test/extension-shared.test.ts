@@ -188,10 +188,8 @@ describe("extension/shared.js — CSV export", () => {
     });
 
     it("writes blob with UTF-8 BOM for Excel compatibility", () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const blobInstances: any[] = [];
       const RealBlob = global.Blob;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).Blob = function (parts: BlobPart[], options: BlobPropertyBag) {
         blobInstances.push({ parts, options });
       };

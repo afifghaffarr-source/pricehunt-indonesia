@@ -13,14 +13,11 @@ import {
   Bell,
   Calculator,
   Search,
-  TrendingDown,
   Shield,
-  Zap,
-  Sparkles,
   BarChart3,
-  Download,
-  ChevronDown,
   CheckCircle2,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";

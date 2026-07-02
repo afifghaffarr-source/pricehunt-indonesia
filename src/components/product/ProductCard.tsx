@@ -42,7 +42,7 @@ export function ProductCard({
   const [isHovered, setIsHovered] = useState(false);
   
   // Mock 30-day price history (replace with real product.priceHistory when available)
-  const mockPriceHistory = Array.from({ length: 30 }, (_, i) => 
+  const mockPriceHistory = Array.from({ length: 30 }, (_, _i) => 
     product.lowestPrice + Math.random() * (product.highestPrice - product.lowestPrice)
   );
   
