@@ -15,7 +15,7 @@ test.describe("Home page", () => {
 
     // Hero: h1 + search bar
     await expect(
-      page.getByRole("heading", { name: /temukan harga terbaik/i })
+      page.getByRole("heading", { name: /beli yang tepat.*waktu yang tepat/i })
     ).toBeVisible();
     await expect(
       page.getByPlaceholder(/cari/i).first()
